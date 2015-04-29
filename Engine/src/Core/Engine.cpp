@@ -1,18 +1,18 @@
 #include "Engine.h"
 
+
 #include<iostream>
 #include<thread>
 
 Engine::Engine() {
-
 }
 
 
 Engine::~Engine() {
 }
 
-void test (){
-
+void Engine::Start(IApplication* app) {
+	this->app = app;
 }
 
 void Engine::LoadScene(IScene* scene) {

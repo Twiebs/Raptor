@@ -10,7 +10,7 @@ public:
 	~GLFWApplication();
 
 	void Create(char* title, int width, int height, bool fullscreen) override;
-	void Start() override;
+	void Start(IApplicationStartable* startable) override;
 	void Exit() override;
 
 	void Resize(int width, int height) override;

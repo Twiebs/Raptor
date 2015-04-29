@@ -1,8 +1,8 @@
 #include "CameraController.h"
 
-CameraController::CameraController(Camera* camera, InputProcessor* inputProcessor) {
+CameraController::CameraController(Camera* camera, IApplicationInput* input) {
 	this->camera = camera;
-	this->inputProcessor = inputProcessor;
+	this->input = input;
 }
 
 
@@ -11,8 +11,8 @@ CameraController::~CameraController() {
 }
 
 void CameraController::Update(float deltaTime) {
-	double xpos = inputProcessor->GetCursorX();
-	double ypos = inputProcessor->GetCursorY();
+	double xpos = input->GetCursorX();
+	double ypos = input->GetCursorY();
 
 	static double lastX = xpos;
 	static double lastY = ypos;
@@ -24,19 +24,19 @@ void CameraController::Update(float deltaTime) {
 
 	Rotate(deltaX, deltaY);
 
-	bool modDown = inputProcessor->IsKeyDown(INPUT_KEY_LEFT_SHIFT);
+	bool modDown = input->IsKeyDown(INPUT_KEY_LEFT_SHIFT);
 
-	if (inputProcessor->IsKeyDown(INPUT_KEY_W))
+	if (input->IsKeyDown(INPUT_KEY_W))
 		Move(FOWARD, deltaTime, modDown);
-	if (inputProcessor->IsKeyDown(INPUT_KEY_S))
+	if (input->IsKeyDown(INPUT_KEY_S))
 		Move(BACKWARD, deltaTime, modDown);
-	if (inputProcessor->IsKeyDown(INPUT_KEY_D))
+	if (input->IsKeyDown(INPUT_KEY_D))
 		Move(RIGHT, deltaTime, modDown);
-	if (inputProcessor->IsKeyDown(INPUT_KEY_A))
+	if (input->IsKeyDown(INPUT_KEY_A))
 		Move(LEFT, deltaTime, modDown);
-	if (inputProcessor->IsKeyDown(INPUT_KEY_SPACE))
+	if (input->IsKeyDown(INPUT_KEY_SPACE))
 		Move(DOWN, deltaTime, modDown);
-	if (inputProcessor->IsKeyDown(INPUT_KEY_C))
+	if (input->IsKeyDown(INPUT_KEY_C))
 		Move(UP, deltaTime, modDown);
 
 	camera->Update();

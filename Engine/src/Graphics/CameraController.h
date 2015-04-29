@@ -15,7 +15,7 @@ enum CameraMovement {
 
 class CameraController {
 public:
-	CameraController(Camera* camera, InputProcessor* inputProcessor);
+	CameraController(Camera* camera, Engine* engine);
 	~CameraController();
 
 	void Move(CameraMovement direction, float deltaTime, bool modDown);
@@ -25,7 +25,7 @@ public:
 
 private:
 	Camera* camera;
-	InputProcessor* inputProcessor;
+	Engine* engine;
 	float movementSpeed = 4.0f;
 	float lookSensitivity = 0.75f;
 	float velocityScalar = 10.5f;

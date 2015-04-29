@@ -44,12 +44,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>D:\workspace\Raptor\Raptor\Engine\src;D:\workspace\Raptor\Raptor\Engine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\workspace\Raptor\Engine\include;D:\workspace\Raptor\Engine\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>opengl32.lib;assimp.lib;FreeImage.lib;freetype.lib;freetype255.lib;glew32.lib;glew32s.lib;glfw3.lib;glfw3dll.lib;SOIL.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>D:\workspace\Raptor\Raptor\Engine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\workspace\Raptor\Engine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -67,6 +67,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Application\IApplicationStartable.cpp" />
     <ClCompile Include="src\Application\Application.cpp" />
     <ClCompile Include="src\Application\GLFWApplication.cpp" />
     <ClCompile Include="src\Application\OpenGLApplication.cpp" />
@@ -120,6 +121,7 @@
     <ClCompile Include="src\VoxelEngine\VoxelTerrain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Application\IApplicationStartable.h" />
     <ClInclude Include="src\Application\Application.h" />
     <ClInclude Include="src\Application\GLFWApplication.h" />
     <ClInclude Include="src\Application\OpenGLApplication.h" />

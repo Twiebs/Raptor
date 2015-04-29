@@ -6,6 +6,8 @@
 #include<Core\Input.h>
 #include<Core\Scene.h>
 
+#include<Application\IApplicationStartable.h>
+
 typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
@@ -26,18 +28,18 @@ enum LogLevel {
 	LOG_ERROR_ONLY
 };
 
-class Engine {
+class Engine : public IApplicationStartable{
 public:
-	InputProcessor inputProcessor;
-
 	Engine();
 	~Engine();
 
 	void LoadScene(IScene* scene);
 	static void StartScene (IScene* scene);
 
-	void Update(float deltaTime);
+	void Start(IApplication* app) override;
+	void Update(float deltaTime) override;
 
+	IApplication* GetApp() { return app; }
 	bool IsRunning() { return isRunning; };
 	void Exit();
 
@@ -46,6 +48,7 @@ public:
 	void Error(std::string message);
 
 private:
+	IApplication* app;
 	LogLevel logLevel;
 	bool isRunning = true;
 	IScene* currentScene;

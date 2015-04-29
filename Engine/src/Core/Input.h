@@ -137,10 +137,10 @@ public:
 };
 
 
-class InputProcessor {
+class IApplicationInput {
 public:
-	InputProcessor();
-	~InputProcessor();
+	IApplicationInput();
+	~IApplicationInput();
 
 	void AddListener(IInputListener* listener);
 

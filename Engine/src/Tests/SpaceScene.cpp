@@ -20,7 +20,8 @@ SpaceScene::~SpaceScene() {
 
 void SpaceScene::OnLoad(Engine* engine) {
 	camera = new PerspectiveCamera(1280, 720);
-	cameraController = new CameraController(camera, &engine->inputProcessor);
+	IApplication* app = engine->GetApp();
+	cameraController = new CameraController(camera, app);
 
 	renderer = new SceneRenderer(camera);
 	renderer->SetWireframeEnabled(false);

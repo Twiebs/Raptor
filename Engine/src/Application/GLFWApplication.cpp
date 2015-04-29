@@ -9,7 +9,7 @@ GLFWApplication::~GLFWApplication() {
 
 }
 
-void GLFWApplication::Start() {
+void GLFWApplication::Start(IApplicationStartable* startable) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glDepthFunc(GL_LESS);
@@ -20,26 +20,23 @@ void GLFWApplication::Start() {
 	static double lastTime = glfwGetTime();
 	static double frameTime = glfwGetTime();
 
-	while (running && engine->IsRunning() && !glfwWindowShouldClose(window)) {
+	startable->Start(this);
+	while (running && !glfwWindowShouldClose(window)) {
 		double currentTime = glfwGetTime();
 		float deltaTime = currentTime - lastTime;
 		lastTime = currentTime;
 
 		glfwPollEvents();
-		engine->Update(deltaTime);
+		startable->Update(deltaTime);
 		glfwSwapBuffers(window);
 	}
 	Exit();
 }
 
 void GLFWApplication::Create(char* title, int width, int height, bool fullscreen) {
-	engine = new Engine();
 	window = InitGLFW(width, height, fullscreen);
 	InitGLEW();
 }
-
-
-
 void GLFWApplication::Exit() {
 	glfwTerminate();
 }
@@ -85,7 +82,7 @@ GLFWwindow* GLFWApplication::InitGLFW(unsigned int screenWidth, unsigned int scr
 	glfwSwapInterval(1);
 
 	//Regiser GLFW callbacks
-	glfwSetWindowUserPointer(window, engine);
+	glfwSetWindowUserPointer(window, this);
 	GLFWRegisterCallbacks(window);
 	return window;
 }
@@ -99,20 +96,20 @@ void GLFWApplication::GLFWRegisterCallbacks(GLFWwindow* window) {
 }
 #pragma region Callbacks
 void GLFWApplication::GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	Engine* engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
-
-	if (action == GLFW_PRESS) engine->inputProcessor.OnKeyDown(key, mods);
-	else if (action == GLFW_RELEASE) engine->inputProcessor.OnKeyUp(key);
+	GLFWApplication* app = static_cast<GLFWApplication*>(glfwGetWindowUserPointer(window));
+		
+	if (action == GLFW_PRESS) app->OnKeyDown(key, mods);
+	else if (action == GLFW_RELEASE) app->OnKeyUp(key);
 }
 
 void GLFWApplication::GLFWCursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
-	Engine* engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
-	engine->inputProcessor.OnCursorPos(xpos, ypos);
+	GLFWApplication* app = static_cast<GLFWApplication*>(glfwGetWindowUserPointer(window));
+	app->OnCursorPos(xpos, ypos);
 }
 
 void GLFWApplication::GLFWWindowCloseCallback(GLFWwindow* window) {
-	Engine* engine = static_cast<Engine*>(glfwGetWindowUserPointer(window));
-	engine->Exit();
+	GLFWApplication* app = static_cast<GLFWApplication*>(glfwGetWindowUserPointer(window));
+	app->Exit();
 }
 
 void GLFWApplication::GLFWWindowSizeCallback(GLFWwindow* window, int width, int height) {

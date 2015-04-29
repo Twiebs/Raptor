@@ -8,20 +8,20 @@ IInputListener::~IInputListener() {
 }
 
 
-InputProcessor::InputProcessor() {
+IApplicationInput::IApplicationInput() {
 
 }
 
-InputProcessor::~InputProcessor() {
+IApplicationInput::~IApplicationInput() {
 
 }
 
 
-void InputProcessor::AddListener(IInputListener* listener) {
+void IApplicationInput::AddListener(IInputListener* listener) {
 	listeners.push_back(listener);
 }
 
-void InputProcessor::OnKeyDown(int keycode, int mods) {
+void IApplicationInput::OnKeyDown(int keycode, int mods) {
 	keysDown[keycode] = true;
 
 	//Notifiy all registered input listenes that a key was pressed
@@ -33,11 +33,11 @@ void InputProcessor::OnKeyDown(int keycode, int mods) {
 	}
 }
 
-void InputProcessor::OnKeyUp(int keycode) {
+void IApplicationInput::OnKeyUp(int keycode) {
 	keysDown[keycode] = false;
 }
 
-void InputProcessor::OnCursorPos(double xpos, double ypos) {
+void IApplicationInput::OnCursorPos(double xpos, double ypos) {
 	this->cursorX = xpos;
 	this->cursorY = ypos;
 }
