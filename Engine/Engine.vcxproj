@@ -1,0 +1,176 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{C89B4C2D-7AD8-4E36-8CF8-DDF7F31A6B53}</ProjectGuid>
+    <RootNamespace>Engine</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>D:\workspace\Raptor\Raptor\Engine\src;D:\workspace\Raptor\Raptor\Engine\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;assimp.lib;FreeImage.lib;freetype.lib;freetype255.lib;glew32.lib;glew32s.lib;glfw3.lib;glfw3dll.lib;SOIL.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\workspace\Raptor\Raptor\Engine\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Application\Application.cpp" />
+    <ClCompile Include="src\Application\GLFWApplication.cpp" />
+    <ClCompile Include="src\Application\OpenGLApplication.cpp" />
+    <ClCompile Include="src\Application\Window.cpp" />
+    <ClCompile Include="src\Application\WindowsApplication.cpp" />
+    <ClCompile Include="src\Core\BMPLoader.cpp" />
+    <ClCompile Include="src\Core\Component.cpp" />
+    <ClCompile Include="src\Core\Engine.cpp" />
+    <ClCompile Include="src\Core\EngineUtils.cpp" />
+    <ClCompile Include="src\Core\Entity.cpp" />
+    <ClCompile Include="src\Core\EntityFactory.cpp" />
+    <ClCompile Include="src\Core\Input.cpp" />
+    <ClCompile Include="src\Core\Scene.cpp" />
+    <ClCompile Include="src\Graphics\Camera.cpp" />
+    <ClCompile Include="src\Graphics\CameraController.cpp" />
+    <ClCompile Include="src\Graphics\Light.cpp" />
+    <ClCompile Include="src\Graphics\Mesh.cpp" />
+    <ClCompile Include="src\Graphics\SceneRenderer.cpp" />
+    <ClCompile Include="src\Graphics\Shader.cpp" />
+    <ClCompile Include="src\Graphics\Skybox.cpp" />
+    <ClCompile Include="src\Graphics\Technique.cpp" />
+    <ClCompile Include="src\Graphics\Texture.cpp" />
+    <ClCompile Include="src\Graphics\Texture2D.cpp" />
+    <ClCompile Include="src\Math\GeometryUtils.cpp" />
+    <ClCompile Include="src\Math\MarchingCubes.cpp" />
+    <ClCompile Include="src\Math\MathUtils.cpp" />
+    <ClCompile Include="src\Math\Matrix.cpp" />
+    <ClCompile Include="src\Math\Quadtree.cpp" />
+    <ClCompile Include="src\Math\Rectangle.cpp" />
+    <ClCompile Include="src\Math\Source.cpp" />
+    <ClCompile Include="src\Math\Vector2.cpp" />
+    <ClCompile Include="src\Math\Vector3.cpp" />
+    <ClCompile Include="src\Tests\DebugCanvas.cpp" />
+    <ClCompile Include="src\Tests\DefaultInputListener.cpp" />
+    <ClCompile Include="src\Tests\Main.cpp" />
+    <ClCompile Include="src\Tests\SkyboxTestScene.cpp" />
+    <ClCompile Include="src\Tests\SpaceScene.cpp" />
+    <ClCompile Include="src\Tests\UICanvasTestScene.cpp" />
+    <ClCompile Include="src\UI\Canvas.cpp" />
+    <ClCompile Include="src\UI\CanvasRenderer.cpp" />
+    <ClCompile Include="src\UI\Color.cpp" />
+    <ClCompile Include="src\UI\Font.cpp" />
+    <ClCompile Include="src\UI\Label.cpp" />
+    <ClCompile Include="src\UI\Table.cpp" />
+    <ClCompile Include="src\UI\Widget.cpp" />
+    <ClCompile Include="src\Universe\CelestialBody.cpp" />
+    <ClCompile Include="src\Universe\CelestialFactory.cpp" />
+    <ClCompile Include="src\Universe\Universe.cpp" />
+    <ClCompile Include="src\Utils\ImageLoader.cpp" />
+    <ClCompile Include="src\VoxelEngine\VoxelChunk.cpp" />
+    <ClCompile Include="src\VoxelEngine\VoxelTerrain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Application\Application.h" />
+    <ClInclude Include="src\Application\GLFWApplication.h" />
+    <ClInclude Include="src\Application\OpenGLApplication.h" />
+    <ClInclude Include="src\Application\Window.h" />
+    <ClInclude Include="src\Application\WindowsApplication.h" />
+    <ClInclude Include="src\Core\BMPLoader.h" />
+    <ClInclude Include="src\Core\Component.h" />
+    <ClInclude Include="src\Core\Engine.h" />
+    <ClInclude Include="src\Core\EngineUtils.h" />
+    <ClInclude Include="src\Core\Entity.h" />
+    <ClInclude Include="src\Core\EntityFactory.h" />
+    <ClInclude Include="src\Core\Input.h" />
+    <ClInclude Include="src\Core\Scene.h" />
+    <ClInclude Include="src\Graphics\Camera.h" />
+    <ClInclude Include="src\Graphics\CameraController.h" />
+    <ClInclude Include="src\Graphics\Light.h" />
+    <ClInclude Include="src\Graphics\Mesh.h" />
+    <ClInclude Include="src\Graphics\SceneRenderer.h" />
+    <ClInclude Include="src\Graphics\Shader.h" />
+    <ClInclude Include="src\Graphics\Skybox.h" />
+    <ClInclude Include="src\Graphics\Technique.h" />
+    <ClInclude Include="src\Graphics\Texture.h" />
+    <ClInclude Include="src\Graphics\Texture2D.h" />
+    <ClInclude Include="src\Math\GeometryUtils.h" />
+    <ClInclude Include="src\Math\MathUtils.h" />
+    <ClInclude Include="src\Math\Matrix.h" />
+    <ClInclude Include="src\Math\Quadtree.h" />
+    <ClInclude Include="src\Math\Rectangle.h" />
+    <ClInclude Include="src\Math\Vector2.h" />
+    <ClInclude Include="src\Math\Vector3.h" />
+    <ClInclude Include="src\resource.h" />
+    <ClInclude Include="src\Tests\DebugCanvas.h" />
+    <ClInclude Include="src\Tests\DefaultInputListener.h" />
+    <ClInclude Include="src\Tests\SkyboxTestScene.h" />
+    <ClInclude Include="src\Tests\SpaceScene.h" />
+    <ClInclude Include="src\Tests\UICanvasTestScene.h" />
+    <ClInclude Include="src\UI\Canvas.h" />
+    <ClInclude Include="src\UI\CanvasRenderer.h" />
+    <ClInclude Include="src\UI\Color.h" />
+    <ClInclude Include="src\UI\Font.h" />
+    <ClInclude Include="src\UI\Label.h" />
+    <ClInclude Include="src\UI\Table.h" />
+    <ClInclude Include="src\UI\Widget.h" />
+    <ClInclude Include="src\Universe\CelestialBody.h" />
+    <ClInclude Include="src\Universe\CelestialFactory.h" />
+    <ClInclude Include="src\Universe\Universe.h" />
+    <ClInclude Include="src\Utils\ImageLoader.h" />
+    <ClInclude Include="src\VoxelEngine\VoxelChunk.h" />
+    <ClInclude Include="src\VoxelEngine\VoxelTerrain.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
