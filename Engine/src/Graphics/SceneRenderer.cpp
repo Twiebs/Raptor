@@ -4,12 +4,22 @@
 
 SceneRenderer::SceneRenderer(Camera* camera) {
 	this->camera = camera;
-	this->defaultShader= new ShaderProgram("Resources/shaders/lighting.vert", "Resources/shaders/lighting.frag");
+	this->defaultShader = new ShaderProgram("Resources/shaders/lighting.vert", "Resources/shaders/lighting.frag");
 }
 
+SceneRenderer::SceneRenderer() {
+
+}
 
 SceneRenderer::~SceneRenderer() {
+
 }
+
+void SceneRenderer::SetCamera(Camera* camera) {
+
+}
+
+
 
 void SceneRenderer::AddLight(Light* light) {
 	this->lights.push_back(light);

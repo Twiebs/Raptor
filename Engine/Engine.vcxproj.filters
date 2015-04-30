@@ -323,5 +323,8 @@
     <ClInclude Include="src\Application\IApplicationStartable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Core\Engine.inc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

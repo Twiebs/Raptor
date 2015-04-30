@@ -132,7 +132,11 @@ public:
 	IInputListener();
 	~IInputListener();
 
+	//Called when the application has recieved an input event from the platform
+	//Returns true if the event was handeled by this input listner
 	virtual bool OnKeyDown(int button, int mod) = 0;
+
+
 	virtual bool OnCursorPos(double xPos, double yPos) = 0;
 };
 
@@ -144,7 +148,6 @@ public:
 
 	void AddListener(IInputListener* listener);
 
-	//Called by the backend(GLFW) to store input states and notifiy input listeners
 	void OnKeyDown(int keycode, int mods);
 	void OnKeyUp(int keycode);
 	void OnCursorPos(double xpos, double ypos);
@@ -157,10 +160,10 @@ public:
 	void SetCursorPos(double x, double y) { cursorX = x; cursorY = y; }
 
 private:
+	std::vector<IInputListener*> listeners;
+
 	bool keysDown[1024];
 	double cursorX, cursorY;
-
-	std::vector<IInputListener*> listeners;
 };
 
 

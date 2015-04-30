@@ -172,6 +172,11 @@
     <ClInclude Include="src\VoxelEngine\VoxelChunk.h" />
     <ClInclude Include="src\VoxelEngine\VoxelTerrain.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Core\Engine.inc.h">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

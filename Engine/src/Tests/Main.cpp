@@ -5,13 +5,15 @@
 #include"UICanvasTestScene.h"
 #include"SpaceScene.h"
 
+#include<memory>
+
 int main() {
 	GLFWApplication app;
 	app.Create("RaptorEngine", 1280, 720, false);
 
-	Engine* engine = new Engine()
-	IScene* scene = new SpaceScene();
-	engine->LoadScene(scene);
+	Engine engine;
+	SpaceScene scene;
+	engine.LoadScene(&scene);
 
-	app.Start(engine);
+	app.Start(&engine);
 }

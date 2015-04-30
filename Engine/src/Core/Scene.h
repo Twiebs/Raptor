@@ -1,13 +1,14 @@
 #pragma once
+#include<memory>
 
-#include<Core\Entity.h>
+#include<Core\Engine.inc.h>
+#include<Graphics\SceneRenderer.h>
+#include<Graphics\CameraController.h>
 
 #include<UI\Canvas.h>
-#include<Graphics\CameraController.h>
-#include<Graphics\Light.h>
-#include<Graphics\SceneRenderer.h>
 
 class Engine;
+class CameraController;
 
 class IScene {
 public:
@@ -23,7 +24,7 @@ public:
 
 class BaseScene : public IScene{
 public:
-	SceneRenderer* renderer;
+	SceneRenderer renderer;
 
 	BaseScene();
 	~BaseScene();
@@ -36,9 +37,10 @@ public:
 
 protected:
 	Canvas* canvas;
+	CameraController cameraController;
 
 	Camera* camera;
-	CameraController* cameraController;
+
 
 	std::vector<Light*> lights;
 	std::vector<Entity*> entities;

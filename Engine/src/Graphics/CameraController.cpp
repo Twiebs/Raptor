@@ -1,51 +1,70 @@
 #include "CameraController.h"
 
-CameraController::CameraController(Camera* camera, IApplicationInput* input) {
-	this->camera = camera;
-	this->input = input;
+CameraController::CameraController() {
+
 }
-
-
 CameraController::~CameraController() {
 
 }
 
-void CameraController::Update(float deltaTime) {
-	double xpos = input->GetCursorX();
-	double ypos = input->GetCursorY();
+void CameraController::SetCamera(Camera* camera) {
+	this->camera = camera;
+}
 
+bool CameraController::OnKeyDown(int button, int mod) {
+	switch (button) {
+	case INPUT_KEY_W: 
+		foward = true; 
+		return true;
+	case INPUT_KEY_S: 
+		backward = true; 
+		return true;
+	case INPUT_KEY_D: 
+		right = true;
+		return true;
+	case INPUT_KEY_A: 
+		left = true;
+		return true;
+	case INPUT_KEY_SPACE: 
+		up = true;
+		return true;
+	case INPUT_KEY_C: 
+		down = true;
+		return true;
+	case INPUT_KEY_LEFT_SHIFT: 
+		sprintIsActive = true;
+		return true;
+	}
+}
+
+bool CameraController::OnCursorPos(double xpos, double ypos) {
 	static double lastX = xpos;
 	static double lastY = ypos;
-
-	float deltaX = xpos - lastX;
-	float deltaY = lastY - ypos;
+	
+	deltaX = xpos - lastX;
+	deltaY = ypos - lastY;
 	lastX = xpos;
 	lastY = ypos;
+	return true;
+}
 
+
+
+void CameraController::Update(float deltaTime) {
 	Rotate(deltaX, deltaY);
 
-	bool modDown = input->IsKeyDown(INPUT_KEY_LEFT_SHIFT);
-
-	if (input->IsKeyDown(INPUT_KEY_W))
-		Move(FOWARD, deltaTime, modDown);
-	if (input->IsKeyDown(INPUT_KEY_S))
-		Move(BACKWARD, deltaTime, modDown);
-	if (input->IsKeyDown(INPUT_KEY_D))
-		Move(RIGHT, deltaTime, modDown);
-	if (input->IsKeyDown(INPUT_KEY_A))
-		Move(LEFT, deltaTime, modDown);
-	if (input->IsKeyDown(INPUT_KEY_SPACE))
-		Move(DOWN, deltaTime, modDown);
-	if (input->IsKeyDown(INPUT_KEY_C))
-		Move(UP, deltaTime, modDown);
-
+	if (foward) Move(FOWARD, deltaTime);
+	if (backward) Move(BACKWARD, deltaTime);
+	if (right) Move(RIGHT, deltaTime);
+	if (left) Move(LEFT, deltaTime);
+	if (down) Move(DOWN, deltaTime);
+	if (up) Move(UP, deltaTime);
 	camera->Update();
 }
 
-void CameraController::Move(CameraMovement direction, float deltaTime, bool modDown = false) {
+void CameraController::Move(CameraMovement direction, float deltaTime) {
 	float velocity = movementSpeed * deltaTime;
-	if (modDown)
-		velocity *= velocityScalar;
+	if (sprintIsActive) velocity *= velocityScalar;
 
 	switch (direction) {
 	case FOWARD:

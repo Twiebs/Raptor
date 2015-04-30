@@ -31,9 +31,9 @@ public:
 	void Render(float deltaTime) override;
 
 private:
-	DirectionalLight* light;
-	
-	Universe* universe;
+	DirectionalLight light;
+	Universe universe;
+
 	std::vector<CelestialBody*> bodies;
 };
 

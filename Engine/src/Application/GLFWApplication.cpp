@@ -1,8 +1,5 @@
 #include "GLFWApplication.h"
 GLFWApplication::GLFWApplication() {
-
-
-
 }
 
 GLFWApplication::~GLFWApplication() {

@@ -1,9 +1,7 @@
 #pragma once
 
 #include<Application\IApplicationStartable.h>
-#include<Application\Window.h>
-#include<Core\Engine.h>
-
+#include<Core\Input.h>
 
 namespace Raptor {
 

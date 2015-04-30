@@ -3,7 +3,17 @@
 #include<Math\GeometryUtils.h>
 #include<glm\gtc\noise.hpp>
 
-Universe::Universe(unsigned int seed) {
+Universe::Universe() {
+
+
+}
+
+
+Universe::~Universe() {
+
+}
+
+void Universe::SetSeed(unsigned int seed) {
 	this->seed = seed;
 
 	SOLAR_STANDARD = {
@@ -16,12 +26,6 @@ Universe::Universe(unsigned int seed) {
 		1.0f,
 		12.0f
 	};
-
-}
-
-
-Universe::~Universe() {
-
 }
 
 CelestialBody* Universe::CreateCelestialBody(CelestialBodyType type, unsigned int seed) {

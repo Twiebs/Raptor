@@ -1,8 +1,10 @@
 #pragma once
 
 #include<Core\Input.h>
-#include <Graphics\Camera.h>
+#include<Graphics\Camera.h>
 #include <Math\MathUtils.h>
+
+class Engine;
 
 enum CameraMovement {
 	FOWARD,
@@ -13,19 +15,32 @@ enum CameraMovement {
 	DOWN
 };
 
-class CameraController {
+class CameraController : public IInputListener{
 public:
-	CameraController(Camera* camera, Engine* engine);
+	CameraController();
 	~CameraController();
 
-	void Move(CameraMovement direction, float deltaTime, bool modDown);
-	void Rotate(float deltaX, float deltaY);
+	void SetCamera(Camera* camera);
+	bool OnKeyDown(int button, int mod) override;
+	bool OnCursorPos(double xPos, double yPos) override;
 
+	void Move(CameraMovement direction, float deltaTime);
+	void Rotate(float deltaX, float deltaY);
 	void Update(float deltaTime);
 
 private:
+	bool sprintIsActive;
+	bool foward;
+	bool backward;
+	bool left;
+	bool right;
+	bool up;
+	bool down;
+
+	float deltaX, deltaY;
+
 	Camera* camera;
-	Engine* engine;
+
 	float movementSpeed = 4.0f;
 	float lookSensitivity = 0.75f;
 	float velocityScalar = 10.5f;

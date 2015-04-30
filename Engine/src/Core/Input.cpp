@@ -18,6 +18,7 @@ IApplicationInput::~IApplicationInput() {
 
 
 void IApplicationInput::AddListener(IInputListener* listener) {
+	if (listeners.size() == 0) listeners = std::vector<IInputListener*>() ;
 	listeners.push_back(listener);
 }
 

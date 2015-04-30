@@ -17,9 +17,10 @@ public:
 	double G = 66.67;
 	int AU = 10;
 
-	Universe(unsigned int seed);
+	Universe();
 	~Universe();
 
+	void SetSeed(unsigned int seed);
 	CelestialBody* CreateCelestialBody(CelestialBodyType type, unsigned int seed);
 
 	void Step(float deltaTime);

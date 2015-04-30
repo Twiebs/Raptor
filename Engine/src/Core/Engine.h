@@ -3,10 +3,7 @@
 #include<string>
 #include<stdint.h>
 
-#include<Core\Input.h>
-#include<Core\Scene.h>
-
-#include<Application\IApplicationStartable.h>
+#include<Core\Engine.inc.h>
 
 typedef int8_t int8;
 typedef int16_t int16;
@@ -49,7 +46,8 @@ public:
 
 private:
 	IApplication* app;
+	IScene* currentScene;
+
 	LogLevel logLevel;
 	bool isRunning = true;
-	IScene* currentScene;
 };

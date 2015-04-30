@@ -15,7 +15,7 @@ bool DefaultInputListener::OnKeyDown(int keycode, int mods) {
 		engine->Exit();
 		return true;
 	case INPUT_KEY_F3:
-		scene->renderer->ToggleWireframeEnabled();
+		scene->renderer.ToggleWireframeEnabled();
 		return true;
 	default:
 		return false;

@@ -8,8 +8,11 @@
 
 class SceneRenderer {
 public:
+	SceneRenderer();
 	SceneRenderer(Camera* camera);
 	~SceneRenderer();
+
+	void SetCamera(Camera* camera);
 
 	void SetWireframeEnabled(bool enabled);
 	void ToggleWireframeEnabled();
