@@ -13,7 +13,6 @@
 #include<Tests\DebugCanvas.h>
 
 //Scene
-#include<Universe\CelestialFactory.h>
 #include<Universe\CelestialBody.h>
 #include<Universe\Universe.h>
 
@@ -31,9 +30,13 @@ public:
 	void Render(float deltaTime) override;
 
 private:
-	DirectionalLight light;
-	Universe universe;
+	std::unique_ptr<Skybox> skybox;
+	std::unique_ptr<Universe> universe;
 
-	std::vector<CelestialBody*> bodies;
+
+	Entity* entity;
+	DirectionalLight light;
+
+	bool displayDevOverlay;
 };
 

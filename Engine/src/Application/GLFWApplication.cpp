@@ -3,16 +3,15 @@ GLFWApplication::GLFWApplication() {
 }
 
 GLFWApplication::~GLFWApplication() {
-
+	glfwTerminate();
 }
 
-void GLFWApplication::Start(IApplicationStartable* startable) {
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glDepthFunc(GL_LESS);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+void GLFWApplication::Attach(IApplicationStartable* startable) {
+	this->startable = startable;
+	startable->Start(this);
+}
 
+void GLFWApplication::Start() {
 	running = true;
 	static double lastTime = glfwGetTime();
 	static double frameTime = glfwGetTime();
@@ -31,11 +30,39 @@ void GLFWApplication::Start(IApplicationStartable* startable) {
 }
 
 void GLFWApplication::Create(char* title, int width, int height, bool fullscreen) {
-	window = InitGLFW(width, height, fullscreen);
+	int glfwInitCode = glfwInit();
+	if (glfwInitCode != GL_TRUE) {
+		std::cout << "Failed to initalize GLFW";
+	}
+
+	glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+	GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+	window = glfwCreateWindow(width, height, title, fullscreen ? primaryMonitor : nullptr, nullptr);
+	if (window == NULL) {
+		std::cout << "Failed to create GLFW window!";
+		glfwTerminate();
+	}
+
+	glfwMakeContextCurrent(window);
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_FALSE);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetWindowPos(window, 400, 300);
+	glfwSwapInterval(1);
+
+	//Regiser GLFW callbacks
+	glfwSetWindowUserPointer(window, this);
+	GLFWRegisterCallbacks(window);
+
 	InitGLEW();
 }
 void GLFWApplication::Exit() {
-	glfwTerminate();
+	running = false;
 }
 
 
@@ -51,40 +78,6 @@ int GLFWApplication::GetHeight() {
 }
 #pragma endregion
 
-GLFWwindow* GLFWApplication::InitGLFW(unsigned int screenWidth, unsigned int screenHeight, bool fullscreen) {
-	int glfwInitCode = glfwInit();
-	if (glfwInitCode != GL_TRUE) {
-		std::cout << "Failed to initalize GLFW";
-		return nullptr;
-	}
-
-	glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-
-	GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
-	GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "Engine", fullscreen ? primaryMonitor : nullptr, nullptr);
-	if (window == NULL) {
-		std::cout << "Failed to create GLFW window!";
-		glfwTerminate();
-		return nullptr;
-	}
-
-	glfwMakeContextCurrent(window);
-	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_FALSE);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSwapInterval(1);
-
-	//Regiser GLFW callbacks
-	glfwSetWindowUserPointer(window, this);
-	GLFWRegisterCallbacks(window);
-	return window;
-}
-
-
 void GLFWApplication::GLFWRegisterCallbacks(GLFWwindow* window) {
 	glfwSetKeyCallback(window, GLFWKeyCallback);
 	glfwSetCursorPosCallback(window, GLFWCursorPosCallback);
@@ -94,14 +87,12 @@ void GLFWApplication::GLFWRegisterCallbacks(GLFWwindow* window) {
 #pragma region Callbacks
 void GLFWApplication::GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	GLFWApplication* app = static_cast<GLFWApplication*>(glfwGetWindowUserPointer(window));
-		
-	if (action == GLFW_PRESS) app->OnKeyDown(key, mods);
-	else if (action == GLFW_RELEASE) app->OnKeyUp(key);
+	app->FireKeyEvent(key, action, mods);
 }
 
 void GLFWApplication::GLFWCursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
 	GLFWApplication* app = static_cast<GLFWApplication*>(glfwGetWindowUserPointer(window));
-	app->OnCursorPos(xpos, ypos);
+	app->FireCursorPosEvent(xpos, ypos);
 }
 
 void GLFWApplication::GLFWWindowCloseCallback(GLFWwindow* window) {

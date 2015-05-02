@@ -15,9 +15,12 @@ public:
 	void Render(float deltaTime) override;
 
 private:
-	ShaderProgram* shader;
-	Font* font;
+	GLuint vertexArrayID;
+	GLuint vertexBufferID;
+	GLuint elementBufferID;
 
+	ShaderProgram* uiShader;
+	Font* font;
 	Color* color;
 };
 

@@ -5,6 +5,7 @@ public:
 	float width, height;
 
 	Rectangle();
+	Rectangle(float x, float y, float width, float height);
 	~Rectangle();
 };
 

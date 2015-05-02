@@ -16,7 +16,7 @@ public:
 
 	virtual void Setup();
 	virtual void Update(float deltaTime);
-	virtual void Draw(float deltaTime);
+	virtual void Render(float deltaTime);
 
 private:
 	CanvasRenderer renderer;

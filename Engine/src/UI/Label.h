@@ -14,7 +14,7 @@ public:
 	~Label();
 
 	void Init(std::string text, Font* font, Color color);
-	void SetText(std::string text) { this->text = text; }
+	void SetText(std::string text);
 	std::string GetText() { return text; }
 	void Draw (CanvasRenderer* renderer, float deltaTime) override;
 

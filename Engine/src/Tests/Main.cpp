@@ -4,6 +4,8 @@
 
 #include"UICanvasTestScene.h"
 #include"SpaceScene.h"
+#include"SkyboxTestScene.h"
+#include"UICanvasTestScene.h"
 
 #include<memory>
 
@@ -12,8 +14,10 @@ int main() {
 	app.Create("RaptorEngine", 1280, 720, false);
 
 	Engine engine;
+	app.Attach(&engine);
+
 	SpaceScene scene;
 	engine.LoadScene(&scene);
 
-	app.Start(&engine);
+	app.Start();
 }

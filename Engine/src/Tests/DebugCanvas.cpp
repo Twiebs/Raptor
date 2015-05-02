@@ -14,20 +14,24 @@ DebugCanvas::~DebugCanvas() {
 }
 
 void DebugCanvas::Setup() {
-	font = new Font("Resources/fonts/arial.ttf", 18);
+	font = new Font("Resources/fonts/arial.ttf", 14);
 
-	rotationLabel.Init("Rotation: [XX, XX]", font, Color(1.0f, 1.0f, 1.0f));
+	rotationLabel.Init("Rotation: [XX, XX]", font, Color(1.0f, 1.0f, 1.0f, 1.0f));
 	rotationLabel.SetPosition(20, GetViewportHeight() - 55);
 
-	positionLabel.Init("Position: [XX, XX, XX]", font, Color(1.0f, 1.0f, 1.0f));
+	positionLabel.Init("Position: [XX, XX, XX]", font, Color(1.0f, 1.0f, 1.0f, 1.0f));
 	positionLabel.SetPosition(20, GetViewportHeight() - 20);
 
-	fpsLabel.Init("FPS: XXX", font, Color(1.0f, 1.0f, 0.0f));
+	fpsLabel.Init("FPS: XXX", font, Color(1.0f, 1.0f, 0.0f, 1.0f));
 	fpsLabel.SetPosition(GetViewportWidth() - 60, GetViewportHeight() - 20);
 
-	AddWidget(&fpsLabel);
-	AddWidget(&positionLabel);
-	AddWidget(&rotationLabel);
+
+	group.SetBounds(10, 620, 250, 100);
+	group.AddWidget(&fpsLabel);
+	group.AddWidget(&positionLabel);
+	group.AddWidget(&rotationLabel);
+	group.Refresh();
+	AddWidget(&group);
 }
 
 void DebugCanvas::Update(float deltaTime) {

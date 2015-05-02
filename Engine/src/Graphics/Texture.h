@@ -2,12 +2,12 @@
 
 #include<vector>
 #include<GL\glew.h>
-#include<Utils\ImageLoader.h>
+#include<Core\ResourceManager.h>
 
 struct TextureData {
 	std::string filename;
 	int width, height;
-	unsigned char* pixels;
+	char* pixels;
 };
 
 class Texture {

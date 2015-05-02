@@ -34,6 +34,7 @@ public:
 	~Font();
 
 	void RenderText(ShaderProgram* shader, std::string text, GLfloat x, GLfloat y, GLfloat scale, Color* color);
+	void GetSize(std::string text, float* width, float* height);
 
 private:
 

@@ -16,7 +16,17 @@ public:
 
 	Color GetColor() { return color; }
 
-	void SetPosition(float x, float y) { this->x = x; this->y = y; }
+	void SetPosition(float x, float y) { 
+		this->x = x; 
+		this->y = y; 
+	}
+
+	void SetBounds(float x, float y, float width, float height) {
+		this->x = x;
+		this->y = y;
+		this->width = width;
+		this->height = height;
+	}
 	void SetParent(Widget* widget);
 
 	virtual void Draw (CanvasRenderer* renderer, float deltaTime) = 0;

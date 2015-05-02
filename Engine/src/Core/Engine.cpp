@@ -29,10 +29,6 @@ void Engine::StartScene(IScene* scene) {
 
 }
 
-void Engine::Exit() {
-	this->isRunning = false;
-}
-
 void Engine::Update(float deltaTime) {
 	currentScene->Tick(deltaTime);
 	currentScene->Render(deltaTime);

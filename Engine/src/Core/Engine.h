@@ -37,8 +37,6 @@ public:
 	void Update(float deltaTime) override;
 
 	IApplication* GetApp() { return app; }
-	bool IsRunning() { return isRunning; };
-	void Exit();
 
 	//Debug
 	void Log(std::string message);

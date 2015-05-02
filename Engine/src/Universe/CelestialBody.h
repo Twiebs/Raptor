@@ -38,11 +38,8 @@ struct CelestialBodyData {
 
 class CelestialBody : public Entity{
 public:
-	CelestialBodyData* data;
-	std::vector<VoxelChunk*> chunks;
+	CelestialBodyData data;
 
-	void Render();
-
-	CelestialBody(CelestialBodyData* data);
+	CelestialBody();
 	~CelestialBody();
 };

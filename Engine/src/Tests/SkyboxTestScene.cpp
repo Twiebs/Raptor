@@ -18,8 +18,12 @@
 #include<Math\GeometryUtils.h>
 
 #include<Tests\DefaultInputListener.h>
+#include"DebugCanvas.h"
 
 SkyboxTestScene::SkyboxTestScene() {
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 
@@ -27,15 +31,16 @@ SkyboxTestScene::~SkyboxTestScene() {
 }
 
 void SkyboxTestScene::OnLoad(Engine* engine) {
-	glViewport(0, 0, 1280, 720);
+	//Camera initalization
 	camera = new PerspectiveCamera(1280, 720);
-
 	cameraController.SetCamera(camera);
 	engine->GetApp()->AddListener(&cameraController);
+	renderer.SetCamera(camera);
+
+	//Canvas initalization
+	canvas = std::make_unique<DebugCanvas>(1280, 720);
 
 	engine->GetApp()->AddListener(new DefaultInputListener(engine, this));
-
-	renderer.SetCamera(camera);
 
 	std::vector<const GLchar*> faces;
 	faces.push_back("Resources/skybox/space/right.png");
@@ -45,8 +50,8 @@ void SkyboxTestScene::OnLoad(Engine* engine) {
 	faces.push_back("Resources/skybox/space/front.png");
 	faces.push_back("Resources/skybox/space/back.png");
 
-	Skybox* skybox = new Skybox(faces);
-	renderer.SetSkybox(skybox);
+	skybox = std::make_unique<Skybox>(faces);
+	renderer.SetSkybox(skybox.get());
 }
 
 void SkyboxTestScene::Tick(float deltaTime) {
@@ -58,6 +63,7 @@ void SkyboxTestScene::Render(float deltaTime) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	renderer.RenderScene();
+	canvas->Render(deltaTime);
 }
 
 void SkyboxTestScene::OnDestroy(Engine* engine) {

@@ -2,6 +2,8 @@
 #include<string>
 #include<Core\Scene.h>
 
+using namespace std;
+
 class SkyboxTestScene : public BaseScene{
 public:
 	SkyboxTestScene();
@@ -12,5 +14,9 @@ public:
 
 	void Tick(float deltaTime) override;
 	void Render(float deltaTime) override;
+
+private:
+	std::unique_ptr<Skybox> skybox;
+	std::unique_ptr<Canvas> canvas;
 };
 

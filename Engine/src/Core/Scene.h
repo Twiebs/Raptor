@@ -25,6 +25,7 @@ public:
 class BaseScene : public IScene{
 public:
 	SceneRenderer renderer;
+	bool drawDeveloperCanvas = true;
 
 	BaseScene();
 	~BaseScene();
@@ -41,9 +42,9 @@ protected:
 
 	Camera* camera;
 
-
 	std::vector<Light*> lights;
 	std::vector<Entity*> entities;
+
 };
 
 

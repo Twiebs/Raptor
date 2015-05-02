@@ -8,14 +8,15 @@ Entity::Entity() {
 Entity::~Entity() {
 }
 
-void Entity::AddComponent(Component* component) {
-	components.push_back(component);
+void Entity::AddComponent(std::unique_ptr<Component> component) {
+	components.push_back(std::move(component));
 }
 
+//This is nonsense dont use it!
 void Entity::RemoveComponent(Component* component) {
-	//This is nonsense dont use it!
+
 }
 
-Component* Entity::GetComponent() {
+std::unique_ptr<Component>& Entity::GetComponent() {
 	return components[0];
 }

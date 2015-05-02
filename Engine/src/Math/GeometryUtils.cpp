@@ -16,14 +16,15 @@ Vector3 GeomertyUtils::PointToQuadrilateralizedSphere(Vector3 point) {
 	return Vector3(dx, dy, dz);
 }
 
-Mesh* GeomertyUtils::BuildCubeMesh(int segments) {
+std::unique_ptr<Mesh> GeomertyUtils::BuildCubeMesh(int segments) {
 	std::vector<Vertex> verticies;
 	std::vector<unsigned int> indicies;
 
 	for (int i = 0; i < 6; i++) {
 		BuildCubeFace((CubeFace)i, segments, verticies, indicies);
 	}
-	return new Mesh(verticies, indicies);
+
+	return std::make_unique<Mesh>(verticies, indicies);
 }
 
 

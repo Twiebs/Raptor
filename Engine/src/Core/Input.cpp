@@ -18,28 +18,27 @@ IApplicationInput::~IApplicationInput() {
 
 
 void IApplicationInput::AddListener(IInputListener* listener) {
-	if (listeners.size() == 0) listeners = std::vector<IInputListener*>() ;
 	listeners.push_back(listener);
 }
 
-void IApplicationInput::OnKeyDown(int keycode, int mods) {
-	keysDown[keycode] = true;
+void IApplicationInput::FireKeyEvent(int keycode, bool isPressed, int mods) {
+	keysDown[keycode] = isPressed;
 
 	//Notifiy all registered input listenes that a key was pressed
 	for each(IInputListener* listener in listeners) {
-		if (listener->OnKeyDown(keycode, mods)) {
+		if (listener->OnKeyEvent(keycode, isPressed, mods)) {
 			//if the listener returns true the event was handled and we can break
 			break;
 		}
 	}
 }
 
-void IApplicationInput::OnKeyUp(int keycode) {
-	keysDown[keycode] = false;
-}
-
-void IApplicationInput::OnCursorPos(double xpos, double ypos) {
+void IApplicationInput::FireCursorPosEvent(double xpos, double ypos) {
 	this->cursorX = xpos;
 	this->cursorY = ypos;
+	for each(IInputListener* listener in listeners) {
+		if (listener->OnCursorPosEvent(xpos, ypos))
+			break;
+	}
 }
 

@@ -9,11 +9,15 @@ Label::Label(std::string text, Font* font, Color color) {
 }
 
 void Label::Init(std::string text, Font* font, Color color) {
-	this->text = text;
 	this->font = font;
 	this->color = color;
+	SetText(text);
 }
 
+void Label::SetText(std::string text) {
+	this->text = text;
+	font->GetSize(text, &width, &height);
+}
 
 Label::~Label() {
 }

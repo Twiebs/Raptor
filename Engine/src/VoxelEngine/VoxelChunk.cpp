@@ -77,8 +77,7 @@ void VoxelChunk::GenerateVoxels() {
 
 	if (verticies.size() != 0) {
 		enabled = true;
-		Mesh* mesh = new Mesh(verticies, indicies);
-		AddComponent(mesh);
+		AddComponent(std::make_unique<Mesh>(verticies, indicies));
 	}
 }
 

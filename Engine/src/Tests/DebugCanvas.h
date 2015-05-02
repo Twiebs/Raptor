@@ -9,6 +9,7 @@
 #include<UI\Font.h>
 #include<UI\Label.h>
 #include<UI\Widget.h>
+#include<UI\Group.h>
 
 class DebugCanvas : public Canvas{
 public:
@@ -23,6 +24,7 @@ public:
 private:
 	Font* font;
 
+	VerticalGroup group;
 	Label positionLabel;
 	Label rotationLabel;
 	Label fpsLabel;

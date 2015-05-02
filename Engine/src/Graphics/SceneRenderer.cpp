@@ -4,11 +4,10 @@
 
 SceneRenderer::SceneRenderer(Camera* camera) {
 	this->camera = camera;
-	this->defaultShader = new ShaderProgram("Resources/shaders/lighting.vert", "Resources/shaders/lighting.frag");
 }
 
 SceneRenderer::SceneRenderer() {
-
+	this->defaultShader = new ShaderProgram("Resources/shaders/lighting.vert", "Resources/shaders/lighting.frag");
 }
 
 SceneRenderer::~SceneRenderer() {
@@ -16,7 +15,7 @@ SceneRenderer::~SceneRenderer() {
 }
 
 void SceneRenderer::SetCamera(Camera* camera) {
-
+	this->camera = camera;
 }
 
 
@@ -39,20 +38,20 @@ void SceneRenderer::ToggleWireframeEnabled() {
 void SceneRenderer::SetWireframeEnabled(bool enabled) {
 	this->wireframe = enabled;
 	if (enabled) {
-		//glDisable(GL_CULL_FACE);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glDisable(GL_CULL_FACE);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		if (wireframeShader == nullptr)
 			wireframeShader = new ShaderProgram("Resources/shaders/wireframe.vert", "Resources/shaders/wireframe.frag");
 	} else {
-		//glEnable(GL_CULL_FACE);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glEnable(GL_CULL_FACE);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 }
 
 void SceneRenderer::RenderScene(){
 	if (wireframe) {
-		//glDisable(GL_CULL_FACE);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		glDisable(GL_CULL_FACE);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 
 	if (skybox != nullptr) 
@@ -73,12 +72,17 @@ void SceneRenderer::RenderScene(){
 	glUniform3f(shader->GetUniformLocation("lightPosition"), 0, 32, 100);
 	
 	if (wireframe) {
-		//glEnable(GL_CULL_FACE);
-		//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glEnable(GL_CULL_FACE);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 }
 
 void SceneRenderer::RenderEntity(Entity* entity) {
+	if (wireframe) {
+		glDisable(GL_CULL_FACE);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	}
+
 	glm::mat4 model = glm::translate(glm::mat4(1.0), entity->position.ToGLM());
 	glm::mat4 mvp = camera->GetCombinedMatrix() * model;
 
@@ -90,10 +94,15 @@ void SceneRenderer::RenderEntity(Entity* entity) {
 		glUniformMatrix4fv(shader->GetUniformLocation("model"), 1, GL_FALSE, &model[0][0]);
 	}
 
-	Mesh* mesh = static_cast<Mesh*>(entity->GetComponent());
+	std::unique_ptr<Mesh>& mesh = (std::unique_ptr<Mesh>&)entity->GetComponent();
 	glBindVertexArray(mesh->vertexArrayID);
 	glDrawElements(GL_TRIANGLES, mesh->indices.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
+
+	if (wireframe) {
+		glEnable(GL_CULL_FACE);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
 }
 
 void SceneRenderer::RenderSkybox() {

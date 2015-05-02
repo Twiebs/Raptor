@@ -9,20 +9,30 @@ DefaultInputListener::DefaultInputListener(Engine* engine, BaseScene* scene) {
 DefaultInputListener::~DefaultInputListener() {
 }
 
-bool DefaultInputListener::OnKeyDown(int keycode, int mods) {
+bool DefaultInputListener::OnKeyEvent(int keycode, bool isPressed, int mods) {
+	//Not intrested in key releases atm
+	if (!isPressed) {
+		return false;
+	}
+
 	switch (keycode) {
 	case INPUT_KEY_ESCAPE:
-		engine->Exit();
+		engine->GetApp()->Exit();
 		return true;
+
 	case INPUT_KEY_F3:
 		scene->renderer.ToggleWireframeEnabled();
 		return true;
-	default:
-		return false;
+
+	case INPUT_KEY_GRAVE_ACCENT:
+		scene->drawDeveloperCanvas = !scene->drawDeveloperCanvas;
+		return true;
 	}
+
+	return false;
 }
 
 
-bool DefaultInputListener::OnCursorPos(double xpos, double ypos) {
+bool DefaultInputListener::OnCursorPosEvent(double xpos, double ypos) {
 	return false;
 }

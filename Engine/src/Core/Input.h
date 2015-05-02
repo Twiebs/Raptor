@@ -127,17 +127,22 @@
 #define INPUT_KEY_MENU               348
 #define INPUT_KEY_LAST               INPUT_KEY_MENU
 
+
+//Interface for interacting with the application layer to recieve input events
+//Event functions return true if the even was handeled by the listener.
+//If true is returned no subsequent listners will recieve the event.
 class IInputListener {
 public:
 	IInputListener();
 	~IInputListener();
 
-	//Called when the application has recieved an input event from the platform
-	//Returns true if the event was handeled by this input listner
-	virtual bool OnKeyDown(int button, int mod) = 0;
+	//Called when the application recieves an input event from the platform layer
+	//Returns true if the event was handeled by this input listner.
+	virtual bool OnKeyEvent(int keycode, bool isPressed, int mod) = 0;
 
-
-	virtual bool OnCursorPos(double xPos, double yPos) = 0;
+	//Called when the cursor position changes
+	//args are the absolute coordinates of the cursor in the window
+	virtual bool OnCursorPosEvent(double xPos, double yPos) = 0;
 };
 
 
@@ -148,9 +153,9 @@ public:
 
 	void AddListener(IInputListener* listener);
 
-	void OnKeyDown(int keycode, int mods);
-	void OnKeyUp(int keycode);
-	void OnCursorPos(double xpos, double ypos);
+	//Called by the platform notifies all registered listeners about the event
+	void FireKeyEvent(int keycode, bool isPressed, int mod);
+	void FireCursorPosEvent(double xpos, double ypos);
 
 	bool IsKeyDown(int keycode) { return keysDown[keycode]; };
 
@@ -159,7 +164,7 @@ public:
 	double GetCursorY() { return cursorY; }
 	void SetCursorPos(double x, double y) { cursorX = x; cursorY = y; }
 
-private:
+protected:
 	std::vector<IInputListener*> listeners;
 
 	bool keysDown[1024];

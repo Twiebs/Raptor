@@ -19,7 +19,8 @@ public:
 	~IApplication();
 
 	virtual void Create(char* title, int width, int height, bool fullscrean) = 0;
-	virtual void Start(IApplicationStartable* startable) = 0;
+	virtual void Start() = 0;
+	virtual void Attach(IApplicationStartable* startable) = 0;
 	virtual void Exit() = 0;
 
 	virtual void Resize(int width, int height) = 0;

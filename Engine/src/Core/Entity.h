@@ -4,6 +4,7 @@
 
 #include<vector>
 #include<Math\Vector3.h>
+#include<memory>
 
 class Entity {
 public:
@@ -17,11 +18,11 @@ public:
 	Entity();
 	~Entity();
 
-	void AddComponent(Component* component);
+	void AddComponent(std::unique_ptr<Component> component);
 	void RemoveComponent(Component* component); //FIXME: bad... wont do a damn thing
-	Component* GetComponent();
+	std::unique_ptr<Component>& GetComponent();
 
 private:
-	std::vector<Component*> components;
+	std::vector<std::unique_ptr<Component>> components;
 };
 

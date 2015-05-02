@@ -68,9 +68,18 @@ void Font::InitGLBuffers() {
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
 
-	//Saftey binds
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+}
+
+void Font::GetSize(std::string text, float* width, float* height) {
+	string::const_iterator iter;
+	for (iter = text.begin(); iter != text.end(); iter++) {
+		Character glyph = characters[*iter];
+		*width += glyph.width;
+		if (*height < glyph.height)
+			*height = glyph.height;
+	}
 }
 
 void Font::RenderText(ShaderProgram* shader, std::string text, GLfloat x, GLfloat y, GLfloat scale, Color* color) {

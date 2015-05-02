@@ -10,7 +10,7 @@ Skybox::Skybox(std::vector<const char*> faces) {
 
 	static GLfloat skyboxVertices[] {
 		// Positions          
-		-1.0f, 1.0f, -1.0f,
+			-1.0f, 1.0f, -1.0f,
 			-1.0f, -1.0f, -1.0f,
 			1.0f, -1.0f, -1.0f,
 			1.0f, -1.0f, -1.0f,

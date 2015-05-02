@@ -11,38 +11,31 @@ void CameraController::SetCamera(Camera* camera) {
 	this->camera = camera;
 }
 
-bool CameraController::OnKeyDown(int button, int mod) {
-	switch (button) {
-	case INPUT_KEY_W: 
-		foward = true; 
-		return true;
-	case INPUT_KEY_S: 
-		backward = true; 
-		return true;
-	case INPUT_KEY_D: 
-		right = true;
-		return true;
-	case INPUT_KEY_A: 
-		left = true;
-		return true;
-	case INPUT_KEY_SPACE: 
-		up = true;
-		return true;
-	case INPUT_KEY_C: 
-		down = true;
-		return true;
-	case INPUT_KEY_LEFT_SHIFT: 
-		sprintIsActive = true;
-		return true;
+bool CameraController::OnKeyEvent(int keycode, bool isPressed, int mod) {
+	switch (keycode) {
+	case INPUT_KEY_W: foward = isPressed;	return true;
+	case INPUT_KEY_S: backward = isPressed; return true;
+	case INPUT_KEY_D: right = isPressed;	return true;
+	case INPUT_KEY_A: left = isPressed;		return true;
+	case INPUT_KEY_SPACE: up = isPressed;	return true;
+	case INPUT_KEY_C: down = isPressed;		return true;
+	case INPUT_KEY_LEFT_SHIFT: sprintIsActive = isPressed;return true;
 	}
+
+	return false;
 }
 
-bool CameraController::OnCursorPos(double xpos, double ypos) {
+bool CameraController::OnCursorPosEvent(double xpos, double ypos) {
 	static double lastX = xpos;
 	static double lastY = ypos;
 	
-	deltaX = xpos - lastX;
-	deltaY = ypos - lastY;
+	float deltaX = xpos - lastX;
+	float deltaY = lastY - ypos;
+
+	camera->yaw += deltaX * lookSensitivity;
+	camera->pitch += deltaY * lookSensitivity;
+	camera->pitch = MathUtils::Clamp(camera->pitch, -89.0f, 89.0f);
+
 	lastX = xpos;
 	lastY = ypos;
 	return true;
@@ -51,8 +44,6 @@ bool CameraController::OnCursorPos(double xpos, double ypos) {
 
 
 void CameraController::Update(float deltaTime) {
-	Rotate(deltaX, deltaY);
-
 	if (foward) Move(FOWARD, deltaTime);
 	if (backward) Move(BACKWARD, deltaTime);
 	if (right) Move(RIGHT, deltaTime);
@@ -80,20 +71,17 @@ void CameraController::Move(CameraMovement direction, float deltaTime) {
 		camera->position += camera->right * velocity;
 		break;
 	case UP:
-		camera->position -= camera->worldUp * velocity;
+		camera->position += camera->worldUp * velocity;
 		break;
 	case DOWN:
-		camera->position += camera->worldUp * velocity;
+		camera->position -= camera->worldUp * velocity;
+		break;
 	}
 }
 
 void CameraController::Rotate(float deltaX, float deltaY) {
-	deltaX *= lookSensitivity;
-	deltaY *= lookSensitivity;
-
-	camera->yaw += deltaX;
-	camera->pitch += deltaY;
-	
+	camera->yaw += deltaX * lookSensitivity;
+	camera->pitch += deltaY * lookSensitivity;
 	camera->pitch = MathUtils::Clamp(camera->pitch, -89.0f, 89.0f);
 }
 

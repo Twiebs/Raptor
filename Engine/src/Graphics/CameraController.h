@@ -20,10 +20,11 @@ public:
 	CameraController();
 	~CameraController();
 
-	void SetCamera(Camera* camera);
-	bool OnKeyDown(int button, int mod) override;
-	bool OnCursorPos(double xPos, double yPos) override;
+	//InputProcessing
+	bool OnKeyEvent(int keycode, bool isPressed, int mod) override;
+	bool OnCursorPosEvent(double xPos, double yPos) override;
 
+	void SetCamera(Camera* camera);
 	void Move(CameraMovement direction, float deltaTime);
 	void Rotate(float deltaX, float deltaY);
 	void Update(float deltaTime);
@@ -37,10 +38,7 @@ private:
 	bool up;
 	bool down;
 
-	float deltaX, deltaY;
-
 	Camera* camera;
-
 	float movementSpeed = 4.0f;
 	float lookSensitivity = 0.75f;
 	float velocityScalar = 10.5f;

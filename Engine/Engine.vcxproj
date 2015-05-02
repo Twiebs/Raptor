@@ -67,6 +67,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Core\ResourceManager.cpp" />
+    <ClCompile Include="src\UI\Group.cpp" />
+    <ClCompile Include="src\Core\IEntityManager.cpp" />
     <ClCompile Include="src\Application\IApplicationStartable.cpp" />
     <ClCompile Include="src\Application\Application.cpp" />
     <ClCompile Include="src\Application\GLFWApplication.cpp" />
@@ -78,7 +81,6 @@
     <ClCompile Include="src\Core\Engine.cpp" />
     <ClCompile Include="src\Core\EngineUtils.cpp" />
     <ClCompile Include="src\Core\Entity.cpp" />
-    <ClCompile Include="src\Core\EntityFactory.cpp" />
     <ClCompile Include="src\Core\Input.cpp" />
     <ClCompile Include="src\Core\Scene.cpp" />
     <ClCompile Include="src\Graphics\Camera.cpp" />
@@ -94,7 +96,7 @@
     <ClCompile Include="src\Math\GeometryUtils.cpp" />
     <ClCompile Include="src\Math\MarchingCubes.cpp" />
     <ClCompile Include="src\Math\MathUtils.cpp" />
-    <ClCompile Include="src\Math\Matrix.cpp" />
+    <ClCompile Include="src\Math\Matrix4.cpp" />
     <ClCompile Include="src\Math\Quadtree.cpp" />
     <ClCompile Include="src\Math\Rectangle.cpp" />
     <ClCompile Include="src\Math\Source.cpp" />
@@ -114,13 +116,14 @@
     <ClCompile Include="src\UI\Table.cpp" />
     <ClCompile Include="src\UI\Widget.cpp" />
     <ClCompile Include="src\Universe\CelestialBody.cpp" />
-    <ClCompile Include="src\Universe\CelestialFactory.cpp" />
     <ClCompile Include="src\Universe\Universe.cpp" />
-    <ClCompile Include="src\Utils\ImageLoader.cpp" />
     <ClCompile Include="src\VoxelEngine\VoxelChunk.cpp" />
     <ClCompile Include="src\VoxelEngine\VoxelTerrain.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Core\ResourceManager.h" />
+    <ClInclude Include="src\UI\Group.h" />
+    <ClInclude Include="src\Core\IEntityManager.h" />
     <ClInclude Include="src\Application\IApplicationStartable.h" />
     <ClInclude Include="src\Application\Application.h" />
     <ClInclude Include="src\Application\GLFWApplication.h" />
@@ -132,7 +135,6 @@
     <ClInclude Include="src\Core\Engine.h" />
     <ClInclude Include="src\Core\EngineUtils.h" />
     <ClInclude Include="src\Core\Entity.h" />
-    <ClInclude Include="src\Core\EntityFactory.h" />
     <ClInclude Include="src\Core\Input.h" />
     <ClInclude Include="src\Core\Scene.h" />
     <ClInclude Include="src\Graphics\Camera.h" />
@@ -147,7 +149,7 @@
     <ClInclude Include="src\Graphics\Texture2D.h" />
     <ClInclude Include="src\Math\GeometryUtils.h" />
     <ClInclude Include="src\Math\MathUtils.h" />
-    <ClInclude Include="src\Math\Matrix.h" />
+    <ClInclude Include="src\Math\Matrix4.h" />
     <ClInclude Include="src\Math\Quadtree.h" />
     <ClInclude Include="src\Math\Rectangle.h" />
     <ClInclude Include="src\Math\Vector2.h" />
@@ -166,9 +168,7 @@
     <ClInclude Include="src\UI\Table.h" />
     <ClInclude Include="src\UI\Widget.h" />
     <ClInclude Include="src\Universe\CelestialBody.h" />
-    <ClInclude Include="src\Universe\CelestialFactory.h" />
     <ClInclude Include="src\Universe\Universe.h" />
-    <ClInclude Include="src\Utils\ImageLoader.h" />
     <ClInclude Include="src\VoxelEngine\VoxelChunk.h" />
     <ClInclude Include="src\VoxelEngine\VoxelTerrain.h" />
   </ItemGroup>
@@ -176,6 +176,10 @@
     <ClInclude Include="src\Core\Engine.inc.h">
       <FileType>Document</FileType>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\shaders\UI.frag" />
+    <None Include="Resources\shaders\UI.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

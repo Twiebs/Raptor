@@ -1,6 +1,5 @@
 #include "SpaceScene.h"
 
-#include<Core\EntityFactory.h>
 #include<Tests\DefaultInputListener.h>
 #include<Math\GeometryUtils.h>
 #include<VoxelEngine\VoxelChunk.h>
@@ -11,7 +10,9 @@
 
 
 SpaceScene::SpaceScene() {
-
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 
@@ -21,14 +22,12 @@ SpaceScene::~SpaceScene() {
 
 
 void SpaceScene::OnLoad(Engine* engine) {
-	//Initalize camera and controller
-	camera = new PerspectiveCamera(1280, 720);
+	//Camera initalization
+
+	camera = new PerspectiveCamera(1280.0f, 720.0f);
 	cameraController.SetCamera(camera);
 	engine->GetApp()->AddListener(&cameraController);
-
-	//Tell the renderer which camera to project and set some configuration
 	renderer.SetCamera(camera);
-	renderer.SetWireframeEnabled(false);
 
 	//Create a light to add to the renderer
 	light.direction.Set(1.0f, -1.0f, 0.0f);
@@ -41,22 +40,25 @@ void SpaceScene::OnLoad(Engine* engine) {
 	canvas = new DebugCanvas(1280, 720);
 	static_cast<DebugCanvas*>(canvas)->camera = camera;
 
-	IInputListener* listener = new DefaultInputListener(engine, this);
-	engine->GetApp()->AddListener(listener);
+	engine->GetApp()->AddListener(new DefaultInputListener(engine, this));
 
 	std::vector<const GLchar*> faces;
-	faces.push_back("Assets/skybox/space/right.png");
-	faces.push_back("Assets/skybox/space/left.png");
-	faces.push_back("Assets/skybox/space/top.png");
-	faces.push_back("Assets/skybox/space/bottom.png");
-	faces.push_back("Assets/skybox/space/front.png");
-	faces.push_back("Assets/skybox/space/back.png");
+	faces.push_back("Resources/skybox/space/right.png");
+	faces.push_back("Resources/skybox/space/left.png");
+	faces.push_back("Resources/skybox/space/top.png");
+	faces.push_back("Resources/skybox/space/bottom.png");
+	faces.push_back("Resources/skybox/space/front.png");
+	faces.push_back("Resources/skybox/space/back.png");
 
-	Skybox* skybox = new Skybox(faces);
-	renderer.SetSkybox(skybox);
+	skybox = std::make_unique<Skybox>(faces);
+	renderer.SetSkybox(skybox.get());
 
-	bodies.push_back(universe.CreateCelestialBody(STAR, 4));
-	bodies.push_back(universe.CreateCelestialBody(TERRESTRIAL, 4));
+	universe = std::make_unique<Universe>(0);
+	universe->CreateCelestialBody(STAR, 3);
+	universe->CreateCelestialBody(TERRESTRIAL, 7);
+
+	entity = new Entity();
+	entity->AddComponent(GeomertyUtils::BuildCubeMesh(1));
 }
 
 void SpaceScene::OnDestroy(Engine* engine) {
@@ -65,7 +67,8 @@ void SpaceScene::OnDestroy(Engine* engine) {
 
 void SpaceScene::Tick(float deltaTime) {
 	cameraController.Update(deltaTime);
-	universe.Step(deltaTime);
+	canvas->Update(deltaTime);
+	universe->Step(deltaTime);
 }
 
 void SpaceScene::Render(float deltaTime) {
@@ -74,9 +77,14 @@ void SpaceScene::Render(float deltaTime) {
 
 	renderer.RenderScene();
 
-	for (CelestialBody* body : bodies) {
-		renderer.RenderEntity(body);
+	for(std::unique_ptr<CelestialBody>& body : universe->bodies) {
+		renderer.RenderEntity(body.get());
 	}
 
-	canvas->Draw(deltaTime);
+	renderer.RenderEntity(entity);
+
+
+	if (drawDeveloperCanvas) {
+		canvas->Render(deltaTime);
+	}
 }

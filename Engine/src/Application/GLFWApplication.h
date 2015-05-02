@@ -10,7 +10,8 @@ public:
 	~GLFWApplication();
 
 	void Create(char* title, int width, int height, bool fullscreen) override;
-	void Start(IApplicationStartable* startable) override;
+	void Start() override;
+	void Attach(IApplicationStartable* startable) override;
 	void Exit() override;
 
 	void Resize(int width, int height) override;
@@ -19,9 +20,7 @@ public:
 
 private:
 	GLFWwindow* window;
-
-	GLFWwindow* InitGLFWBackend(unsigned int screenWidth, unsigned int screenHeight, bool fullscreen);
-	GLFWwindow* InitGLFW(unsigned int screenWidth, unsigned int screenHeight, bool fullscreen);
+	IApplicationStartable* startable;
 
 	void GLFWRegisterCallbacks(GLFWwindow* window);
 	static void GLFWKeyCallback(GLFWwindow* window, int button, int scancode, int action, int mods);
