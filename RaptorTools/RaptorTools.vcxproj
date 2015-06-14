@@ -65,11 +65,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\RaptorEngine\RaptorEngine.vcxproj">
-      <Project>{856d4858-d5d4-4a90-ab2c-42bbeff7ffab}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ModelViewerScene.cpp" />
     <ClCompile Include="NoiseScene.cpp" />
