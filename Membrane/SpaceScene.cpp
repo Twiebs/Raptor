@@ -1,9 +1,4 @@
-#include "SpaceScene.h"
-
-#include<Math\GeometryUtils.h>
-#include<UI\Table.h>
-#include<Utils\FPSCamera.h>
-#include<Engine\Entity.h>
+#include "SpaceScene.hpp"
 
 SpaceScene::SpaceScene() {
 	glEnable(GL_DEPTH_TEST);
@@ -18,7 +13,6 @@ SpaceScene::~SpaceScene() {
 
 void SpaceScene::OnLoad(Engine& engine) {
 	this->engine = &engine;
-	//Camera initalization
 	camera = std::make_unique<FPSCamera>(1280.0f, 720.0f);
 	camera->position.Set(0.0f, 0.0f, 200.0f);
 	engine.GetApp()->AddListener(camera.get());

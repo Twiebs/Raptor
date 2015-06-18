@@ -5,9 +5,8 @@
 #include<vector>
 
 #include<Math\Rectangle.h>
-#include<Math\Vertex3D.hpp>
+#include<Graphics\Vertex3D.hpp>
 #include<Graphics\Mesh.h>
-#include<Graphics\IRenderer.h>
 
 #include<glm\gtc\noise.hpp>
 #include<Math\Noise.h>
@@ -24,7 +23,7 @@ public:
 	bool Subdivde();
 	bool Combine();
 	bool LODPosition(Vector3& position);
-	void Draw(std::unique_ptr<IRenderer>& renderer, std::unique_ptr<GLSLProgram>& shader);
+	//void Draw(std::unique_ptr<IRenderer>& renderer, std::unique_ptr<GLSLProgram>& shader);
 
 	static void GenerateTerrainTask(float terrainX, float terrainZ, float terrainWidth, float terrainLength, float terrainHeight, TerrainQuadTree* terrain);
 

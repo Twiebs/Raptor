@@ -16,12 +16,12 @@ void Label::Init(std::string text, Font* font, Color color) {
 
 void Label::SetText(std::string text) {
 	this->text = text;
-	font->GetSize(text, &width, &height);
+	//font->GetSize(text, &width, &height);
 }
 
 Label::~Label() {
 }
-
-void Label::Draw (CanvasRenderer* renderer, float deltaTime) {
-	renderer->RenderFont(font, text, GetX(), GetY(), &color);
-}
+//
+//void Label::Draw (CanvasRenderer* renderer, float deltaTime) {
+//	renderer->RenderFont(font, text, GetX(), GetY(), &color);
+//}

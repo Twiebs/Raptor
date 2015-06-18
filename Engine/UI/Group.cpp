@@ -11,12 +11,12 @@ WidgetGroup::~WidgetGroup() {
 void WidgetGroup::AddWidget(Widget* widget) {
 	this->children.push_back(widget);
 }
-
-void WidgetGroup::Draw(CanvasRenderer* renderer, float deltaTime) {
-	for each(Widget* widget in children) {
-		widget->Draw(renderer, deltaTime);
-	}
-}
+//
+//void WidgetGroup::Draw(CanvasRenderer* renderer, float deltaTime) {
+//	for each(Widget* widget in children) {
+//		widget->Draw(renderer, deltaTime);
+//	}
+//}
 
 
 VerticalGroup::VerticalGroup() {

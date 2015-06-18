@@ -1,11 +1,13 @@
 #pragma once
 
 #include <Core\IScene.h>
-#include <ECS\EntityManager.hpp>
+#include <Core\EntityManager.hpp>
 #include <Core\AssetManager.hpp>
 
-#include <ECS\Systems\RenderSystem2D.hpp>
-#include <UI\Font.h>
+#include <Components/Transform2D.hpp>
+
+#include <Systems\RenderSystem2D.hpp>
+#include <Assets\Font.hpp>
 
 class ECSTestScene : public IScene{
 public:
@@ -17,8 +19,5 @@ public:
 
 	void Tick(float deltaTime) override;
 	void Render(float deltaTime) override;
-
-private:
-	EntityManager* entityManager;
 };
 

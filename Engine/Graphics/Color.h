@@ -1,6 +1,6 @@
 #pragma once
 
-#include<Engine/Engine.h>
+#include <Core\Common.hpp>
 
 struct RGBA8 {
 	uint8 r;

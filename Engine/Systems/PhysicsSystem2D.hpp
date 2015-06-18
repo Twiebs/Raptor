@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ECS\ISystem.hpp>
+#include <Core\ISystem.hpp>
 
 class PhysicsSystem2D : public ISystem {
 public:

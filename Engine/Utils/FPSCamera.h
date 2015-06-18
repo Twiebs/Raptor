@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Core\Input.h>
+#include <Core/IInputListener.hpp>
+#include <Core/InputService.hpp>
 #include <Graphics/Camera.h>
 
 //A pserspective camera with built in FPS style camera controls
@@ -15,7 +16,6 @@ public:
 	bool OnKeyEvent(int key, bool isPressed, int mods) override;
 	//Rotates the camera
 	bool OnCursorPosEvent(double xpos, double ypos) override;
-
 	//Moves the camera and updates the matrices via the base class
 	void Update(float deltaTime);
 

@@ -4,7 +4,7 @@
 
 #include<Graphics\GL\GLSLProgram.h>
 
-#include<UI\Font.h>
+#include<Assets\Font.hpp>
 #include<UI\Widget.h>
 
 class Label : public Widget{
@@ -16,7 +16,7 @@ public:
 	void Init(std::string text, Font* font, Color color);
 	void SetText(std::string text);
 	std::string GetText() { return text; }
-	void Draw (CanvasRenderer* renderer, float deltaTime) override;
+	//void Draw (CanvasRenderer* renderer, float deltaTime) override;
 
 private:
 	std::string text;

@@ -1,7 +1,10 @@
 #pragma once
+
 class Engine;
 
-class IScene {
+#include <Core\IInputListener.hpp>
+
+class IScene : public IInputListener {
 public:
 	IScene();
 	~IScene();
@@ -11,4 +14,5 @@ public:
 
 	virtual void Tick(float deltaTime) = 0;
 	virtual void Render(float deltaTime) = 0;
+
 };

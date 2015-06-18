@@ -2,8 +2,8 @@
 
 #include<vector>
 
-#include<Core\Input.h>
-#include<UI\Widget.h>
+#include <Core\IInputListener.hpp>
+#include <UI\Widget.h>
 
 class Canvas : IInputListener{
 public:
@@ -22,9 +22,6 @@ public:
 protected:
 	int viewportWidth, viewportHeight;
 	std::vector<Widget*> children;
-
-	CanvasRenderer renderer;
-
-	bool OnMouseButtonEvent(int button, bool isPressed, int mods) override;
+	bool OnMouseButtonEvent(int button, double xpos, double ypos, bool isPressed, int mods) override;
 };
 

@@ -1,29 +1,39 @@
 #pragma once
 
-#include<Application\OpenGLApplication.h>
-#include<GLFW\glfw3.h>
+#include <iostream>
+#include <Application\IApplication.h>
 
-class GLFWApplication : public OpenGLApplication{
+#include <GL\glew.h>
+#include <GLFW\glfw3.h>
+
+class GLFWApplication : public IApplication {
 public:
 	GLFWApplication();
 	~GLFWApplication();
 
-	void Create(char* title, int width, int height, bool fullscreen) override;
-	void Start() override;
-	void Attach(IApplicationStartable* startable) override;
-	void Exit() override;
+	void InitGLEW();
+
+	void Create(std::string tile, int width, int height, bool fullscreen) override;
 
 	void Resize(int width, int height) override;
 	int GetWidth() const override;
 	int GetHeight() const override;
 
+	double GetTime() override;
+
+	bool ShouldClose() override;
+
+	void BeginFrame() override;
+	void EndFrame() override;
+
 	void SetDisplayMode(DisplayMode mode) override;
 	void SetCursorHidden(bool isHidden) override;
 
+	void RegisterInputService(InputService* input) override;
+
+
 private:
 	GLFWwindow* window;
-	IApplicationStartable* startable;
-
 	void GLFWRegisterCallbacks(GLFWwindow* window);
 	static void GLFWKeyCallback(GLFWwindow* window, int button, int scancode, int action, int mods);
 	static void GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);

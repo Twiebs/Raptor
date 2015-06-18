@@ -3,9 +3,6 @@
 #include<string>
 
 #include "GLSLProgram.h"
-#include <Core\EngineUtils.h>
-
-
 
 GLSLProgram::GLSLProgram(GLuint programID) :
 	programID(programID)
@@ -14,7 +11,7 @@ GLSLProgram::GLSLProgram(GLuint programID) :
 }
 
 GLSLProgram::~GLSLProgram() {
-	cout << "Destroying shaderID: " << programID << " | Tag: " << tag << endl;
+	std::cout << "Destroying shaderID: " << programID << " | Tag: " << tag << std::endl;
 	glDeleteProgram(programID);
 }
 
@@ -28,7 +25,7 @@ GLint GLSLProgram::GetUniformLocation(const char* uniformName) {
 			}
 		}
 		std::cout << "ERROR: Uniform[" << uniformName << "] unreconized(optimized) in GLSLProgram[" << programID << "]" <<
-			"while attempting to render:" << target << endl;
+			"while attempting to render:" << target << std::endl;
 		unkownUniformLog.push_back(uniformName);
 	}
 	return location;

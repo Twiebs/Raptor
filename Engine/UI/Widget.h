@@ -1,6 +1,5 @@
 #pragma once
 
-#include<UI\CanvasRenderer.h>
 #include<Graphics\Color.h>
 
 class Widget {
@@ -29,7 +28,7 @@ public:
 	}
 	void SetParent(Widget* widget);
 
-	virtual void Draw (CanvasRenderer* renderer, float deltaTime) = 0;
+	//virtual void Draw (CanvasRenderer* renderer, float deltaTime) = 0;
 	virtual void HandelEvent();
 
 protected:

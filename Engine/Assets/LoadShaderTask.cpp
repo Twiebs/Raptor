@@ -1,9 +1,16 @@
 #include "LoadShaderTask.hpp"
 
+LoadShaderTask::LoadShaderTask(AssetID id, AssetRegistry* registry, std::string vertSourceFile, std::string fragSourceFile) 
+	: id(id), registry(registry), vertexShaderFilename(vertSourceFile), fragmentShaderFilename(fragSourceFile) { }
 
-void LoadShaderTask::Run() {
+LoadShaderTask::~LoadShaderTask() {
 
-	std::function<void(std::string&, std::string&)> processShaderFile = [&processShaderFile](std::string& filename, std::string& outFile) {
+}
+
+
+void LoadShaderTask::Run(uint32 threadID) {
+
+	std::function<bool(std::string&, std::string&)> processShaderFile = [&processShaderFile](std::string& filename, std::string& outFile) -> bool{
 		std::ifstream fileStream(filename);
 
 		if (fileStream.is_open()) {
@@ -37,7 +44,7 @@ void LoadShaderTask::Run() {
 	processShaderFile(fragmentShaderFilename, fragmentShaderSource);
 }
 
-void LoadShaderTask::Finalize() {
+void LoadShaderTask::Finalize(uint32 threadID) {
 	auto compileShader = [](std::string& shaderSource, GLenum shaderType) -> GLuint {
 		const GLchar* source = shaderSource.c_str();
 		GLuint shaderID = glCreateShader(shaderType);
@@ -77,5 +84,5 @@ void LoadShaderTask::Finalize() {
 	glDeleteShader(vertexShaderID);
 	glDeleteShader(fragmentShaderID);
 
-	registry->data[id] = new GLSLProgram(programID);
+	registry->data[id - 1] = new GLSLProgram(programID);
 }

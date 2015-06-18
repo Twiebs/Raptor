@@ -1,7 +1,7 @@
 #pragma once
 
 #include<math.h>
-#include<Core\Types.h>
+#include<Core\Common.hpp>
 
 #define PI 3.14159265358979323846
 
@@ -24,6 +24,10 @@ namespace MathUtils {
 
 	inline static float Radians(float degrees) {
 		return (PI / 180.0f) * degrees;
+	}
+
+	inline static float Max(float value, float max) {
+		return value > max ? value : max;
 	}
 
 };

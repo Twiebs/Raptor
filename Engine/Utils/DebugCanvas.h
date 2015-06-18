@@ -6,7 +6,7 @@
 #include<Graphics\GL\GLSLProgram.h>
 
 #include<UI\Canvas.h>
-#include<UI\Font.h>
+#include<Assets\Font.hpp>
 #include<UI\Label.h>
 #include<UI\Widget.h>
 #include<UI\Group.h>

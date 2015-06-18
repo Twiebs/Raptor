@@ -11,8 +11,8 @@ TerrainQuadTree::TerrainQuadTree(Rectangle& bounds, float terrainHeight, float L
 	this->parent = parent;
 	this->level = level;
 
-	auto thread = std::thread(GenerateTerrainTask, bounds.x, bounds.y, bounds.width, bounds.height, terrainHeight, this);
-	thread.detach();
+	//auto thread = std::thread(GenerateTerrainTask, bounds.x, bounds.y, bounds.width, bounds.height, terrainHeight, this);
+	//thread.detach();
 }
 
 TerrainQuadTree::~TerrainQuadTree() {
@@ -91,29 +91,29 @@ bool TerrainQuadTree::Combine() {
 	bottomRight = nullptr;
 
 	active = false;
-	auto thread = std::thread(GenerateTerrainTask, bounds.x, bounds.y, bounds.width, bounds.height, terrainHeight, this);
-	thread.detach();
+	//auto thread = std::thread(GenerateTerrainTask, bounds.x, bounds.y, bounds.width, bounds.height, terrainHeight, this);
+	//thread.detach();
 }
 
-void TerrainQuadTree::Draw(std::unique_ptr<IRenderer>& renderer, std::unique_ptr<GLSLProgram>& shader) {
-	if (!active){
-		if (mesh != nullptr){
-			mesh->Setup();
-			active = true;
-		}
-		else return;
-	}
-	
-	if (topLeft != nullptr) {
-		topLeft->Draw(renderer, shader);
-		topRight->Draw(renderer, shader);
-		bottomLeft->Draw(renderer, shader);
-		bottomRight->Draw(renderer, shader);
-	}
-	else {
-		renderer->Draw(mesh, shader);
-	}
-}
+//void TerrainQuadTree::Draw(std::unique_ptr<IRenderer>& renderer, std::unique_ptr<GLSLProgram>& shader) {
+//	if (!active){
+//		if (mesh != nullptr){
+//			mesh->Setup();
+//			active = true;
+//		}
+//		else return;
+//	}
+//	
+//	if (topLeft != nullptr) {
+//		topLeft->Draw(renderer, shader);
+//		topRight->Draw(renderer, shader);
+//		bottomLeft->Draw(renderer, shader);
+//		bottomRight->Draw(renderer, shader);
+//	}
+//	else {
+//		renderer->Draw(mesh, shader);
+//	}
+//}
 
 
 void TerrainQuadTree::GenerateTerrainTask(float terrainX, float terrainZ, float terrainWidth, float terrainLength, float terrainHeight, TerrainQuadTree* terrain) {

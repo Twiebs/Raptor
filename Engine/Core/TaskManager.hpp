@@ -9,9 +9,7 @@
 #include<atomic>
 #include<memory>
 
-#include<Core\Config.hpp>
-#include<Core\Preprocess.hpp>
-#include<Core\Types.h>
+#include<Core\Common.hpp>
 
 //TODO Were going to need some sort of handle for the tasks incase we need to interupt them...
 typedef uint64 TaskID;
@@ -51,8 +49,8 @@ private:
 
 class ITask {
 public:
-	virtual void Run() = 0;
-	virtual void Finalize() = 0;
+	virtual void Run(uint32 threadID) = 0;
+	virtual void Finalize(uint32 threadID) = 0;
 };
 
 // Idealy this should be the only layer of the engine that knows anything about
@@ -73,38 +71,47 @@ public:
 		static_assert(std::is_base_of<ITask, T>::value, "Scheduled task must be derived from the ITask interface!");
 		#ifdef MULTI_THREADED
 			mutex.lock();
+			tasksInManager++;
 			scheduledTasks.push(std::make_unique<T>(args...));
 			mutex.unlock();
 			condition.notify_one();
 		#endif
-		#ifndef MUTLI_THREADED
-			//NOTE Do we need to even use a unique_ptr here?
-			//Whats wrong with the stack?
-			//Benchmark this to find out if there are any preformance considerations that might provide the anwser
-			//to this question
-			auto task = std::make_unique<T>(args...);
-			task->Run();
-			task->Finalize();
+		#ifndef MULTI_THREADED
+			T task(args...);
+			task.Run(0);
+			task.Finalize(0);
 		#endif
 	}
+	
 
-	inline static TaskManager& Instance() {
-		static TaskManager* instance = nullptr;
-		if (instance == nullptr)
-			instance = new TaskManager();
-		return *instance;
+	void BuildTask(std::function<void()>&& taskBegin) {
+		queuedTasks.emplace(taskBegin);
 	}
 
-	void Update();
+	void CancelTask(TaskID id) {
+#ifndef MULTI_THREADED
+#endif
+
+	}
+
+	void FinishAllTasksNow();
+	void Update(double deltaTime);
 
 private:
-	friend static void ThreadProc(TaskManager* manager);
 	std::vector<std::thread> threads;
 	std::queue<std::unique_ptr<ITask>> scheduledTasks;
 	std::queue<std::unique_ptr<ITask>> compleatedTasks;
+
+	std::queue<std::function<void()>> queuedTasks;
+	std::queue<std::function<void()>> finishedTasks;
+
 	std::mutex mutex;
 	std::condition_variable condition;
-
+	uint32 tasksInManager = 0;
 	bool running = true;
+
+	//std::queue<std::function<void>> testTaskFunctorQueue;
+
+	friend static void ThreadProc(uint32 threadID, TaskManager* manager);
 };
 

@@ -6,7 +6,6 @@
 
 
 Skybox::Skybox(std::vector<const char*> faces) {
-	this->cubemap = new Cubemap(faces);
 
 	static GLfloat skyboxVertices[] {
 		// Positions          

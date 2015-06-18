@@ -6,4 +6,5 @@ BaseLight::BaseLight() {
 
 
 BaseLight::~BaseLight() {
+
 }

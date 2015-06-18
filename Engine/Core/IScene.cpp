@@ -1,6 +1,4 @@
-#include <Core/IScene.h>
-
-
+#include "IScene.h"
 
 IScene::IScene() {
 }

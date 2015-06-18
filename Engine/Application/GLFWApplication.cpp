@@ -6,30 +6,35 @@ GLFWApplication::~GLFWApplication() {
 	glfwTerminate();
 }
 
-void GLFWApplication::Attach(IApplicationStartable* startable) {
-	this->startable = startable;
-	startable->Start(this);
-}
-
-void GLFWApplication::Start() {
-	running = true;
-	static double lastTime = glfwGetTime();
-	static double frameTime = glfwGetTime();
-
-	startable->Start(this);
-	while (running && !glfwWindowShouldClose(window)) {
-		double currentTime = glfwGetTime();
-		float deltaTime = currentTime - lastTime;
-		lastTime = currentTime;
-
-		glfwPollEvents();
-		startable->Update(deltaTime);
-		glfwSwapBuffers(window);
+void GLFWApplication::InitGLEW() {
+	glewExperimental = true;
+	GLenum glewInitCode = glewInit();
+	if (glewInitCode != GLEW_OK) {
+		std::cout << "GLEW failed to initialize!";
+		if (!glewIsSupported("GLEW_VERSION_4_5")) {
+			std::cout << " GLEW Version not supported 4.0\n ";
+		}
 	}
-	Exit();
 }
 
-void GLFWApplication::Create(char* title, int width, int height, bool fullscreen) {
+
+double GLFWApplication::GetTime() {
+	return glfwGetTime();
+}
+
+bool GLFWApplication::ShouldClose() {
+	return shouldClose;
+}
+
+
+void GLFWApplication::BeginFrame() {
+	glfwPollEvents();
+}
+void GLFWApplication::EndFrame() {
+	glfwSwapBuffers(window);
+}
+
+void GLFWApplication::Create(std::string title, int width, int height, bool fullscreen) {
 	this->width = width;
 	this->height = height;
 
@@ -46,7 +51,7 @@ void GLFWApplication::Create(char* title, int width, int height, bool fullscreen
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
-	window = glfwCreateWindow(width, height, title, fullscreen ? primaryMonitor : nullptr, nullptr);
+	window = glfwCreateWindow(width, height, title.c_str(), fullscreen ? primaryMonitor : nullptr, nullptr);
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window!";
 		glfwTerminate();
@@ -54,18 +59,14 @@ void GLFWApplication::Create(char* title, int width, int height, bool fullscreen
 
 	glfwMakeContextCurrent(window);
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_FALSE);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetWindowPos(window, 400, 300);
 	glfwSwapInterval(1);
 
 	//Regiser GLFW callbacks
-	glfwSetWindowUserPointer(window, this);
-	GLFWRegisterCallbacks(window);
+
+
 
 	InitGLEW();
-}
-void GLFWApplication::Exit() {
-	running = false;
 }
 
 void GLFWApplication::SetCursorHidden(bool isHidden) {
@@ -75,7 +76,10 @@ void GLFWApplication::SetCursorHidden(bool isHidden) {
 void GLFWApplication::SetDisplayMode(DisplayMode mode) {
 }
 
-
+void GLFWApplication::RegisterInputService(InputService* input) {
+	glfwSetWindowUserPointer(window, input);
+	GLFWRegisterCallbacks(window);
+}
 
 #pragma region WindowFunctions
 void GLFWApplication::Resize(int width, int height) {
@@ -99,26 +103,26 @@ void GLFWApplication::GLFWRegisterCallbacks(GLFWwindow* window) {
 }
 
 void GLFWApplication::GLFWKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	GLFWApplication* app = static_cast<GLFWApplication*>(glfwGetWindowUserPointer(window));
-	app->FireKeyEvent(key, action, mods);
+	InputService* input = static_cast<InputService*>(glfwGetWindowUserPointer(window));
+	input->FireKeyEvent(key, action, mods);
 }
 
 void GLFWApplication::GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods){
-	GLFWApplication* app = static_cast<GLFWApplication*>(glfwGetWindowUserPointer(window));
-	app->FireMouseButtonEvent(button, action, mods);
+	InputService* input = static_cast<InputService*>(glfwGetWindowUserPointer(window));
+	input->FireMouseButtonEvent(button, action, mods);
 }
 
 void GLFWApplication::GLFWCursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
-	GLFWApplication* app = static_cast<GLFWApplication*>(glfwGetWindowUserPointer(window));
-	app->FireCursorPosEvent(xpos, ypos);
+	InputService* input = static_cast<InputService*>(glfwGetWindowUserPointer(window));
+	input->FireCursorPosEvent(xpos, ypos);
 }
 
 void GLFWApplication::GLFWWindowCloseCallback(GLFWwindow* window) {
-	GLFWApplication* app = static_cast<GLFWApplication*>(glfwGetWindowUserPointer(window));
-	app->Exit();
+	InputService* input = static_cast<InputService*>(glfwGetWindowUserPointer(window));
+	//TODO close behavior
 }
 
 void GLFWApplication::GLFWWindowSizeCallback(GLFWwindow* window, int width, int height) {
-
+	InputService* input = static_cast<InputService*>(glfwGetWindowUserPointer(window));
 }
 #pragma endregion

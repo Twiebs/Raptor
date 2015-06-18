@@ -1,28 +1,16 @@
+#include<memory>
 
-#include<Application\GLFWApplication.h>
-#include<Engine\Entity.h>
+#include <Core/Engine.hpp>
 
 #include "UICanvasTestScene.h"
 #include "SpaceScene.h"
 #include "UICanvasTestScene.h"
 #include "LODScene.h"
 
-
-#include<memory>
-
-#include<Math\Random.h>
-#include<iostream>
-#include<time.h>
-
 int main() {
-	GLFWApplication app;
-	app.Create("RaptorEngine", 1280, 720, false);
+	auto engine = std::make_unique<Engine>();
+	engine->CreateScene<SpaceScene>();
+	engine->Run();
 
-	Engine engine;
-	app.Attach(&engine);
-
-	SpaceScene scene;
-	engine.LoadScene(&scene);
-
-	app.Start();
+	return 0;
 }

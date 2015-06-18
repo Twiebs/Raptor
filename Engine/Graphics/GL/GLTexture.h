@@ -1,16 +1,19 @@
 #pragma once
 
-#include<GL\glew.h>
-#include<Graphics\Image.h>
+#include <string>
 
-class GLTexture {
-public:
+#include <Core/Common.hpp>
+#include <GL/glew.h>
+
+enum class TextureType : uint8 {
+	Diffuse,
+	Specular,
+	Cubemap,
+};
+
+struct GLTexture {
 	GLuint id;
-	ImageData data;
-	std::string textureType;
-
-	GLTexture(ImageData& data);
-	~GLTexture();
-
+	TextureType type;
+	GLenum target;
 };
 

@@ -6,7 +6,9 @@
 #include<Utils\FPSCamera.h>
 #include <Graphics\Skybox.h>
 #include<Utils\DebugCanvas.h>
-#include<Graphics\GL\GLRenderer.h>
+#include<Core\AssetManager.hpp>
+
+#include <Core\Engine.hpp>
 
 class CommonScene : public IScene, public IInputListener{
 friend class DebugCanvas;
@@ -26,13 +28,6 @@ protected:
 	std::unique_ptr<FPSCamera> camera;
 	std::unique_ptr<Skybox> skybox;
 	std::unique_ptr<DebugCanvas> canvas;
-
-	std::unique_ptr<IRenderer> renderer;
-
-	//GLSL Shader Programs
-	std::unique_ptr<GLSLProgram> wireframeShader;
-	std::unique_ptr<GLSLProgram> skyboxShader;
-
 	bool drawDevelCanvasEnabled = false;
 };
 

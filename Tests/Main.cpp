@@ -1,19 +1,13 @@
-
-#include<Application\GLFWApplication.h>
-#include<Engine\Engine.h>
+#include <Core/Engine.hpp>
 
 #include"TerrainScene.h"
 #include"ECSTestScene.h"
 
 int main() {
-	GLFWApplication app;
-	app.Create("RaptorEngine", 1280, 720, false);
+	auto engine = std::make_unique<Engine>();
+	engine->Create("Raptor Tests", 1280, 720, false);
+	engine->CreateScene<ECSTestScene>();
+	engine->Run();
 
-	Engine engine;
-	app.Attach(&engine);
-
-	ECSTestScene scene;
-	engine.LoadScene(&scene);
-
-	app.Start();
+	return 0;
 }

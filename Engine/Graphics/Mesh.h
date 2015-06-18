@@ -4,14 +4,13 @@
 
 #include<GL\glew.h>
 
-#include<Math\Vertex3D.hpp>
 #include<Math\Vector3.hpp>
 #include<Math\Vector2.hpp>
 
+#include<Graphics\Vertex3D.hpp> 
 #include<Graphics\GL\GLSLProgram.h>
 #include<Graphics\GL\GLTexture.h>
 #include<memory>
-
 
 class Mesh {
 public:

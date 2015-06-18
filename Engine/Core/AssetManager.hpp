@@ -1,45 +1,61 @@
 #pragma once
 
-#include <Core\Types.h>
 #include <memory>
 #include <unordered_map>
 #include <string>
 #include <atomic>
 #include <mutex>
+#include <typeinfo>
 
-//Assets
-#include<Graphics\Image.h>
-#include<UI\Font.h>
+#include <FreeImage.h>
 
-//Loaders
-#include<FreeImage.h>
-#include<typeinfo>
-#include <Math\MathUtils.h>
+#include <Core\IService.hpp>
+#include <Core\Engine.hpp>
+#include <Core\Common.hpp>
 #include <Core\TaskManager.hpp>
 
+#include <Math\MathUtils.h>
+#include <Graphics\Vertex3D.hpp>
+
+#include <Assets\Font.hpp>
+#include <Assets\ModelLoader.hpp>
 #include <Assets\LoadShaderTask.hpp>
+#include <Assets\Pixmap.hpp>
 
 typedef uint64 AssetID;
+
+class IService;
+class Engine;
+
+
+//AssetSlot template with current 
+//TODO:
+//asset tags
+
+enum class AssetState {
+	Unloaded,
+	Queued,
+	Loaded,
+	Locked
+};
+
+struct AssetSlot {
+	AssetState state;
+	void* data;
+};
+
 struct AssetRegistry {
 	std::vector<void*> data;
 };
 
-class LoadAssetTask : public ITask {
-public:
-	LoadAssetTask(AssetID id, AssetRegistry* registry, std::string filename);
-private:
-	AssetID id;
-	AssetRegistry* registry;
-	std::string filename;
-};
 
 class LoadFontTask : public ITask {
 public:
 	LoadFontTask(AssetID id, AssetRegistry* registry, std::string filename, uint32 fontsize);
 	~LoadFontTask();
 
-	void Run() override;
-	void Finalize() override;
+	void Run(uint32 threadID) override;
+	void Finalize(uint32 threadID) override;
 
 private:
 	Font* font;
@@ -50,30 +66,56 @@ private:
 	uint32 fontsize;
 };
 
-
-class AssetManager {
+class LoadPixmapTask : public ITask {
 public:
-	static AssetManager& Instance();
+	LoadPixmapTask(AssetID, AssetRegistry* registry, std::string& filename);
+	~LoadPixmapTask();
 
+	void Run(uint32 threadID) override;
+	void Finalize(uint32 threadID) override;
+private:
+	AssetID id;
+	AssetRegistry* registry;
+	std::string filename;
+	Pixmap* pixmap;
+};
 
-	//@Deprecaed
-	std::shared_ptr<ImageData> GetImage(const std::string& filename);
+//TODO default memory arena size?
+class AssetManager : public IService {
+public:
+	AssetManager();
+	~AssetManager();
 
 	template<typename T>
 	T* GetAsset(AssetID id) {
-		T* assetPtr = (T*)registry.data[id];
+		assert(id != 0);
+		T* assetPtr = (T*)registry.data[id - 1];
 		return assetPtr;
 	}
 
 	AssetID LoadFont(const std::string& filename, uint32 fontSize);
 	AssetID LoadShader(const std::string& vertexShaderFile, const std::string& fragmentShaderFile);
-
+	AssetID LoadModel(const std::string& filename);
+	AssetID LoadPixmap(const std::string& filename);
 private:
-
-
 	AssetRegistry registry;
 
-	AssetManager();
-	~AssetManager();
+	std::vector<Font> fonts;
+
+	AssetID GetNextAvaiableID();
 };
 
+
+//
+//glActiveTexture(GL_TEXTURE0);
+//glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+//for (int i = 0; i < images.size(); i++) {
+//	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, images[i]->width, images[i]->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, images[i]->pixels);
+//}
+//
+//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+//glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+//glBindTexture(GL_TEXTURE_CUBE_MAP, 0);

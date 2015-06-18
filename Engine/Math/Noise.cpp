@@ -15,6 +15,20 @@ float Noise::FBM(float x, float y, int octaves, float frequency, float persistan
 	}
 	return total / maxAmp;
 };
+
+float Noise::RidgedNoise(float x, float y, int octaves, float frequency, float persistance) {
+	float total = 0.0f;
+	float amplitude = 1.0f;
+	float maxAmp = 0.0f;
+	for (int i = 0; i < octaves; i++) {
+		total += ((1.0f - abs(Eval(x*frequency, y*frequency))) * 2.0 - 1.0) * amplitude;
+		frequency *= 2.0f;
+		maxAmp += amplitude;
+		amplitude *= persistance;
+	}
+	return total / maxAmp;
+}
+
 #pragma endregion
 
 #pragma region ImprovedPerlinNoise

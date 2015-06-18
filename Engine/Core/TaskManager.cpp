@@ -11,15 +11,17 @@ TaskManager::~TaskManager() {
 }
 
 void TaskManager::Startup() {
+#ifdef MULTI_THREADED
 	auto threadCount = std::thread::hardware_concurrency();
 	if (threadCount < MINIMUM_THREADS)
 		threadCount = MINIMUM_THREADS;
 
-	for (auto i = 0; i < threadCount; i++)
-		threads.emplace_back(ThreadProc, this);
+	for (uint32 i = 0; i < threadCount; i++)
+		threads.emplace_back(ThreadProc, i, this);
+#endif
 }
 
-static void ThreadProc(TaskManager* manager) {
+static void ThreadProc(uint32 threadID, TaskManager* manager) {
 	for(;;) {
 		std::unique_ptr<ITask> task = nullptr;
 		{
@@ -31,19 +33,30 @@ static void ThreadProc(TaskManager* manager) {
 				manager->scheduledTasks.pop();
 			}
 		}
-		task->Run();
-		manager->compleatedTasks.push(std::move(task));
+		task->Run(threadID);
+		manager->mutex.lock();
+		manager->compleatedTasks.emplace(std::move(task));
+		manager->mutex.unlock();
 	}
 }
 
-void TaskManager::Update() {
+void TaskManager::Update(double deltaTime) {
 	while (compleatedTasks.size() > 0) {
 		mutex.lock();
 		auto task = std::move(compleatedTasks.front());
 		compleatedTasks.pop();
+		tasksInManager--;
 		mutex.unlock();
-		task->Finalize();
+		task->Finalize(0);
 	}
+}
+
+void TaskManager::FinishAllTasksNow() {
+#ifdef MULTI_THREADED
+	while (tasksInManager > 0) {
+		Update(0);
+	}
+#endif
 }
 
 void TaskManager::Shutdown() {

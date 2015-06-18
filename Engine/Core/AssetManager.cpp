@@ -19,22 +19,51 @@ LoadFontTask::~LoadFontTask() {
 
 }
 
-AssetID AssetManager::LoadShader(const std::string& vertexShaderFile, const std::string& fragmentShaderFile) {
-	AssetID id = registry.data.size();
-	registry.data.push_back(nullptr);
-	TaskManager::Instance().ScheduleTask<LoadShaderTask>(id, &registry, vertexShaderFile, fragmentShaderFile);
-	return id;
+
+LoadPixmapTask::LoadPixmapTask(AssetID id, AssetRegistry* registry, std::string& filename) : 
+	id(id), registry(registry), filename(filename) {
 }
 
+LoadPixmapTask::~LoadPixmapTask() {
+}
 
-void LoadFontTask::Run()  {
+void LoadPixmapTask::Run(uint32 threadID) {
+	FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename.c_str(), 0);
+	if (format == FIF_UNKNOWN)
+		std::cout << "ERROR: Could not read file: " << filename.c_str() << std::endl;
+
+	FIBITMAP* image = FreeImage_Load(format, filename.c_str());
+	if (!image)
+		std::cout << "ERROR: Image file was found and reconized but it could not be loaded" << std::endl;
+
+	FIBITMAP* temp = FreeImage_ConvertTo32Bits(image);
+	FreeImage_Unload(image);
+	image = temp;
+
+	pixmap = new Pixmap(FreeImage_GetWidth(image), FreeImage_GetHeight(image), PixmapFormat::RGBA8);
+	uint8* pixels = FreeImage_GetBits(image);
+	for (uint32 i = 0; i < (pixmap->width * pixmap->height * 4); i += 4) {
+		pixmap->data[i + 0] = pixels[i + 2];
+		pixmap->data[i + 1] = pixels[i + 1];
+		pixmap->data[i + 2] = pixels[i + 0];
+		pixmap->data[i + 3] = pixels[i + 3];
+	}
+
+	FreeImage_Unload(image);
+}
+
+void LoadPixmapTask::Finalize(uint32 threadID) {
+	registry->data[id - 1] = pixmap;
+}
+
+void LoadFontTask::Run(uint32 threadID)  {
 	FT_Error error;
 	FT_Library library;
 
 	//Initalize FT
 	error = FT_Init_FreeType(&library);
 	if (error) {
-		std::cout << "ERROR: Could not init FreeType Library" << std::endl;
+		std::cout << "ERROR: Could not init FreeType Library" << "\n";
 		return;
 	}
 	else
@@ -44,7 +73,7 @@ void LoadFontTask::Run()  {
 	FT_Face face;
 	error = FT_New_Face(library, filename.c_str(), 0, &face);
 	if (error) {
-		std::cout << "ERROR: Failed to load font: " << filename << std::endl;
+		std::cout << "ERROR: Failed to load font: " << filename << "\n";
 		return;
 	}
 	else
@@ -52,9 +81,6 @@ void LoadFontTask::Run()  {
 
 	FT_Set_Pixel_Sizes(face, 0, fontsize);
 	font = new Font();
-
-	font->glyphs.reserve(128);
-
 	//Now things get intresting...
 	//Generate a bitmap with the bitmaps of each individual FT glyph bitmap packed into it
 	uint32 bitmapGlyphWidth = fontsize;
@@ -80,16 +106,12 @@ void LoadFontTask::Run()  {
 		}
 
 		//Create a new glyph for the font
-		font->glyphs.push_back(Glyph{
-			face->glyph->bitmap.width,
-			face->glyph->bitmap.rows,
-			face->glyph->bitmap_left,
-			face->glyph->bitmap_top,
-			face->glyph->advance.x >> 6
-		});
-
-		//Setup the UVS for the glyph
 		Glyph& glyph = font->glyphs[i - 32];
+		glyph.width		= face->glyph->bitmap.width;
+		glyph.height	= face->glyph->bitmap.rows;
+		glyph.bearingX	= face->glyph->bitmap_left;
+		glyph.bearingY	= face->glyph->bitmap_top;
+		glyph.advance	= face->glyph->advance.x >> 6;
 		glyph.uvs[0] = Vector2((float)bitmapX / (float)bitmapWidth, (float)bitmapY / bitmapHeight);
 		glyph.uvs[1] = Vector2(((float)bitmapX + (float)glyph.width) / (float)bitmapWidth, (float)bitmapY / (float)bitmapHeight);
 		glyph.uvs[2] = Vector2((float)(bitmapX + glyph.width) / (float)bitmapWidth, (float)(bitmapY + glyph.height) / (float)bitmapHeight);
@@ -106,12 +128,6 @@ void LoadFontTask::Run()  {
 		}
 	}
 
-	//Generate the GLtexture
-
-
-
-	//Update the font with the parameters of our created texture
-
 	font->bitmapWidth = bitmapWidth;
 	font->bitmapHeight = bitmapHeight;
 
@@ -120,7 +136,7 @@ void LoadFontTask::Run()  {
 	FT_Done_FreeType(library);
 }
 
-void LoadFontTask::Finalize() {
+void LoadFontTask::Finalize(uint32 threadID) {
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
@@ -132,58 +148,36 @@ void LoadFontTask::Finalize() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	font->textureID = textureID;
 
-	registry->data[id] = font;
+	registry->data[id - 1] = font;
 }
 
 
-AssetManager& AssetManager::Instance() {
-	static AssetManager* instance = nullptr;
-	if (instance == nullptr)
-		instance = new AssetManager();
-	return *instance;
+AssetID AssetManager::LoadShader(const std::string& vertexShaderFile, const std::string& fragmentShaderFile) {
+	auto id = GetNextAvaiableID();
+	engine->taskManager->ScheduleTask<LoadShaderTask>(id, &registry, vertexShaderFile, fragmentShaderFile);
+	return id;
 }
 
-std::shared_ptr<ImageData> AssetManager::GetImage(const std::string& filename) {
-	auto data = std::make_shared<ImageData>();
+AssetID AssetManager::LoadPixmap(const std::string& filename) {
+	auto id = GetNextAvaiableID();
+	engine->taskManager->ScheduleTask<LoadPixmapTask>(id, &registry, filename);
+	return id;
+}
 
-
-	FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename.c_str(), 0);
-	if (format == FIF_UNKNOWN) {
-		std::cout << "ERROR: Could not read file: " << filename.c_str() << std::endl;
-		return nullptr;
-	}
-
-	FIBITMAP* image = FreeImage_Load(format, filename.c_str());
-	if (!image) {
-		std::cout << "ERROR: Image file was found and reconized but it could not be loaded" << std::endl;
-		return nullptr;
-	}
-
-	FIBITMAP* temp = FreeImage_ConvertTo32Bits(image);
-	auto tempType = FreeImage_GetColorType(temp);
-	FreeImage_Unload(image);
-	image = temp;
-
-
-	data->width  = FreeImage_GetWidth(image);
-	data->height = FreeImage_GetHeight(image);
-	data->pixels = new RGBA8[data->width * data->height];
-	auto type = FreeImage_GetColorType(image);
-
-	uint8* pixels = FreeImage_GetBits(image);
-	for (uint32 i = 0; i < (data->width * data->height); i++) {
-		data->pixels[i].r = pixels[(i * 4) + 2];
-		data->pixels[i].g = pixels[(i * 4) + 1];
-		data->pixels[i].b = pixels[(i * 4) + 0];
-		data->pixels[i].a = pixels[(i * 4) + 3];
-	}
-
-	return data;
+AssetID AssetManager::LoadModel(const std::string& filename) {
+	auto id = GetNextAvaiableID();
+	engine->taskManager->ScheduleTask<LoadModelTask>(id, &registry, filename);
+	return id;
 }
 
 AssetID AssetManager::LoadFont(const std::string& filename, uint32 fontSize) {
-	AssetID id = registry.data.size();
+	auto id = GetNextAvaiableID();
+	engine->taskManager->ScheduleTask<LoadFontTask>(id, &registry, filename, fontSize);
+	return id;
+}
+
+AssetID AssetManager::GetNextAvaiableID() {
+	AssetID id = registry.data.size() + 1;
 	registry.data.push_back(nullptr);
-	TaskManager::Instance().ScheduleTask<LoadFontTask>(id, &registry, filename, fontSize);
 	return id;
 }

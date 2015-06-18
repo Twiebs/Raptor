@@ -14,7 +14,6 @@ DebugCanvas::~DebugCanvas() {
 }
 
 void DebugCanvas::Setup() {
-	font = ResourceManager::Instance().LoadFont("Resources/fonts/arial.ttf", 14);
 
 	rotationLabel.Init("Rotation: [XX, XX]", font, Color(1.0f, 1.0f, 1.0f, 1.0f));
 	positionLabel.Init("Position: [XX, XX, XX]", font, Color(1.0f, 1.0f, 1.0f, 1.0f));

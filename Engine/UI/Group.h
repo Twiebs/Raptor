@@ -8,7 +8,7 @@ public:
 	WidgetGroup();
 	~WidgetGroup();
 
-	void Draw(CanvasRenderer* renderer, float deltaTime) override;
+	//void Draw(CanvasRenderer* renderer, float deltaTime) override;
 
 	void AddWidget(Widget* widget);
 	virtual void Refresh() = 0;
