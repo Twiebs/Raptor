@@ -1,0 +1,2 @@
+/home/torin/workspace/Raptor/eclipse/Engine/CMakeFiles/RaptorCore.dir
+/home/torin/workspace/Raptor/eclipse/CMakeFiles/RaptorTools.dir

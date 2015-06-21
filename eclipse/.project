@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Raptor-Debug@eclipse</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.cdt.make.core.makeBuilder</name>
+			<triggers>clean,full,incremental,</triggers>
+			<arguments>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.cleanBuildTarget</key>
+					<value>clean</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enableCleanBuild</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.append_environment</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.stopOnError</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enabledIncrementalBuild</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.command</key>
+					<value>/usr/bin/make</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.contents</key>
+					<value>org.eclipse.cdt.make.core.activeConfigSettings</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.target.inc</key>
+					<value>all</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.arguments</key>
+					<value>-j4</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.buildLocation</key>
+					<value>/home/torin/workspace/Raptor/eclipse</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.useDefaultBuildCmd</key>
+					<value>false</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.environment</key>
+					<value>VERBOSE=1|CMAKE_NO_VERBOSE=1|</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enableFullBuild</key>
+					<value>true</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.target.auto</key>
+					<value>all</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.enableAutoBuild</key>
+					<value>false</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.target.clean</key>
+					<value>clean</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.fullBuildTarget</key>
+					<value>all</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.buildArguments</key>
+					<value></value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.build.location</key>
+					<value>/home/torin/workspace/Raptor/eclipse</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.make.core.autoBuildTarget</key>
+					<value>all</value>
+				</dictionary>
+				<dictionary>
+					<key>org.eclipse.cdt.core.errorOutputParser</key>
+					<value>org.eclipse.cdt.core.MakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GASErrorParser;org.eclipse.cdt.core.GLDErrorParser;</value>
+				</dictionary>
+			</arguments>
+		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.cdt.make.core.ScannerConfigBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.cdt.make.core.makeNature</nature>
+		<nature>org.eclipse.cdt.make.core.ScannerConfigNature</nature>
+		<nature>org.eclipse.cdt.core.ccnature</nature>
+		<nature>org.eclipse.cdt.core.cnature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>[Source directory]</name>
+			<type>2</type>
+			<location>/home/torin/workspace/Raptor/src</location>
+		</link>
+		<link>
+			<name>[Subprojects]</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Subprojects]/Raptor</name>
+			<type>2</type>
+			<location>/home/torin/workspace/Raptor/src</location>
+		</link>
+		<link>
+			<name>[Targets]</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools/Source Files/ModelViewerScene.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Tools/ModelViewerScene.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools/Source Files/Main.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Tools/Main.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools/Source Files/NoiseScene.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Tools/NoiseScene.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[exe] RaptorTools/Object Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/GLFWApplication.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Application/GLFWApplication.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/ModelLoader.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Assets/ModelLoader.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/LoadShaderTask.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Assets/LoadShaderTask.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Pixmap.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Assets/Pixmap.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Font.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Assets/Font.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/IAssetLoader.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Assets/IAssetLoader.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/TaskManager.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Core/TaskManager.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/ComponentBlock.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Core/ComponentBlock.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/InputService.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Core/InputService.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Engine.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Core/Engine.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/AssetManager.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Core/AssetManager.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Entity.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Core/Entity.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/EntityManager.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Core/EntityManager.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/ComponentContainer.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Core/ComponentContainer.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Model.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Graphics/Model.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Color.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Graphics/Color.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Mesh.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Graphics/Mesh.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Skybox.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Graphics/Skybox.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Camera.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Graphics/Camera.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Light.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Graphics/Light.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/GLTexture.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Graphics/GL/GLTexture.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/GLSLProgram.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Graphics/GL/GLSLProgram.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Source.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/Source.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Random.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/Random.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Vector3.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/Vector3.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Noise.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/Noise.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Quadtree.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/Quadtree.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/MathUtils.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/MathUtils.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/MarchingCubes.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/MarchingCubes.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Matrix4.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/Matrix4.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Vector2.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/Vector2.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Rectangle.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/Rectangle.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/GeometryUtils.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Math/GeometryUtils.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/PhysicsSystem2D.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Systems/PhysicsSystem2D.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/RenderSystem3D.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Systems/RenderSystem3D.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/RenderSystem2D.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Systems/RenderSystem2D.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Widget.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/UI/Widget.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Group.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/UI/Group.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Table.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/UI/Table.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Canvas.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/UI/Canvas.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/TextField.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/UI/TextField.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/Label.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/UI/Label.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/FPSCamera.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Utils/FPSCamera.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/DebugCanvas.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Utils/DebugCanvas.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Source Files/CommonScene.cpp</name>
+			<type>1</type>
+			<location>/home/torin/workspace/Raptor/src/Engine/Utils/CommonScene.cpp</location>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Header Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/CMake Rules</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Resources</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>[Targets]/[lib] RaptorCore/Object Files</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>
