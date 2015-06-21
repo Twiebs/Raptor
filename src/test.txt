@@ -1,0 +1,1 @@
+cmake -DCMAKE_TOOLCHAIN_FILE="C:/Program Files/Emscripten/emscripten/1.30.0/cmake/Modules/Platform/Emscripten.cmake" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=mingw32-make -G  "Unix Makefiles" ../src

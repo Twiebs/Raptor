@@ -2,16 +2,16 @@
 
 
 #include <Core/InputService.hpp>
-#include <Core/IScene.h>
-#include <UI/Canvas.h>
+#include <Core/IScene.hpp>
+#include <UI/Canvas.hpp>
 #include <Core/Engine.hpp>
 
 #include <Math/Noise.hpp>
-#include <Math/Random.h>
+#include <Math/Random.hpp>
 
-#include <Graphics/Color.h>
+#include <Graphics/Color.hpp>
 #include <Assets/Pixmap.hpp>
-#include <Graphics/GL/GLTexture.h>
+#include <Graphics/GL/GLTexture.hpp>
 
 #include <Components/SpriteComponent.hpp>
 

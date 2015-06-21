@@ -1,5 +1,5 @@
-#include "Matrix4.h"
-#include <Math/MathUtils.h>
+#include "Matrix4.hpp"
+#include <Math/MathUtils.hpp>
 
 //void Matrix4::initPerspectiveTransform(const PerspectiveProjectionInfo & perspectiveProjectionInfo) {
 //	float ar = perspectiveProjectionInfo.width / perspectiveProjectionInfo.height;

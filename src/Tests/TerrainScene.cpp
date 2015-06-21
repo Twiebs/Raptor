@@ -14,7 +14,7 @@ void TerrainScene::OnLoad(Engine& engine) {
 	debugCamera = std::make_unique<FPSCamera>(engine.app->GetWidth(), engine.app->GetHeight());
 
 
-	//terrainShader = std::make_unique<GLSLProgram>("Resources/shaders/Terrain.vert", "Resources/shaders/Terrain.frag");
+	//terrainShader = std::make_unique<GLSLProgram>("Assets/shaders/Terrain.vert", "Assets/shaders/Terrain.frag");
 	camera->position.Set(0.0f, 1000.0f, 0.0f);
 	rootTree = new TerrainQuadTree(Rectangle(0.0f, 0.0f, 4092.0f, 4092.0f), 256.0f, 4092.0f, nullptr, 0);
 }

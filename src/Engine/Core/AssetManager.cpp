@@ -9,7 +9,7 @@ AssetManager::~AssetManager() {
 }
 
 LoadFontTask::LoadFontTask(AssetID id, AssetRegistry* registry, std::string filename, uint32 fontsize) :
-	id(id), 
+	id(id),
 	registry(registry),
 	filename(filename),
 	fontsize(fontsize)
@@ -20,7 +20,7 @@ LoadFontTask::~LoadFontTask() {
 }
 
 
-LoadPixmapTask::LoadPixmapTask(AssetID id, AssetRegistry* registry, std::string& filename) : 
+LoadPixmapTask::LoadPixmapTask(AssetID id, AssetRegistry* registry, std::string& filename) :
 	id(id), registry(registry), filename(filename) {
 }
 

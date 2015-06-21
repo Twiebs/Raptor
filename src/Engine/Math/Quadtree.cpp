@@ -1,4 +1,4 @@
-#include "Quadtree.h"
+#include "Quadtree.hpp"
 
 
 QuadTree::QuadTree(Rectangle bounds) {
@@ -8,7 +8,7 @@ QuadTree::QuadTree(Rectangle bounds) {
 QuadTree::~QuadTree() {
 }
 
-bool QuadTree::Insert(Vector2 point) { 
+bool QuadTree::Insert(Vector2 point) {
 	if (!bounds.Contains(point)) {
 		return false;
 		//This point does not belong in the tree
@@ -16,7 +16,7 @@ bool QuadTree::Insert(Vector2 point) {
 
 	if (nodes.size() < nodeCapacity) {
 		nodes.push_back(point);
-		return true; 
+		return true;
 	}
 
 	else {
@@ -46,7 +46,7 @@ void QuadTree::Subdivde() {
 	topRight = std::make_unique<QuadTree>(Rectangle(bounds.x + (bounds.width * 0.5f), bounds.y, bounds.width * 0.5f, bounds.height * 0.5f));
 	bottomLeft = std::make_unique<QuadTree>(Rectangle(bounds.x + (bounds.width * 0.5f), bounds.y + (bounds.height * 0.5f), bounds.width * 0.5f, bounds.height * 0.5f));
 	bottomRight = std::make_unique<QuadTree>(Rectangle(bounds.x, bounds.y + (bounds.height * 0.5f), bounds.width * 0.5f, bounds.height * 0.5f));
-	
+
 	for (Vector2& point : nodes) {
 		if (topLeft->Insert(point)) continue;
 		else if (topRight->Insert(point)) continue;

@@ -1,4 +1,4 @@
-#include "GLFWApplication.h"
+#include "GLFWApplication.hpp"
 GLFWApplication::GLFWApplication() {
 }
 

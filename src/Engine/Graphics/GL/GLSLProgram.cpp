@@ -2,7 +2,7 @@
 #include<fstream>
 #include<string>
 
-#include "GLSLProgram.h"
+#include "GLSLProgram.hpp"
 
 GLSLProgram::GLSLProgram(GLuint programID) :
 	programID(programID)

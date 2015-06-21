@@ -24,7 +24,7 @@ void ECSTestScene::OnLoad(Engine& engine) {
 
 	Random rng;
 
-	auto pixmapID = engine.assetManager->LoadPixmap("Resources/null.png");
+	auto pixmapID = engine.assetManager->LoadPixmap("Assets/null.png");
 	engine.taskManager->FinishAllTasksNow();
 	auto pixmap = engine.assetManager->GetAsset<Pixmap>(pixmapID);
 	
@@ -39,7 +39,7 @@ void ECSTestScene::OnLoad(Engine& engine) {
 	glGenerateMipmap(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	auto fontID = engine.assetManager->LoadFont("Resources/fonts/arial.ttf", 15);
+	auto fontID = engine.assetManager->LoadFont("Assets/fonts/arial.ttf", 15);
 
 	for (int i = 0; i < 1999; i++) {
 		EntityID entityID = engine.entityManager->CreateEntity();

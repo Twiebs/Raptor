@@ -9,15 +9,19 @@
 
 #include <FreeImage.h>
 
-#include <freetype2/ft2build.h>
-#include FT_FREETYPE_H
 
+#if _MSC_VER
+#include <freetype/ft2build.h>
+#elif
+#include <freetype2/ft2build.h>
+#endif
+#include FT_FREETYPE_H
 #include <Core/IService.hpp>
 #include <Core/Engine.hpp>
 #include <Core/Common.hpp>
 #include <Core/TaskManager.hpp>
 
-#include <Math/MathUtils.h>
+#include <Math/MathUtils.hpp>
 #include <Graphics/Vertex3D.hpp>
 
 #include <Assets/Font.hpp>

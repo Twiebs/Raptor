@@ -1,4 +1,4 @@
-#include "MathUtils.h"
+#include "MathUtils.hpp"
 
 float MathUtils::Clamp(float value, float min, float max) {
 	float clamped = value;

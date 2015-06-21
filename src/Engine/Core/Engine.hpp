@@ -1,12 +1,11 @@
 #pragma once
 
-#include<iostream>
-#include<string>
-#include<stdint.h>
+#include <iostream>
+#include <string>
 
 #include <Core/Common.hpp>
 #ifdef GLFW_APPLICATION
-#include <Application/GLFWApplication.h>
+#include <Application/GLFWApplication.hpp>
 #endif
 
 
@@ -14,7 +13,7 @@
 #include <Core/EntityManager.hpp>
 #include <Core/AssetManager.hpp>
 #include <Core/TaskManager.hpp>
-#include <Core/IScene.h>
+#include <Core/IScene.hpp>
 
 class IScene;
 class EntityManager;

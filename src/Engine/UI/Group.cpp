@@ -1,4 +1,4 @@
-#include "Group.h"
+#include "Group.hpp"
 
 
 WidgetGroup::WidgetGroup() {

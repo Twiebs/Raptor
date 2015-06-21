@@ -1,4 +1,4 @@
-#include "GeometryUtils.h"
+#include "GeometryUtils.hpp"
 
 
 Vector3 GeomertyUtils::PointToQuadrilateralizedSphere(Vector3 point) {

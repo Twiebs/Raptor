@@ -1,8 +1,8 @@
 #pragma once
 
 #include <Core/Component.hpp>
-#include <Graphics/Color.h>
-#include <Graphics/GL/GLTexture.h>
+#include <Graphics/Color.hpp>
+#include <Graphics/GL/GLTexture.hpp>
 
 struct SpriteComponent : public Component {
 	float x, y;

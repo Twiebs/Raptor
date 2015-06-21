@@ -14,7 +14,7 @@ public:
 	virtual float Eval(float x, float y, float z, float w) = 0;
 
 	//Fractal Brownian Motion
-	float FBM(float x, int ocvtanves, float frequency, float persistance);
+	float FBM(float x, int octaves, float frequency, float persistance);
 	float FBM(float x, float y, int octaves, float frequency, float persistance);
 	float FBM(float x, float y, float z, int octaves, float frequency, float persistance);
 	float FBM(float x, float y, float z, float w, int octaves, float frequency, float persistance);
@@ -22,7 +22,7 @@ public:
 	//TODO There are multiple different params that actualy go into the formation of RidgedNoise
 	//Find out what they are and change the values that are in the .cpp
 	//RidgedNoise
-	float RidgedNoise(float x, int ocvtanves, float frequency, float persistance);
+	float RidgedNoise(float x, int octaves, float frequency, float persistance);
 	float RidgedNoise(float x, float y, int octaves, float frequency, float persistance);
 	float RidgedNoise(float x, float y, float z, int octaves, float frequency, float persistance);
 	float RidgedNoise(float x, float y, float z, float w, int octaves, float frequency, float persistance);
@@ -30,28 +30,28 @@ public:
 
 //Improved Perlin Noise
 //Based on KenPerlins original Java implementation http://mrl.nyu.edu/~perlin/noise/
-//Also from tutorial here http://flafla2.github.io/2014/08/09/perlinnoise.html
+//Also from tutorial here http://flafla2.github.io/2014/08/09/perlinnoise.hpptml
 class ImprovedPerlinNoise : public Noise {
 public:
 	ImprovedPerlinNoise(unsigned int seed);
-	~ImprovedPerlinNoise();
+	virtual ~ImprovedPerlinNoise();
 
-	float Eval(float x) override;
-	float Eval(float x, float y) override;
-	float Eval(float x, float y, float z) override;
-	float Eval(float x, float y, float z, float w) override;
+	float Eval(float x) final;
+	float Eval(float x, float y) final;
+	float Eval(float x, float y, float z) final;
+	float Eval(float x, float y, float z, float w) final;
 };
 
 //Simplex noise implementation
 class SimplexNoise : public Noise {
 public:
 	SimplexNoise(unsigned int seed);
-	~SimplexNoise();
+	virtual ~SimplexNoise();
 
-	float Eval(float x) override;
-	float Eval(float x, float y) override;
-	float Eval(float x, float y, float z) override;
-	float Eval(float x, float y, float z, float w) override;
+	float Eval(float x) final;
+	float Eval(float x, float y) final;
+	float Eval(float x, float y, float z) final;
+	float Eval(float x, float y, float z, float w) final;
 };
 
 //Open Simplex noise implementation originaly created by Kurt Spencer
@@ -60,22 +60,22 @@ public:
 class OpenSimplexNoise : public Noise {
 public:
 	OpenSimplexNoise(unsigned int seed);
-	~OpenSimplexNoise();
+	virtual ~OpenSimplexNoise();
 
-	float Eval(float x) override;
-	float Eval(float x, float y) override;
-	float Eval(float x, float y, float z) override;
-	float Eval(float x, float y, float z, float w) override;
+	float Eval(float x) final;
+	float Eval(float x, float y) final;
+	float Eval(float x, float y, float z) final;
+	float Eval(float x, float y, float z, float w) final;
 };
 
 //Wrapper class for glm simplex noise implementation
 class GLMSimplexNoise : public Noise {
 public:
 	GLMSimplexNoise(unsigned int seed = 0);
-	~GLMSimplexNoise();
+	virtual ~GLMSimplexNoise();
 
-	float Eval(float x) override;
-	float Eval(float x, float y) override;
-	float Eval(float x, float y, float z) override;
-	float Eval(float x, float y, float z, float w) override;
+	float Eval(float x) final;
+	float Eval(float x, float y) final;
+	float Eval(float x, float y, float z) final;
+	float Eval(float x, float y, float z, float w) final;
 };

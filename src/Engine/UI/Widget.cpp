@@ -1,4 +1,4 @@
-#include "Widget.h"
+#include "Widget.hpp"
 
 
 Widget::Widget() {

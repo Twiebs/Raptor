@@ -83,8 +83,8 @@ void NoiseScene::OnLoad(Engine* engine){
 	auto renderer = engine->entityManager->CreateSystem<RenderSystem2D>();
 	renderer->SetProjectionMatrix(projection);
 
-	auto fontID = engine->assetManager->LoadFont("Resources/fonts/arial.ttf", 18);
-	auto btnTexture = engine->assetManager->LoadPixmap("Resources/null.png");
+	auto fontID = engine->assetManager->LoadFont("Assets/fonts/arial.ttf", 18);
+	auto btnTexture = engine->assetManager->LoadPixmap("Assets/null.png");
 	engine->taskManager->FinishAllTasksNow();
 
 	auto pixmap = engine->assetManager->GetAsset<Pixmap>(btnTexture);
@@ -145,10 +145,10 @@ void NoiseScene::GenerateTexture(uint32 seed, int octaves, float frequency, floa
 		for (int y = 0; y < pixmap.height; y++){
 			float n = (noise.RidgedNoise(x, y, octaves, frequency, persistance));
 			uint32 i = ((4 * y) * pixmap.width) + (x * 4);
-			pixmap.data[i + 0] = 255 * n;
-			pixmap.data[i + 1] = 255 * n;
-			pixmap.data[i + 2] = 255 * n;
-			pixmap.data[i + 3] = 255 * 1.0f;
+			pixmap.data[i + 0] = (uint8)(255 * n);
+			pixmap.data[i + 1] = (uint8)(255 * n);
+			pixmap.data[i + 2] = (uint8)(255 * n);
+			pixmap.data[i + 3] = (uint8)(255 * 1);
 		}
 	}
 

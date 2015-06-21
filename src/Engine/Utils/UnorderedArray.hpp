@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Core/Common.hpp>
-#include <Math/MathUtils.h>
+#include <Math/MathUtils.hpp>
 
 template<typename T>
 class UnorderedArray {

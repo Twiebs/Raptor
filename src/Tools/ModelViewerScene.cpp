@@ -12,7 +12,7 @@ ModelViewerScene::~ModelViewerScene() {
 void ModelViewerScene::OnLoad(Engine* engine) {
 	engine->app->SetCursorHidden(false);
 	//auto fontID = engine->assetManager->LoadFont("Resource/fonts/arial.ttf", 18);
-	AssetID modelID = engine->assetManager->LoadModel("Resources/models/nanosuit/nanosuit.obj");
+	AssetID modelID = engine->assetManager->LoadModel("Assets/models/nanosuit/nanosuit.obj");
 
 	auto& manager = engine->entityManager;
 	manager->CreateSystem<RenderSystem3D>();

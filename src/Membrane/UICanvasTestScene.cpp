@@ -23,9 +23,9 @@ UICanvasTestScene::~UICanvasTestScene() {
 }
 
 void UICanvasTestScene::OnLoad(Engine& engine) {
-	uiShader = new GLSLProgram("Resources/shaders/UI.vert", "Resources/shaders/UI.frag");
+	uiShader = new GLSLProgram("Assets/shaders/UI.vert", "Assets/shaders/UI.frag");
 	canvas = std::make_unique<DebugCanvas>(1280, 720);
-	font = new Font("Resources/fonts/arial.ttf", 48);
+	font = new Font("Assets/fonts/arial.ttf", 48);
 	color = new Color(1.0f, 0.0f, 0.0f, 1.0f);
 
 	Vector2 vertices[] {

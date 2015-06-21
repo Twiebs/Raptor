@@ -8,11 +8,11 @@
 #include <Components/SpriteComponent.hpp>
 #include <Components/TextComponent.hpp>
 
-#include <Graphics/Camera.h>
+#include <Graphics/Camera.hpp>
 #include <Graphics/Vertex2D.hpp>
-#include <Graphics/GL/GLTexture.h>
+#include <Graphics/GL/GLTexture.hpp>
 
-#include <Math/Rectangle.h>
+#include <Math/Rectangle.hpp>
 #include <Math/Vector2.hpp>
 
 //TODO:

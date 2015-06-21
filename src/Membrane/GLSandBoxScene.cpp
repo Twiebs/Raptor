@@ -10,8 +10,8 @@ GLSandBoxScene::~GLSandBoxScene() {
 
 void GLSandBoxScene::OnLoad(Engine& engine) {
 	CommonScene::OnLoad(engine);
-	nanosuitModel = std::move(ResourceManager::LoadModel("Resources/models/nanosuit/nanosuit.obj"));
-	modelShader = std::make_unique<GLSLProgram>("Resources/shaders/Model.vert", "Resources/shaders/Model.frag");
+	nanosuitModel = std::move(ResourceManager::LoadModel("Assets/models/nanosuit/nanosuit.obj"));
+	modelShader = std::make_unique<GLSLProgram>("Assets/shaders/Model.vert", "Assets/shaders/Model.frag");
 }
 
 void GLSandBoxScene::Render(float deltaTime) {

@@ -1,14 +1,14 @@
 #pragma once
 
 #include <Core/Engine.hpp>
-#include <Core/IScene.h>
+#include <Core/IScene.hpp>
 
 #include <Systems/RenderSystem3D.hpp>
 
 #include <Components/ModelComponent.hpp>
 
-#include <Graphics/Model.h>
-#include <Graphics/Camera.h>
+#include <Graphics/Model.hpp>
+#include <Graphics/Camera.hpp>
 
 class ModelViewerScene : public IScene {
 public:

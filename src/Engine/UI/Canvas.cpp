@@ -1,4 +1,4 @@
-#include "Canvas.h"
+#include "Canvas.hpp"
 
 
 Canvas::Canvas(int viewportWidth, int viewportHeight) {

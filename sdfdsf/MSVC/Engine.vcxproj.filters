@@ -1,0 +1,378 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Components">
+      <UniqueIdentifier>{d4fe9f8a-5b88-4bf3-96e2-e88fec5ab79f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Systems">
+      <UniqueIdentifier>{b8f479ee-63d5-4c04-9570-45a008bc8c0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{a51c8081-7793-4926-83a7-a8cc43c32aad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application">
+      <UniqueIdentifier>{0e415d82-6c14-4ce2-863d-e67a9e835d16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UI">
+      <UniqueIdentifier>{f47fdfff-d7d4-463e-b6ea-655a07483575}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{8caf6ca3-1cf8-4402-97b5-28b13fe74b00}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Core">
+      <UniqueIdentifier>{976bd358-1c15-45b5-a064-09b1d2ad296c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{5e367cde-5ced-4e70-8425-5c0aac62c5d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Assets">
+      <UniqueIdentifier>{e05f3046-44e3-4d71-8ff6-ab33c1343aab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Memory">
+      <UniqueIdentifier>{06fe1355-b093-4880-8de6-2314461fb980}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{e15f9068-2e88-4741-a8d1-1c5c38a9fcee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Services">
+      <UniqueIdentifier>{6142c8b6-ee5a-4eb1-ab0a-948043a19af6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\Engine\Math\Vector3.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Math\Vector2.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Graphics\Camera.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Graphics\Color.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Utils\CommonScene.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Math\GeometryUtils.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Application\GLFWApplication.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Graphics\GL\GLTexture.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Graphics\GL\GLSLProgram.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Utils\FPSCamera.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\UI\Canvas.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Utils\DebugCanvas.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Graphics\Mesh.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Graphics\Model.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Graphics\Skybox.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\UI\Table.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\UI\Widget.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Math\Quadtree.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Math\Rectangle.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Math\MarchingCubes.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Math\MathUtils.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Math\Matrix4.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Math\Noise.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Graphics\Light.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\UI\Group.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\UI\TextField.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Math\Random.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\UI\Label.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\AssetManager.cpp">
+      <Filter>Services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Assets\LoadShaderTask.cpp">
+      <Filter>Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Systems\RenderSystem2D.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Systems\PhysicsSystem2D.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Systems\RenderSystem3D.cpp">
+      <Filter>Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\ISystem.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Assets\Font.cpp">
+      <Filter>Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\Entity.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\EntityManager.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\ComponentContainer.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\ComponentBlock.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\InputService.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\Engine.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\IScene.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\IService.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Assets\ModelLoader.cpp">
+      <Filter>Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Assets\IAssetLoader.cpp">
+      <Filter>Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Core\TaskManager.cpp">
+      <Filter>Core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Engine\Assets\Pixmap.cpp">
+      <Filter>Assets</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Engine\Math\Vector2.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Math\Vector3.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Graphics\Vertex2D.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Math\Vertex3D.hpp">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Math\MathUtils.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Math\Matrix4.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Math\Random.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Math\Noise.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\UI\Widget.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Utils\FPSCamera.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Graphics\Camera.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Graphics\GL\GLSLProgram.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Graphics\GL\GLTexture.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\UI\TextField.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Graphics\Mesh.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Graphics\Light.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Graphics\Model.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Graphics\Skybox.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Application\GLFWApplication.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Utils\CommonScene.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Math\GeometryUtils.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Utils\DebugCanvas.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\UI\Font.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Math\Rectangle.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Math\Quadtree.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\UI\Group.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\UI\Canvas.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Graphics\Color.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\UI\Table.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\AssetManager.hpp">
+      <Filter>Services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Assets\LoadShaderTask.hpp">
+      <Filter>Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Components\Transform3D.hpp">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Components\SpriteComponent.hpp">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Components\TextComponent.hpp">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Components\Transform2D.hpp">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Systems\RenderSystem2D.hpp">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Systems\PhysicsSystem2D.hpp">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Components\MeshComponent.hpp">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\UI\Label.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Systems\RenderSystem3D.hpp">
+      <Filter>Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\ISystem.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\Common.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Assets\Font.hpp">
+      <Filter>Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Memory\ObjectAllocator.hpp">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Platform\Platform.hpp">
+      <Filter>Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\EntityManager.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\Entity.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\ComponentBlock.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\ComponentContainer.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\IInputListener.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\InputService.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Application\IApplication.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\Engine.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\IScene.h">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\IService.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Assets\IAssetLoader.hpp">
+      <Filter>Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Assets\ModelLoader.hpp">
+      <Filter>Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Components\ModelComponent.hpp">
+      <Filter>Components</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\Component.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Assets\Pixmap.hpp">
+      <Filter>Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\TaskManager.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Utils\UnorderedArray.hpp">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Engine\Core\ComponentType.hpp">
+      <Filter>Core</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

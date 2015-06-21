@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Math/Vector2.hpp>
-#include <Graphics/Color.h>
+#include <Graphics/Color.hpp>
 
 struct Vertex2D {
 	Vector2 position;

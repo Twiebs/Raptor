@@ -7,7 +7,7 @@
 #include <Core/TaskManager.hpp>
 #include <Core/AssetManager.hpp>
 #include <Core/Component.hpp>
-#include <Graphics/Model.h>
+#include <Graphics/Model.hpp>
 
 struct AssetRegistry;
 class LoadAssetTask;

@@ -14,8 +14,8 @@ bool RenderSystem3D::Startup(EntityManager* manager) {
 	meshComponentID = manager->ComponentTypeOf<MeshComponent>()->index;
 	modelComponentID = manager->ComponentTypeOf<ModelComponent>()->index;
 
-	wireframeShaderID = engine->assetManager->LoadShader("Resources/shaders/wireframe.vert", "Resources/shaders/wireframe.frag");
-	meshShaderID= engine->assetManager->LoadShader("Resources/shaders/Model.vert", "Resources/shaders/Model.frag");
+	wireframeShaderID = engine->assetManager->LoadShader("Assets/shaders/wireframe.vert", "Assets/shaders/wireframe.frag");
+	meshShaderID= engine->assetManager->LoadShader("Assets/shaders/Model.vert", "Assets/shaders/Model.frag");
 	return true;
 }
 bool RenderSystem3D::Shutdown(EntityManager* manager) {

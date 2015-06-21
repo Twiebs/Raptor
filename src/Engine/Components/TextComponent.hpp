@@ -5,7 +5,7 @@
 #include <Core/AssetManager.hpp>
 
 #include <Assets/Font.hpp>
-#include <Graphics/Color.h>
+#include <Graphics/Color.hpp>
 
 struct TextComponent : public Component {
 	uint32 x, y;

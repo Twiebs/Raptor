@@ -1,4 +1,4 @@
-// #include "FPSCamera.h"
+// #include "FPSCamera.hpp"
 //
 // bool FPSCamera::OnKeyEvent(int keycode, bool isPressed, int mods) {
 // 	switch (keycode) {

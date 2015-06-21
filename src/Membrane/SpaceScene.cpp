@@ -36,17 +36,17 @@ void SpaceScene::OnLoad(Engine& engine) {
 
 	//Skybox creation
 	std::vector<const GLchar*> faces;
-	faces.push_back("Resources/skybox/space/right.png"); 
-	faces.push_back("Resources/skybox/space/left.png");
-	faces.push_back("Resources/skybox/space/top.png");
-	faces.push_back("Resources/skybox/space/bottom.png");
-	faces.push_back("Resources/skybox/space/front.png");
-	faces.push_back("Resources/skybox/space/back.png");
+	faces.push_back("Assets/skybox/space/right.png"); 
+	faces.push_back("Assets/skybox/space/left.png");
+	faces.push_back("Assets/skybox/space/top.png");
+	faces.push_back("Assets/skybox/space/bottom.png");
+	faces.push_back("Assets/skybox/space/front.png");
+	faces.push_back("Assets/skybox/space/back.png");
 	skybox = std::make_unique<Skybox>(faces);
 
 		//Load the model
 	renderer = std::make_unique<GLRenderer>(camera.get());
-	//nanosuitModel = ResourceManager::LoadModel("Resources/models/nanosuit/nanosuit.obj");
+	//nanosuitModel = ResourceManager::LoadModel("Assets/models/nanosuit/nanosuit.obj");
 
 	//Create the universe
 	universe = std::make_unique<Universe>(57);
@@ -65,12 +65,12 @@ void SpaceScene::OnLoad(Engine& engine) {
 	texture1D = GenerateJovianTexture(256, RGBA8{ 50, 45, 200, 255 }, RGBA8{ 50, 120, 255, 255 }, 0.25f);
 
 	//Load shaders
-	terrestrialShader = std::make_unique<GLSLProgram>("Resources/shaders/lighting.vert", "Resources/shaders/lighting.frag");
-	solarShader = std::make_unique<GLSLProgram>("Resources/shaders/Solar.vert", "Resources/shaders/Solar.frag");
-	jovianShader = std::make_unique<GLSLProgram>("Resources/shaders/Jovian.vert", "Resources/shaders/Jovian.frag");
-	wireframeShader = std::make_unique<GLSLProgram>("Resources/shaders/wireframe.vert", "Resources/shaders/wireframe.frag");
-	skyboxShader = std::make_unique<GLSLProgram>("Resources/shaders/skybox.vert", "Resources/shaders/skybox.frag");
-	modelShader = std::make_unique<GLSLProgram>("Resources/shaders/Model.vert", "Resources/shaders/Model.frag");
+	terrestrialShader = std::make_unique<GLSLProgram>("Assets/shaders/lighting.vert", "Assets/shaders/lighting.frag");
+	solarShader = std::make_unique<GLSLProgram>("Assets/shaders/Solar.vert", "Assets/shaders/Solar.frag");
+	jovianShader = std::make_unique<GLSLProgram>("Assets/shaders/Jovian.vert", "Assets/shaders/Jovian.frag");
+	wireframeShader = std::make_unique<GLSLProgram>("Assets/shaders/wireframe.vert", "Assets/shaders/wireframe.frag");
+	skyboxShader = std::make_unique<GLSLProgram>("Assets/shaders/skybox.vert", "Assets/shaders/skybox.frag");
+	modelShader = std::make_unique<GLSLProgram>("Assets/shaders/Model.vert", "Assets/shaders/Model.frag");
 }
 
 void SpaceScene::OnDestroy(Engine& engine) {

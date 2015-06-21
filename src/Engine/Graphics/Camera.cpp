@@ -1,4 +1,4 @@
-#include "Camera.h"
+#include "Camera.hpp"
 
 Camera::Camera(float viewportWidth, float viewportHeight) {
 	position.Set(0.0f, 0.0f, 3.0f);

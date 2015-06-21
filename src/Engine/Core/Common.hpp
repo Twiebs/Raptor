@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #define GLFW_APPLICATION
+#define SDL
 
 //#define BENCHMARK
 #define CLOCK_RESOLUTION std::milli

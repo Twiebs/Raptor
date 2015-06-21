@@ -72,7 +72,7 @@ bool RenderSystem2D::Startup(EntityManager* manager) {
 	REGISTER_SYSTEM_TAG(RenderSystem2D);
 
 	//Get the id of the shader that we are going to use to renderer the entities in the system
-	shaderID = engine->assetManager->LoadShader("Resources/shaders/RenderSystem2D.vert", "Resources/shaders/RenderSystem2D.frag");
+	shaderID = engine->assetManager->LoadShader("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag");
 	return true;
 }
 

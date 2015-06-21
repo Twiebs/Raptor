@@ -76,7 +76,7 @@ void LODScene::OnLoad(Engine& engine) {
 	camera->position.Set(0.0f, 12000.0f, 0.0f);
 	engine.GetApp()->AddListener(this);
 
-	terrainShader = std::make_unique<GLSLProgram>("Resources/shaders/Terrain.vert", "Resources/shaders/Terrain.frag");
+	terrainShader = std::make_unique<GLSLProgram>("Assets/shaders/Terrain.vert", "Assets/shaders/Terrain.frag");
 
 	width = 512;
 	length = 512;

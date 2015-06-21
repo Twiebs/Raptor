@@ -1,4 +1,4 @@
-// #include "CommonScene.h"
+// #include "CommonScene.hpp"
 //
 //
 // CommonScene::CommonScene() {
@@ -19,15 +19,15 @@
 // 	canvas->camera = camera.get();
 //
 // 	std::vector<const GLchar*> faces;
-// 	faces.push_back("Resources/skybox/islands/right.jpg");
-// 	faces.push_back("Resources/skybox/islands/left.jpg");
-// 	faces.push_back("Resources/skybox/islands/top.jpg");
-// 	faces.push_back("Resources/skybox/islands/bottom.jpg");
-// 	faces.push_back("Resources/skybox/islands/back.jpg");
-// 	faces.push_back("Resources/skybox/islands/front.jpg");
+// 	faces.push_back("Assets/skybox/islands/right.jpg");
+// 	faces.push_back("Assets/skybox/islands/left.jpg");
+// 	faces.push_back("Assets/skybox/islands/top.jpg");
+// 	faces.push_back("Assets/skybox/islands/bottom.jpg");
+// 	faces.push_back("Assets/skybox/islands/back.jpg");
+// 	faces.push_back("Assets/skybox/islands/front.jpg");
 // 	skybox = std::make_unique<Skybox>(faces);
-// 	//skyboxShader = std::make_unique<GLSLProgram>("Resources/shaders/skybox.vert", "Resources/shaders/skybox.frag");
-// 	//wireframeShader = std::make_unique<GLSLProgram>("Resources/shaders/wireframe.vert", "Resources/shaders/wireframe.frag");
+// 	//skyboxShader = std::make_unique<GLSLProgram>("Assets/shaders/skybox.vert", "Assets/shaders/skybox.frag");
+// 	//wireframeShader = std::make_unique<GLSLProgram>("Assets/shaders/wireframe.vert", "Assets/shaders/wireframe.frag");
 // }
 // void CommonScene::OnDestroy(Engine& engine) {
 //
