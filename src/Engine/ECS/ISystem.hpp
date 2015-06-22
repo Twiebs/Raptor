@@ -13,22 +13,22 @@
 #define REGISTER_SYSTEM_TAG(x) tag = #x;
 
 class Engine;
-class EntityManager;
+class ECSManager;
 class Entity;
 
-//Base class for all systems that are registered with an [EntityManager]
+//Base class for all systems that are registered with an [ECSManager]
 class ISystem {
 public:
 	ISystem() { }
 	virtual ~ISystem() { }
 
-	virtual bool Startup 	(EntityManager* manager) = 0;
-	virtual bool Shutdown (EntityManager* manager) = 0;
+	virtual bool Startup 	(ECSManager* manager) = 0;
+	virtual bool Shutdown (ECSManager* manager) = 0;
 	virtual void Update 		(double deltaTime) 		 = 0;
 
 protected:
-	friend class EntityManager;
-	EntityManager* manager;
+	friend class ECSManager;
+	ECSManager* manager;
 	Engine* engine;
 
 public:

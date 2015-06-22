@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ECS/EntityManager.hpp>
+#include <ECS/ECSManager.hpp>
 #include <Core/AssetManager.hpp>
 #include <ECS/ISystem.hpp>
 #include <ECS/ComponentBlock.hpp>
@@ -27,13 +27,13 @@
 //Has an internal camera(NOT YET) that is used to project into screen space
 //The camera can be controller by registering a camera controller with this system
 class RenderSystem2D : public ISystem {
-friend class EntityManager;
+friend class ECSManager;
 public:
 	RenderSystem2D(uint32 batchSize = 2000);
 	~RenderSystem2D();
 
-	bool Startup (EntityManager* manager) final;
-	bool Shutdown(EntityManager* manager) final;
+	bool Startup (ECSManager* manager) final;
+	bool Shutdown(ECSManager* manager) final;
 	void Update(double deltaTime) final;
 
 	void ProcessText(TextComponent& textComponent);
@@ -41,7 +41,7 @@ public:
 	void SetProjectionMatrix(Matrix4& projection);
 
 private:
-	EntityManager* entityManager;
+	ECSManager* manager;
 	uint32 batchCapacity;
 	uint32 entryCount;
 

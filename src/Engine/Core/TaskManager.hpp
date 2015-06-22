@@ -24,6 +24,7 @@ public:
 	ConcurentQueue();
 	~ConcurentQueue();
 
+
 	// Attempts to add a item to the queue
 	// Returns true if the add was suscuessful
 	// False if it was not
@@ -64,6 +65,15 @@ class TaskManager {
 public:
 	TaskManager();
 	~TaskManager();
+
+
+	//TODO these are now becoming singletons again.. For now untill i figure out / remove these
+	static TaskManager& Instance() {
+		static TaskManager* instance = nullptr;
+		if(instance == nullptr)
+			instance = new TaskManager();
+		return *instance;
+	}
 
 	void Startup();
 	void Shutdown();

@@ -93,21 +93,23 @@ endif(EMSCRIPTEN)
 add_definitions(-D_SDL)
 
 include_directories(Engine)
-include_directories(../include)
-include_directories(../include/freetype)
+if(MSVC)
+      include_directories(../include)
+      include_directories(../include/freetype)
+endif(MSVC)
 
 set(GRAPHICS_SRCS
   Engine/Graphics/GLSLProgram.cpp
   Engine/Graphics/GLSLProgram.hpp
 )
-add_library(graphics STATIC ${GRAPHICS_SRCS})
+# add_library(graphics STATIC ${GRAPHICS_SRCS})
 
 
 set(MATH_SRCS
   Engine/Math/Vector2.cpp
   Engine/Math/Vector2.hpp
 )
-add_library(math STATIC ${MATH_SRCS})
+# add_library(math STATIC ${MATH_SRCS})
 
 set(BASE_SRCS
   Engine/Graphics/Color.hpp
@@ -132,16 +134,16 @@ set(BASE_SRCS
   # Engine/Base/PhysicsSystem2D.cpp
   # Engine/Base/PhysicsSystem3D.hpp
 )
-add_library(base STATIC ${BASE_SRCS})
+# add_library(base STATIC ${BASE_SRCS})
 
 set(ECS_SRCS
   Engine/ECS/Component.hpp
   Engine/ECS/ComponentBlock.cpp
   Engine/ECS/ComponentBlock.hpp
   Engine/ECS/ComponentType.hpp
+  Engine/ECS/ECSManager.cpp
+  Engine/ECS/ECSManager.hpp
   Engine/ECS/Entity.cpp
-  Engine/ECS/EntityManager.cpp
-  Engine/ECS/EntityManager.hpp
   Engine/ECS/ISystem.hpp
 )
 add_library(ecs STATIC ${ECS_SRCS})
@@ -154,10 +156,10 @@ add_library(run STATIC ${PLATFORM_SRCS})
 
 add_executable(app Tests/Main.cpp)
 target_link_libraries(app run)
-target_link_libraries(app math)
 target_link_libraries(app ecs)
-target_link_libraries(app base)
-target_link_libraries(app graphics)
+# target_link_libraries(app math)
+# target_link_libraries(app base)
+# target_link_libraries(app graphics)
 
 # file(GLOB HTML_TESTS_SRCS_CPP HTMLTests/*.cpp)
 # file(GLOB HTML_TESTS_SRCS_HPP HTMLTests/*.hpp)

@@ -3,7 +3,7 @@
 Entity::Entity() {
 }
 
-Entity::Entity(EntityManager* manager, uint64 uuid, uint64 id) :
+Entity::Entity(ECSManager* manager, uint64 uuid, uint64 id) :
 	manager(manager), uuid(uuid), id(id) {
 }
 

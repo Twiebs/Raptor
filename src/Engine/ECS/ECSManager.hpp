@@ -19,9 +19,6 @@
 #include <ECS/Entity.hpp>
 #include <ECS/ISystem.hpp>
 
-#include <Core/AssetManager.hpp>
-#include <Core/TaskManager.hpp>
-
 #include <Utils/UnorderedArray.hpp>
 
 #define MAX_COMPONENTS 64
@@ -37,15 +34,12 @@
 #define COMPONET_CREATED
 #endif
 
-class EntityManager: IService {
+class ECSManager: IService {
 public:
-	std::unique_ptr<AssetManager> assetManager;
-	std::unique_ptr<TaskManager> taskManager;
+	ECSManager();
+	~ECSManager();
 
-	EntityManager();
-	~EntityManager();
-
-	//TODO move to a delayed opperation handling scheme... Opperations should be delayed until the next tick of the engine
+	//TODO move to a delayed ropperation handling scheme... Opperations should be delayed until the next tick of the engine
 	// Creates a new system and adds it to the entityManager
 	// Returns a raw pointer to the system that was just created
 	template<typename T, typename ... Args>

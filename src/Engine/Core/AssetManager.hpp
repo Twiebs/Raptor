@@ -30,10 +30,9 @@
 #include <Assets/LoadShaderTask.hpp>
 #include <Assets/Pixmap.hpp>
 
-#include <ECS/EntityManager.hpp>
+#include <ECS/ECSManager.hpp>
 
 class IService;
-class EntityManager;
 
 //AssetSlot template with current
 //TODO:
@@ -60,6 +59,7 @@ class LoadFontTask : public ITask {
 public:
 	LoadFontTask(AssetID id, AssetRegistry* registry, std::string filename, uint32 fontsize);
 	~LoadFontTask();
+
 
 	void Run(uint32 threadID) final;
 	void Finalize(uint32 threadID) final;
@@ -89,10 +89,16 @@ private:
 
 //TODO default memory arena size?
 class AssetManager : public IService {
-friend class EntityManager;
 public:
 	AssetManager();
 	~AssetManager();
+
+	static AssetManager& Instance() {
+		static AssetManager* instance;
+		if (instance == nullptr)
+			instance = new AssetManager();
+		return *instance;
+	}
 
 	template<typename T>
 	T* GetAsset(AssetID id) {
@@ -106,7 +112,6 @@ public:
 	AssetID LoadModel(const std::string& filename);
 	AssetID LoadPixmap(const std::string& filename);
 private:
-	EntityManager* entityManager;
 	AssetRegistry registry;
 
 	std::vector<Font> fonts;

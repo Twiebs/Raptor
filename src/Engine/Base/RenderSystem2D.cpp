@@ -62,7 +62,7 @@ RenderSystem2D::~RenderSystem2D() {
 }
 
 //Called by the entityManager when this system is added
-bool RenderSystem2D::Startup(EntityManager* manager) {
+bool RenderSystem2D::Startup(ECSManager* manager) {
 	//Get the id of the components that the system will process
 	transformComponentID = manager->ComponentTypeOf<Transform2D>()->index;
 	textComponentID = manager->ComponentTypeOf<TextComponent>()->index;
@@ -75,7 +75,7 @@ bool RenderSystem2D::Startup(EntityManager* manager) {
 	return true;
 }
 
-bool RenderSystem2D::Shutdown(EntityManager* manager) {
+bool RenderSystem2D::Shutdown(ECSManager* manager) {
 	return true;
 }
 
@@ -87,7 +87,7 @@ void RenderSystem2D::Update(double deltaTime) {
 #endif
 
 	static bool isReady = false;
-	GLSLProgram* shader = entityManager->assetManager->template GetAsset<GLSLProgram>(shaderID);
+	GLSLProgram* shader = AssetManager::Instance().template GetAsset<GLSLProgram>(shaderID);
 	if (shader != nullptr && !isReady) {
 		isReady = true;
 		shader->Use();

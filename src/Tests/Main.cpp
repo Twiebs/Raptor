@@ -1,14 +1,11 @@
-// #include <Core/Engine.hpp>
-//
-// #include"TerrainScene.h"
-// #include"ECSTestScene.h"
-
 #include <Platform/Platform.hpp>
-#include <ECS/EntityManager.hpp>
-#include <Base/RenderSystem2D.hpp>
-#include <Base/TextComponent.hpp>
+#include <ECS/ECSManager.hpp>
 
-EntityManager* manager;
+#if __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
+
+ECSManager* manager;
 
 void MainLoop() {
 	PlatformBeginFrame();
@@ -18,15 +15,12 @@ void MainLoop() {
 
 int main () {
   PlatformInit("Raptor Web", 1280, 720, false);
-	manager = new EntityManager();
+	manager = new ECSManager();
 	//manager->CreateSystem<RenderSystem2D>();
 	auto entity = manager->CreateEntity();
-	manager->CreateSystem<RenderSystem2D>();
-	auto text = manager->CreateComponent<TextComponent>(entity);
-
 
 #ifdef __EMSCRIPTEN__
-  //emscripten_set_main_loop(MainLoop, 60, 1);
+  emscripten_set_main_loop(MainLoop, 60, 1);
 #endif
   return 0;
 }

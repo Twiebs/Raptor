@@ -1,21 +1,19 @@
 
-#include "EntityManager.hpp"
+#include "ECSManager.hpp"
 
-EntityManager::EntityManager() :
+ECSManager::ECSManager() :
 	componentBlocks(MAX_COMPONENTS, nullptr),
 	componentsByEntityID(MAX_COMPONENTS, UnorderedArray<uint32>()),
 	nextComponentTypeBit(1) {
-		assetManager = std::make_unique<AssetManager>();
-		assetManager->entityManager = this;
-		taskManager = std::make_unique<TaskManager>();
+;
 	}
 
-EntityManager::~EntityManager() {
+ECSManager::~ECSManager() {
 
 }
 
 //TODO: Entity pooling
-EntityID EntityManager::CreateEntity() {
+EntityID ECSManager::CreateEntity() {
 	if (removedEntities.size() > 0) {
 		auto entityID = removedEntities[removedEntities.size() - 1];
 		removedEntities.pop_back();
@@ -28,18 +26,18 @@ EntityID EntityManager::CreateEntity() {
 	return entity.id;
 }
 
-Entity* EntityManager::GetEntity(EntityID id) {
+Entity* ECSManager::GetEntity(EntityID id) {
 	assert(id != 0);
 	return &entities[id];
 }
 
 
-ComponentBlock* EntityManager::GetComponentBlock(uint32 index) const {
+ComponentBlock* ECSManager::GetComponentBlock(uint32 index) const {
 	return componentBlocks[index];
 }
 
 //FIXME now broken...
-void EntityManager::RemoveEntity(Entity* entity) {
+void ECSManager::RemoveEntity(Entity* entity) {
 //	//TODO free entities components
 //	entity->componentBits = 0;
 //	entity->uuid = 0;	//UUID of zero is not provided by the engine
@@ -52,7 +50,7 @@ void EntityManager::RemoveEntity(Entity* entity) {
 //#endif
 }
 //
-//void EntityManager::RefreshEntityComponentMask(Entity* entity) {
+//void ECSManager::RefreshEntityComponentMask(Entity* entity) {
 //	for (auto iter = componentGroupMap.begin(); iter != componentGroupMap.end(); iter++) {
 //		ComponentGroup& group = *iter->second;
 //		bool isInGroup = ((entity->groupBits & group.bit) == group.bit);
@@ -72,13 +70,13 @@ void EntityManager::RemoveEntity(Entity* entity) {
 //}
 
 //Returns the actual array with the entities in it
-std::vector<Entity*>* EntityManager::GetEntities() {
+std::vector<Entity*>* ECSManager::GetEntities() {
 	//return &entities;
 	return nullptr;
 }
 
 //Gets or creates a new array with entities that contain the components
-//std::vector<Entity*>* EntityManager::GetEntities(std::bitset<MAX_COMPONENTS> componentMaskBits) {
+//std::vector<Entity*>* ECSManager::GetEntities(std::bitset<MAX_COMPONENTS> componentMaskBits) {
 //
 //	ComponentGroup& group = GetComponetGroup(componentMaskBits);
 //
@@ -95,7 +93,7 @@ std::vector<Entity*>* EntityManager::GetEntities() {
 //Returns a reference to a component type from a map of type_infos to ComponetTypes
 //Or Initalizes a new instance
 //TODO: Consider Pre-Registration of compnonents with #define
-//ComponentType& EntityManager::GetComponentType(const std::type_info& typeInfo) {
+//ComponentType& ECSManager::GetComponentType(const std::type_info& typeInfo) {
 //	ComponentType* type = componentTypes[typeInfo];
 //	//The component type has not been registered with the manager yet
 //	if (type == nullptr) {
@@ -114,7 +112,7 @@ std::vector<Entity*>* EntityManager::GetEntities() {
 //	return *type;
 //}
 
-//ComponentGroup& EntityManager::GetComponetGroup(std::bitset<MAX_GROUPS> bits) {
+//ComponentGroup& ECSManager::GetComponetGroup(std::bitset<MAX_GROUPS> bits) {
 //	ComponentGroup* group = componentGroupMap[bits];
 //	if (group == nullptr) {
 //		group = new ComponentGroup{
@@ -130,7 +128,7 @@ std::vector<Entity*>* EntityManager::GetEntities() {
 //}
 
 
-void EntityManager::Update(double deltaTime) {
+void ECSManager::Update(double deltaTime) {
 #ifdef BENCHMARK
 	static double logTime = 0;
 	auto start = std::chrono::steady_clock::now();
