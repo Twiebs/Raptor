@@ -33,8 +33,11 @@ typedef uint64_t uint64;
 //To restucture data as it needs
 typedef uint64 AssetID;
 typedef uint64 TaskID;
-typedef uint64 EntityID;
+typedef uint64 EntityID;		//TODO these should no longer be exposed to the user so they should just be uint64s
 typedef uint64 EntityUUID;
+
+//Error logging
+#define LOG_ERROR(x) std::cout << "ERROR: " << #x << "\n"
 
 //Bechmarking Macros to determine the time taken for a certin task to compleatedTasks
 #ifdef BENCHMARK

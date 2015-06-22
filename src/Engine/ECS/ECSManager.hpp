@@ -1,8 +1,7 @@
 #pragma once
 
-#include <algorithm>
-#include <unordered_map>
 #include <typeindex>
+#include <unordered_map>
 #include <assert.h>
 #include <memory>
 
@@ -10,15 +9,12 @@
 #include<type_traits>
 #endif
 
-#include <Core/IService.hpp>
-
 #include <Core/Common.hpp>
 #include <ECS/Component.hpp>
 #include <ECS/ComponentBlock.hpp>
 #include <ECS/ComponentType.hpp>
 #include <ECS/Entity.hpp>
 #include <ECS/ISystem.hpp>
-
 #include <Utils/UnorderedArray.hpp>
 
 #define MAX_COMPONENTS 64
@@ -34,7 +30,14 @@
 #define COMPONET_CREATED
 #endif
 
-class ECSManager: IService {
+//NOTE
+// - Components should not hold any data...
+// - They simply should just point to the data that they are refrencing...
+
+
+//NOTE Why do we even bother inheriting from some service thing?
+//it serves no value whatsoever
+class ECSManager{
 public:
 	ECSManager();
 	~ECSManager();
@@ -48,7 +51,6 @@ public:
 		systems.emplace_back(new T(args...));
 		ISystem* system = systems[systems.size() - 1];
 		system->manager = this;
-		system->engine = engine;
 		bool success = system->Startup(this);
 		return (T*) system;
 	}
@@ -155,10 +157,6 @@ private:
 	uint32 nextComponentTypeIndex = 0; //The index the next registered ComponentType will have
 	std::vector<ComponentType> componentTypes; //This is where the component types are stored in memory
 	std::unordered_map<std::type_index, uint32> componentTypeIndexMap; //The map of component types
-
-	friend class EntitySystem;
-	friend class Engine;
-
 public:
 #if _DEBUG
 	uint64 entitiesActive;		//Count of active entities

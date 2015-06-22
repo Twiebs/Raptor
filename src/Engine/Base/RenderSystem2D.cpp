@@ -79,7 +79,6 @@ bool RenderSystem2D::Shutdown(ECSManager* manager) {
 	return true;
 }
 
-
 void RenderSystem2D::Update(double deltaTime) {
 	entryCount = 0;
 #ifdef BENCHMARK

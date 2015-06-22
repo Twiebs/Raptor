@@ -99,10 +99,10 @@ if(MSVC)
 endif(MSVC)
 
 set(GRAPHICS_SRCS
-  Engine/Graphics/GLSLProgram.cpp
-  Engine/Graphics/GLSLProgram.hpp
+      Engine/Graphics/DebugRenderer.cpp
+      Engine/Graphics/DebugRenderer.hpp
 )
-# add_library(graphics STATIC ${GRAPHICS_SRCS})
+add_library(graphics STATIC ${GRAPHICS_SRCS})
 
 
 set(MATH_SRCS
@@ -157,6 +157,7 @@ add_library(run STATIC ${PLATFORM_SRCS})
 add_executable(app Tests/Main.cpp)
 target_link_libraries(app run)
 target_link_libraries(app ecs)
+target_link_libraries(app graphics)
 # target_link_libraries(app math)
 # target_link_libraries(app base)
 # target_link_libraries(app graphics)
