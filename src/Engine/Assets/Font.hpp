@@ -5,8 +5,8 @@
 
 #include <GL/glew.h>
 #include <Graphics/Color.hpp>
-#include <Graphics/GL/GLTexture.hpp>
-#include <Graphics/GL/GLSLProgram.hpp>
+#include <Graphics/GLTexture.hpp>
+#include <Graphics/GLSLProgram.hpp>
 #include <Math/Vector2.hpp>
 
 struct Glyph {

@@ -3,17 +3,21 @@
 #include <queue>
 #include <vector>
 #include <iostream>
-#include <thread>
 #include <functional>
-#include <condition_variable>
-#include <atomic>
 #include <memory>
+
+#ifdef MULTI_THREADED
+#include <thread>
+#include <atomic>
+#include <condition_variable>
+#endif
 
 #include <Core/Common.hpp>
 
 //TODO Were going to need some sort of handle for the tasks incase we need to interupt them...
 typedef uint64 TaskID;
 
+#ifdef MULTI_THREADED
 template<typename T, uint32 size>
 class ConcurentQueue{
 public:
@@ -45,6 +49,7 @@ private:
 	std::atomic<uint32> writePos;
 	uint32 readPos;
 };
+#endif	//MUTL_THREADED
 
 
 class ITask {
@@ -68,7 +73,9 @@ public:
 	//If single threaded simply initalizes the task and then runs it
 	template<typename T, typename... Args>
 	void ScheduleTask(Args... args) {
+	#ifndef __EMSCRIPTEN	//Emscripten does not like this assert
 		static_assert(std::is_base_of<ITask, T>::value, "Scheduled task must be derived from the ITask interface!");
+	#endif
 		#ifdef MULTI_THREADED
 			mutex.lock();
 			tasksInManager++;
@@ -98,20 +105,21 @@ public:
 	void Update(double deltaTime);
 
 private:
-	std::vector<std::thread> threads;
-	std::queue<std::unique_ptr<ITask>> scheduledTasks;
-	std::queue<std::unique_ptr<ITask>> compleatedTasks;
+	std::queue<std::unique_ptr<ITask> > scheduledTasks;
+	std::queue<std::unique_ptr<ITask> > compleatedTasks;
 
-	std::queue<std::function<void()>> queuedTasks;
-	std::queue<std::function<void()>> finishedTasks;
-
+	std::queue<std::function<void()> > queuedTasks;
+	std::queue<std::function<void()> > finishedTasks;
+#ifdef MUTLI_THREADED
+std::vector<std::thread> threads;
 	std::mutex mutex;
 	std::condition_variable condition;
+#endif
 	uint32 tasksInManager = 0;
 	bool running = true;
 
 	//std::queue<std::function<void>> testTaskFunctorQueue;
-
+#ifdef MUTLI_THREADED
 	friend void ThreadProc(uint32 threadID, TaskManager* manager) {
 		for(;;) {
 			std::unique_ptr<ITask> task = nullptr;
@@ -130,6 +138,6 @@ private:
 			manager->mutex.unlock();
 		}
 	}
-
+#endif
 
 };

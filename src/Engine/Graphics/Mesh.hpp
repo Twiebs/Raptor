@@ -2,6 +2,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 
 #include <GL/glew.h>
 
@@ -9,9 +10,8 @@
 #include <Math/Vector2.hpp>
 
 #include <Graphics/Vertex3D.hpp>
-#include <Graphics/GL/GLSLProgram.hpp>
-#include <Graphics/GL/GLTexture.hpp>
-#include <memory>
+#include <Graphics/GLSLProgram.hpp>
+#include <Graphics/GLTexture.hpp>
 
 class Mesh {
 public:
@@ -30,6 +30,7 @@ public:
 	void Setup();
 	void Draw(std::unique_ptr<GLSLProgram>& shader);
 	void CalculateNormals();
+
 private:
 	GLuint vertexBufferID;
 	GLuint elementBufferID;

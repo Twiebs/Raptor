@@ -58,9 +58,6 @@ Vector3 Vector3::Cross(const Vector3& vector) const {
 	return Vector3(_x, _y, _z);
 }
 
-glm::vec3 Vector3::ToGLM() const{
-	return glm::vec3(x, y, z);
-}
 
 Vector3::~Vector3() {
 }

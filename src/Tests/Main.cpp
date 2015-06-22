@@ -1,13 +1,32 @@
-#include <Core/Engine.hpp>
+// #include <Core/Engine.hpp>
+//
+// #include"TerrainScene.h"
+// #include"ECSTestScene.h"
 
-#include"TerrainScene.h"
-#include"ECSTestScene.h"
+#include <Platform/Platform.hpp>
+#include <ECS/EntityManager.hpp>
+#include <Base/RenderSystem2D.hpp>
+#include <Base/TextComponent.hpp>
 
-int main() {
-	auto engine = std::make_unique<Engine>();
-	engine->Create("Raptor Tests", 1280, 720, false);
-	engine->CreateScene<ECSTestScene>();
-	engine->Run();
+EntityManager* manager;
 
-	return 0;
+void MainLoop() {
+	PlatformBeginFrame();
+	manager->Update(0.1f);
+	PlatformEndFrame();
+}
+
+int main () {
+  PlatformInit("Raptor Web", 1280, 720, false);
+	manager = new EntityManager();
+	//manager->CreateSystem<RenderSystem2D>();
+	auto entity = manager->CreateEntity();
+	manager->CreateSystem<RenderSystem2D>();
+	auto text = manager->CreateComponent<TextComponent>(entity);
+
+
+#ifdef __EMSCRIPTEN__
+  //emscripten_set_main_loop(MainLoop, 60, 1);
+#endif
+  return 0;
 }

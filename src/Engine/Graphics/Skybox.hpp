@@ -5,7 +5,7 @@
 #include <GL/glew.h>
 
 #include <Graphics/Mesh.hpp>
-#include <Graphics/GL/GLSLProgram.hpp>
+#include <Graphics/GLSLProgram.hpp>
 #include <Graphics/Camera.hpp>
 
 class Skybox {

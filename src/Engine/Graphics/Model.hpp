@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <Graphics/Mesh.hpp>
-#include <Graphics/GL/GLSLProgram.hpp>
+#include <Graphics/GLSLProgram.hpp>
 #include <memory>
 
 class Mesh;

@@ -154,25 +154,25 @@ void LoadFontTask::Finalize(uint32 threadID) {
 
 AssetID AssetManager::LoadShader(const std::string& vertexShaderFile, const std::string& fragmentShaderFile) {
 	auto id = GetNextAvaiableID();
-	engine->taskManager->ScheduleTask<LoadShaderTask>(id, &registry, vertexShaderFile, fragmentShaderFile);
+	entityManager->taskManager->ScheduleTask<LoadShaderTask>(id, &registry, vertexShaderFile, fragmentShaderFile);
 	return id;
 }
 
 AssetID AssetManager::LoadPixmap(const std::string& filename) {
 	auto id = GetNextAvaiableID();
-	engine->taskManager->ScheduleTask<LoadPixmapTask>(id, &registry, filename);
+	entityManager->taskManager->ScheduleTask<LoadPixmapTask>(id, &registry, filename);
 	return id;
 }
 
 AssetID AssetManager::LoadModel(const std::string& filename) {
 	auto id = GetNextAvaiableID();
-	engine->taskManager->ScheduleTask<LoadModelTask>(id, &registry, filename);
+	entityManager->taskManager->ScheduleTask<LoadModelTask>(id, &registry, filename);
 	return id;
 }
 
 AssetID AssetManager::LoadFont(const std::string& filename, uint32 fontSize) {
 	auto id = GetNextAvaiableID();
-	engine->taskManager->ScheduleTask<LoadFontTask>(id, &registry, filename, fontSize);
+	entityManager->taskManager->ScheduleTask<LoadFontTask>(id, &registry, filename, fontSize);
 	return id;
 }
 

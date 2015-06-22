@@ -6,7 +6,7 @@
 #include <Assets/IAssetLoader.hpp>
 #include <Core/TaskManager.hpp>
 #include <Core/AssetManager.hpp>
-#include <Core/Component.hpp>
+#include <ECS/Component.hpp>
 #include <Graphics/Model.hpp>
 
 struct AssetRegistry;

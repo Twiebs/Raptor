@@ -1,7 +1,6 @@
 #pragma once
 
 #include <iostream>
-#include <glm/glm.hpp>
 
 class Vector3 {
 public:
@@ -21,8 +20,6 @@ public:
 	inline float Length();
 
 	float Distance(Vector3& other);
-
-	glm::vec3 ToGLM() const;
 
 	Vector3& Normalize();
 	Vector3 Cross(const Vector3& vector) const;

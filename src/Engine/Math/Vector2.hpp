@@ -7,4 +7,3 @@ public:
 	Vector2(float x, float y);
 	~Vector2();
 };
-

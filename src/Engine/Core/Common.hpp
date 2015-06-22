@@ -21,6 +21,7 @@ typedef float float32;
 typedef double float64;
 typedef unsigned int uint;
 
+//Unsigned int types
 typedef uint8_t uint8;
 typedef uint16_t uint16;
 typedef uint32_t uint32;

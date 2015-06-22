@@ -1,2 +1,0 @@
-D:/workspace/Raptor/emscripten/CMakeFiles/RaptorCore.dir
-D:/workspace/Raptor/emscripten/CMakeFiles/RaptorTools.dir

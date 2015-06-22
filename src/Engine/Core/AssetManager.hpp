@@ -9,15 +9,16 @@
 
 #include <FreeImage.h>
 
+#include <freetype/ft2build.h>
+#include FT_FREETYPE_H
 
 #if _MSC_VER
 #include <freetype/ft2build.h>
-#elif
-#include <freetype2/ft2build.h>
+#else
+//#include <freetype2/ft2build.h>
 #endif
-#include FT_FREETYPE_H
+
 #include <Core/IService.hpp>
-#include <Core/Engine.hpp>
 #include <Core/Common.hpp>
 #include <Core/TaskManager.hpp>
 
@@ -29,11 +30,10 @@
 #include <Assets/LoadShaderTask.hpp>
 #include <Assets/Pixmap.hpp>
 
-typedef uint64 AssetID;
+#include <ECS/EntityManager.hpp>
 
 class IService;
-class Engine;
-
+class EntityManager;
 
 //AssetSlot template with current
 //TODO:
@@ -89,6 +89,7 @@ private:
 
 //TODO default memory arena size?
 class AssetManager : public IService {
+friend class EntityManager;
 public:
 	AssetManager();
 	~AssetManager();
@@ -105,6 +106,7 @@ public:
 	AssetID LoadModel(const std::string& filename);
 	AssetID LoadPixmap(const std::string& filename);
 private:
+	EntityManager* entityManager;
 	AssetRegistry registry;
 
 	std::vector<Font> fonts;

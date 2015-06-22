@@ -24,6 +24,7 @@ void TaskManager::Startup() {
 
 
 void TaskManager::Update(double deltaTime) {
+#ifdef MULTI_THREADED
 	while (compleatedTasks.size() > 0) {
 		mutex.lock();
 		auto task = std::move(compleatedTasks.front());
@@ -32,6 +33,7 @@ void TaskManager::Update(double deltaTime) {
 		mutex.unlock();
 		task->Finalize(0);
 	}
+#endif
 }
 
 void TaskManager::FinishAllTasksNow() {
@@ -43,9 +45,11 @@ void TaskManager::FinishAllTasksNow() {
 }
 
 void TaskManager::Shutdown() {
+#ifdef MULTI_THREADED
 	bool stop = true;
 	condition.notify_all();
 	for (std::thread& thread : threads) {
 		thread.join();
 	}
+#endif
 }

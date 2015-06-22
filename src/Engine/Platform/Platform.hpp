@@ -1,5 +1,7 @@
 #pragma once
-#include <Core/Common.hpp>
-#ifdef SDL
-#include "SDLPlatform.hpp"
-#endif
+
+int PlatformInit(const char* title, int width, int height, bool fullscreen);
+int PlatformShutdown();
+
+void PlatformBeginFrame();
+void PlatformEndFrame();

@@ -50,7 +50,7 @@ void Engine::Update(double deltaTime) {
 
 	taskManager->Update(deltaTime);	 //Finialize any completed tasks that are now ready
 	entityManager->Update(deltaTime);	//Tick the entity manager
-	
+
 	//These are now useless?
 	currentScene->Tick(deltaTime);
 	currentScene->Render(deltaTime);
