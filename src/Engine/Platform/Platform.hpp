@@ -5,3 +5,5 @@ int PlatformShutdown();
 
 void PlatformBeginFrame();
 void PlatformEndFrame();
+
+bool PlatformHandleInput();

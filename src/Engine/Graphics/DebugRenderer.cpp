@@ -4,10 +4,10 @@
 DebugRenderer::DebugRenderer(uint32 maxVertices) {
       //Allocate a buffer to write our verticies and incides into
       uint32 indexCount = maxVertices * 6;
-      uint32 verticesMemorySize = sizeof(Vertex2D) * maxVertices;
+      uint32 verticesMemorySize = sizeof(DebugVertex) * maxVertices;
       uint32 indicesMemorySize = indexCount * sizeof(uint32);
       memory = new uint8[verticesMemorySize + indicesMemorySize];
-      vertices = (Vertex2D*)memory;
+      vertices = (DebugVertex*)memory;
       indices = (uint32*)(memory + verticesMemorySize);
 
       //Set the array of indices since they never change
@@ -21,6 +21,8 @@ DebugRenderer::DebugRenderer(uint32 maxVertices) {
             indices[i + 5] = vertexIdx + 3;
       }
 
+      shader = DEBUGLoadShaderFromSource(vertexShaderSource, fragmentShaderSource);
+
       glGenVertexArrays(1, &vertexArrayID);
       glBindVertexArray(vertexArrayID);
 
@@ -32,41 +34,57 @@ DebugRenderer::DebugRenderer(uint32 maxVertices) {
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferID);
       glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesMemorySize, &indices[0], GL_DYNAMIC_DRAW);
 
-      glEnableVertexAttribArray(0);
-      glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*)offsetof(Vertex2D, position));
-      glEnableVertexAttribArray(1);
-      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*)offsetof(Vertex2D, uv));
-      glEnableVertexAttribArray(2);
-      glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*)offsetof(Vertex2D, color));
+      GLuint positionLocation = 0;
+      GLuint colorLocation = 1;
+#ifdef OPENGL_ES
+      positionLocation = glGetAttribLocation(shader->GetProgram(), "position");
+      colorLocation = glGetAttribLocation(shader->GetProgram(), "color");
+#endif
+
+      glEnableVertexAttribArray(positionLocation);
+      glVertexAttribPointer(positionLocation, 2, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)offsetof(DebugVertex, position));
+      glEnableVertexAttribArray(colorLocation);
+      glVertexAttribPointer(colorLocation, 4, GL_FLOAT, GL_FALSE, sizeof(DebugVertex), (GLvoid*)offsetof(DebugVertex, color));
 
       glBindBuffer(GL_ARRAY_BUFFER, 0);
       glBindVertexArray(0);
+
+
 }
 
 DebugRenderer::~DebugRenderer() {
-      delete[] memory;
-      glDeleteVertexArrays(1, &vertexArrayID);
+  delete[] memory;
+  glDeleteVertexArrays(1, &vertexArrayID);
 	glDeleteBuffers(1, &vertexBufferID);
 	glDeleteBuffers(1, &elementBufferID);
 }
 
 void DebugRenderer::PushRect(float x, float y, float width, float height) {
       Color color;
-      vertices[vertexIndex + 0] = Vertex2D {Vector2(x, y), Vector2(0.0f, 0.0f), color};
-      vertices[vertexIndex + 1] = Vertex2D {Vector2(x + width, y), Vector2(1.0f, 0.0f), color};
-      vertices[vertexIndex + 2] = Vertex2D {Vector2(x + width, y + height), Vector2(1.0f, 1.0f), color};
-      vertices[vertexIndex + 3] = Vertex2D {Vector2(x, y + height), Vector2(0.0f, 1.0f), color};
+      vertices[vertexIndex + 0] = DebugVertex {Vector2(x, y), color};
+      vertices[vertexIndex + 1] = DebugVertex { Vector2(x + width, y), color};
+      vertices[vertexIndex + 2] = DebugVertex { Vector2(x + width, y + height), color};
+      vertices[vertexIndex + 3] = DebugVertex { Vector2(x, y + height), color};
 }
 
 void DebugRenderer::Begin() {
-      assert(!beginCalled);
+    assert(!beginCalled);
+    beginCalled = true;
 }
 
 void DebugRenderer::End() {
-      assert(beginCalled);
-      Flush();
+  assert(beginCalled);
+  beginCalled = false;
+  Flush();
 }
 
 void DebugRenderer::Flush() {
-      vertexIndex = 0;
+  glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DebugVertex) * vertexIndex, (GLvoid*)&vertices[0]);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  glBindVertexArray(vertexArrayID);
+  glDrawElements(GL_TRIANGLES, vertexIndex * 6, GL_UNSIGNED_INT, (GLvoid*)indices[0]);
+  glBindVertexArray(0);
+  vertexIndex = 0;
 }

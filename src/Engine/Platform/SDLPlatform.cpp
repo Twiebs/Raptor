@@ -30,8 +30,25 @@ int PlatformInit(const char* title, int width, int height, bool fullscreen) {
     return -1;
   }
 
+
   //Platform was initalized suscuessfuly
   return 0;
+}
+
+bool PlatformHandleInput() {
+  SDL_Event event;
+  while(SDL_PollEvent(&event)) {
+    switch(event.type) {
+      case SDL_KEYDOWN:
+        break;
+      case SDL_KEYUP:
+        break;
+      case SDL_QUIT:
+        return false;
+        break;
+    }
+  }
+  return true;
 }
 
 int PlatformShutdown() {

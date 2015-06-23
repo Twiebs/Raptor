@@ -2,6 +2,10 @@
 
 #include <stdint.h>
 
+#ifdef __EMSCRIPTEN__
+#define OPENGL_ES
+#endif
+
 #define GLFW_APPLICATION
 #define SDL
 
@@ -37,7 +41,7 @@ typedef uint64 EntityID;		//TODO these should no longer be exposed to the user s
 typedef uint64 EntityUUID;
 
 //Error logging
-#define LOG_ERROR(x) std::cout << "ERROR: " << #x << "\n"
+#define LOG_ERROR(x) std::cout << "ERROR: " << x << "\n"
 
 //Bechmarking Macros to determine the time taken for a certin task to compleatedTasks
 #ifdef BENCHMARK

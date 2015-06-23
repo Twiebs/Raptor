@@ -87,8 +87,36 @@ add_definitions(-std=c++14)
 
 if(EMSCRIPTEN)
 set(CMAKE_EXECUTABLE_SUFFIX ".html")
-
 endif(EMSCRIPTEN)
+
+#We need to include SDL and glew
+#Do it the unix way if were not on windows
+
+#OpenGL does not keep to the convetion that its name is the same as its
+#variables so its included manualy
+find_package(OpenGL REQUIRED)
+if(NOT OPENGL_FOUND)
+  message("Could not find OpenGL!" FATAL_ERROR)
+endif(NOT OPENGL_FOUND)
+list(APPEND INCS ${OPENGL_INCLUDE_DIRS})
+list(APPEND LIBS ${OPENGL_LIBRARIES})
+
+if(NOT EMSCRIPTEN AND NOT MSVC)
+  foreach(lib GLEW SDL)
+    find_package(${lib} REQUIRED)
+    if(NOT ${lib}_FOUND)
+      message("Could not find" ${lib}! FATAL_ERROR)
+    endif(NOT ${lib}_FOUND)
+    list(APPEND INCS ${${lib}_INCLUDE_DIRS})
+    list(APPEND LIBS ${${lib}_LIBRARIES})
+    list(APPEND LIBS ${${lib}_LIBRARY})
+  endforeach(lib GLEW)
+  include_directories(${INCS})
+endif(NOT EMSCRIPTEN AND NOT MSVC)
+
+#Debug ouput the includes and libs that were found
+message("Included directories: " ${INCS})
+message("Using libaries: " ${LIBS})
 
 add_definitions(-D_SDL)
 
@@ -101,15 +129,12 @@ endif(MSVC)
 set(GRAPHICS_SRCS
       Engine/Graphics/DebugRenderer.cpp
       Engine/Graphics/DebugRenderer.hpp
+      Engine/Graphics/GLSLProgram.cpp
+      Engine/Graphics/GLSLProgram.hpp
+      Engine/Graphics/Color.hpp
 )
 add_library(graphics STATIC ${GRAPHICS_SRCS})
 
-
-set(MATH_SRCS
-  Engine/Math/Vector2.cpp
-  Engine/Math/Vector2.hpp
-)
-# add_library(math STATIC ${MATH_SRCS})
 
 set(BASE_SRCS
   Engine/Graphics/Color.hpp
@@ -155,9 +180,10 @@ SET(PLATFORM_SRCS
 add_library(run STATIC ${PLATFORM_SRCS})
 
 add_executable(app Tests/Main.cpp)
+target_link_libraries(app graphics)
 target_link_libraries(app run)
 target_link_libraries(app ecs)
-target_link_libraries(app graphics)
+target_link_libraries(app ${LIBS})
 # target_link_libraries(app math)
 # target_link_libraries(app base)
 # target_link_libraries(app graphics)
