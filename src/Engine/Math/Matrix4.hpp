@@ -1,15 +1,7 @@
 #pragma once
 
-#include "Vector3.hpp"
-#include "MathUtils.hpp"
-
-struct PerspectiveProjectionInfo {
-	float fov;
-	float width;
-	float height;
-	float zNear;
-	float zFar;
-};
+#include <Math/Vector3.hpp>
+#include <Math/MathUtils.hpp>
 
 class Matrix4 {
 public:
@@ -54,12 +46,28 @@ public:
 	}
 
 	//Creates an Orthographic Projection matrix
-	static Matrix4 Ortho(float left, float right, float bottom, float top, float near, float far, float up);
-	//Creates a Perspective Projection Matrix
-	static Matrix4 Perspective();
+	inline static Matrix4 Ortho(float left, float right, float bottom, float top, float near, float far, float up) {
+		float x, y, z;
+		float tx, ty, tz;
 
+		x = 2.0f / (right - left);
+		y = 2.0f / (top - bottom);
+		z = -2.0f / (far - near);
+		tx = -(right + left) / (right - left);
+		ty = -(top + bottom) / (top - bottom);
+		tz = -(far + near) / (far - near);
 
-#pragma region "Transform Opperations"
+		y *= up;
+		ty *= up;
+
+		Matrix4 r;
+		r[0][0] = x;	r[0][1] = 0.0f; r[0][2] = 0.0f; r[0][3] = tx;
+		r[1][0] = 0.0f; r[1][1] = y;	r[1][2] = 0.0f; r[1][3] = ty;
+		r[2][0] = 0.0f; r[2][1] = 0.0f; r[2][2] = z;	r[2][3] = tz;
+		r[3][0] = 0.0f; r[3][1] = 0.0f; r[3][2] = 0.0f; r[3][3] = 1.0f;
+		return r;
+	}
+
 	//Creates a translation transform matrix
 	inline static Matrix4 Translate(float x, float y, float z) {
 		Matrix4 r;
@@ -105,6 +113,4 @@ public:
 
 		return rz * ry * rx;
 	}
-#pragma endregion
-
 };

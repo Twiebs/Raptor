@@ -24,8 +24,6 @@ public:
 	Vector3& Normalize();
 	Vector3 Cross(const Vector3& vector) const;
 
-	std::string ToString();
-
 	friend std::ostream& operator<<(std::ostream& os, const Vector3& vector) {
 		os << "[" << vector.x << ", " << vector.y << ", " << vector.z << "]";
 		return os;

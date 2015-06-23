@@ -6,7 +6,9 @@
 #include <Graphics/GLSLProgram.hpp>
 #include <Graphics/Color.hpp>
 #include <Utils/IO.hpp>
+
 #include <Math/Vector2.hpp>
+#include <Math/Matrix4.hpp>
 
 #include <GL/glew.h>
 
@@ -26,39 +28,34 @@ public:
 
       void PushRect(float x, float y, float width, float height);
 
+      void DEBUGBuildRect();
+
 private:
       uint8* memory;
       DebugVertex* vertices;
       uint32* indices;
 
-      GLuint vertexArrayID;
-      GLuint vertexBufferID;
-      GLuint elementBufferID;
+      GLuint vertexArrayID = 0;
+      GLuint vertexBufferID = 0;
+      GLuint elementBufferID = 0;
       GLSLProgram* shader;
 
+      GLuint debugVertexArrayID;
+      GLuint debugVertexBufferID;
+
       bool beginCalled = false;
-      uint32 vertexIndex;
+      uint32 vertexIndex = 0;
 
       const std::string vertexShaderSource =
       "#version 100\n"
       "attribute vec2 position;"
-      "attribute vec4 color;"
-
-      "varying vec4 vertexColor;"
-
-      "uniform mat4 mvp;"
       "void main() {"
-        "vertexColor = color;"
-        "gl_Position	= mvp * vec4(position.xy, 0.0, 1.0);"
-      "}"
-      ;
-
+        "gl_Position = vec4(position.xy, 0.0, 1.0);"
+      "}";
 
       const std::string fragmentShaderSource =
       "#version 100\n"
-      "precision mediump float;"
-      "varying lowp vec4 vertexColor;"
       "void main() {"
-        "gl_FragColor = vertexColor;"
+        "gl_FragColor = vec4(1.0);"
       "}";
 };

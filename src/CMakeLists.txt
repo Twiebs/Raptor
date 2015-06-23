@@ -135,6 +135,13 @@ set(GRAPHICS_SRCS
 )
 add_library(graphics STATIC ${GRAPHICS_SRCS})
 
+set(MATH_SRCS
+      Engine/Math/Matrix4.cpp
+      Engine/Math/Matrix4.hpp
+      Engine/Math/Vector2.hpp
+)
+add_library(math STATIC ${MATH_SRCS})
+
 
 set(BASE_SRCS
   Engine/Graphics/Color.hpp
@@ -180,6 +187,7 @@ SET(PLATFORM_SRCS
 add_library(run STATIC ${PLATFORM_SRCS})
 
 add_executable(app Tests/Main.cpp)
+target_link_libraries(app math)
 target_link_libraries(app graphics)
 target_link_libraries(app run)
 target_link_libraries(app ecs)

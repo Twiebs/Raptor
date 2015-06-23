@@ -2,9 +2,9 @@
 
 #include <stdint.h>
 
-#ifdef __EMSCRIPTEN__
+//#ifdef __EMSCRIPTEN__
 #define OPENGL_ES
-#endif
+//#endif
 
 #define GLFW_APPLICATION
 #define SDL

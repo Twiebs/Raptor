@@ -70,7 +70,8 @@ void UICanvasTestScene::Render(float deltaTime) {
 
 	//model = glm::scale(model, glm::vec3(200, 50.0f, 50.0f));
 
-	Matrix4 ortho = Matrix4::Ortho(0.0f, 1920, 720.0f, 0.0f, 0.0f, 100.0f, 1.0f);
+	//TODO WTF?
+	Matrix4 ortho = Matrix4::Ortho(0.0f, 1280, 720.0f, 0.0f, 0.0f, 100.0f, 1.0f);
 	Matrix4 translate = Matrix4::Translate(0.0f, 0.0f, 0.0f);
 	Matrix4 scale = Matrix4::Scale(0.5f, 0.5f, 0.5f);
 	Matrix4 rotate = Matrix4::Rotate(0.75f, 0.0f, 0.0f);
