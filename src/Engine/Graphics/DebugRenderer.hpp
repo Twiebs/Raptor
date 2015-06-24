@@ -55,13 +55,13 @@ private:
       bool beginCalled = false;
       uint32 vertexIndex = 0;
 
-      const std::string vertexShaderSource =
+      std::string vertexShaderSource =
       "attribute vec4 position;"
       "void main() {"
         "gl_Position = position;"
       "}";
 
-      const std::string fragmentShaderSource =
+      std::string fragmentShaderSource =
       "void main() {"
         "gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);"
       "}";

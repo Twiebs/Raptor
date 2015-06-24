@@ -2,7 +2,6 @@
 
 #include <Core/Common.hpp>
 #include <ECS/Component.hpp>
-
 #include <Graphics/Color.hpp>
 
 struct TextComponent : public Component {

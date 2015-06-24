@@ -71,7 +71,8 @@ bool RenderSystem2D::Startup(ECSManager* manager) {
 	REGISTER_SYSTEM_TAG(RenderSystem2D);
 
 	// Get the id of the shader that we are going to use to renderer the entities in the system
-	shaderID = AssetManager::Instance().LoadShader("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag");
+	shader = DEBUGLoadShaderFromFile("Assets/shaders/RnederSystem2D.vert", "Assets/shaders/RenderSystem2D.frag");
+	// shaderID = AssetManager::Instance().LoadShader("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag");
 	// URGENT RenderSystem2D never obtains a shaderID!
 	this->manager = manager;
 	return true;
@@ -88,7 +89,7 @@ void RenderSystem2D::Update(double deltaTime) {
 #endif
 
 	static bool isReady = false;
-	GLSLProgram* shader = AssetManager::Instance().GetAsset<GLSLProgram>(shaderID);
+	// GLSLProgram* shader = AssetManager::Instance().GetAsset<GLSLProgram>(shaderID);
 	if (shader != nullptr && !isReady) {
 		isReady = true;
 		shader->Use();
@@ -159,7 +160,8 @@ void RenderSystem2D::Flush() {
 }
 
 void RenderSystem2D::ProcessText(TextComponent& textComponent) {
-	Font* font = AssetManager::Instance().GetAsset<Font>(textComponent.fontID);
+	Font* font = nullptr;
+	//Font* font = AssetManager::Instance().GetAsset<Font>(textComponent.fontID);
 	if (font == nullptr) return;
 
 	//auto transform = manager->GetComponent<Transform2D>(textComponent.ownerID);

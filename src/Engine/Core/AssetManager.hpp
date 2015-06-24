@@ -23,7 +23,7 @@
 #include <Math/MathUtils.hpp>
 #include <Graphics/Vertex3D.hpp>
 
-#include <Assets/Font.hpp>
+#include <Graphics/Font.hpp>
 #include <Assets/ModelLoader.hpp>
 #include <Assets/LoadShaderTask.hpp>
 #include <Assets/Pixmap.hpp>

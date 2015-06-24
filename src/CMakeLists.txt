@@ -86,7 +86,7 @@ endif(EMSCRIPTEN)
 
 #EMSCRIPTEN allready handles these and MSVC does its own thing...
 if(NOT EMSCRIPTEN AND NOT MSVC)
-  foreach(lib OpenGL GLEW SDL)
+  foreach(lib OpenGL GLEW SDL SDLIMAGE)
     find_package(${lib} REQUIRED)
     string(TOUPPER ${lib} lib)
     if(NOT ${lib}_FOUND)
@@ -99,7 +99,7 @@ if(NOT EMSCRIPTEN AND NOT MSVC)
 endif()
 
 #Now we add Dependencies that EMSCRIPTEN will not cover
-if(NOT MSVC)
+if(NOT EMSCRIPTEN AND NOT MSVC)
   foreach(lib ASSIMP FreeImage Freetype )
     find_package(${lib} REQUIRED)
     string(TOUPPER ${lib} lib)
@@ -127,34 +127,34 @@ else()
 	include_directories(/usr/include/freetype2)
 endif(MSVC)
 
-set(CORE_SRCS
-  Engine/Core/AssetManager.cpp
-  Engine/Core/AssetManager.hpp
-  Engine/Core/TaskManager.cpp
-  Engine/Core/TaskManager.hpp
-  Engine/Assets/LoadShaderTask.cpp
-  Engine/Assets/LoadShaderTask.hpp
-  Engine/Assets/ModelLoader.cpp
-  Engine/Assets/ModelLoader.hpp
-  Engine/Assets/IAssetLoader.cpp
-  Engine/Assets/IAssetLoader.hpp
-)
+# set(CORE_SRCS
+#   Engine/Core/AssetManager.cpp
+#   Engine/Core/AssetManager.hpp
+#   Engine/Core/TaskManager.cpp
+#   Engine/Core/TaskManager.hpp
+#   Engine/Assets/LoadShaderTask.cpp
+#   Engine/Assets/LoadShaderTask.hpp
+#   Engine/Assets/ModelLoader.cpp
+#   Engine/Assets/ModelLoader.hpp
+#   Engine/Assets/IAssetLoader.cpp
+#   Engine/Assets/IAssetLoader.hpp
+# )
 
-add_library(core STATIC ${CORE_SRCS})
-target_link_libraries(core ${LIBS} math graphics)
+# add_library(core STATIC ${CORE_SRCS})
+# target_link_libraries(core ${LIBS} math graphics)
 
 set(GRAPHICS_SRCS
-      Engine/Assets/Font.hpp
-      Engine/Assets/Font.cpp
+      Engine/Graphics/Font.hpp
+      Engine/Graphics/Font.cpp
       Engine/Graphics/Mesh.cpp
       Engine/Graphics/Mesh.hpp
       Engine/Graphics/Model.cpp
       Engine/Graphics/Model.hpp
+      Engine/Graphics/Color.hpp
       Engine/Graphics/DebugRenderer.cpp
       Engine/Graphics/DebugRenderer.hpp
       Engine/Graphics/GLSLProgram.cpp
       Engine/Graphics/GLSLProgram.hpp
-      Engine/Graphics/Color.hpp
 )
 add_library(graphics STATIC ${GRAPHICS_SRCS})
 
@@ -168,12 +168,6 @@ set(MATH_SRCS
 add_library(math STATIC ${MATH_SRCS})
 
 set(BASE_SRCS
-  Engine/Graphics/Color.hpp
-  Engine/Core/AssetManager.hpp
-  Engine/Core/AssetManager.cpp
-  Engine/Core/TaskManager.cpp
-  Engine/Core/TaskManager.hpp
-
   # Engine/Base/MeshComponent.hpp
   # Engine/Base/ModelComponent.hpp
   Engine/Base/SpriteComponent.hpp
@@ -204,16 +198,18 @@ set(ECS_SRCS
 add_library(ecs STATIC ${ECS_SRCS})
 
 #base depends on ecs
-target_link_libraries(base ecs graphics core)
+target_link_libraries(base ecs graphics)
 
 SET(PLATFORM_SRCS
+  Engine/Utils/IO.cpp
+  Engine/Utils/IO.hpp
   Engine/Platform/Platform.hpp
   Engine/Platform/SDLPlatform.cpp
 )
 
 add_library(run STATIC ${PLATFORM_SRCS})
 
-add_executable(app Tests/GLTest.cpp)
+add_executable(app Tests/Main.cpp)
 target_link_libraries(app run)
 target_link_libraries(app ecs base)
 target_link_libraries(app graphics)

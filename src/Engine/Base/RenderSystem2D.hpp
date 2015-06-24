@@ -11,12 +11,13 @@
 #include <Graphics/Vertex2D.hpp>
 #include <Graphics/GLTexture.hpp>
 #include <Graphics/GLSLProgram.hpp>
-#include <Assets/Font.hpp>
-#include <Core/AssetManager.hpp>
+#include <Graphics/Font.hpp>
 
 #include <Math/Matrix4.hpp>
 #include <Math/Rectangle.hpp>
 #include <Math/Vector2.hpp>
+
+#include <Utils/IO.hpp>
 
 //TODO:
 // - Batch sort mode
@@ -53,6 +54,7 @@ private:
 	GLuint vertexBufferID;
 	GLuint elementBufferID;
 	GLuint currentTextureID;
+	GLSLProgram* shader;	//DEBUG
 
 	uint32 transformComponentID;
 	uint32 spriteComponentID;
