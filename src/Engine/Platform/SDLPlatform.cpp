@@ -8,6 +8,7 @@
 
 #include <Core/Common.hpp>
 #include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
 #include <GL/glew.h>
 #include "Platform.hpp"
 
@@ -65,6 +66,10 @@ void PlatformBeginFrame() {
 
 void PlatformEndFrame() {
 	SDL_GL_SwapBuffers();
+}
+
+void PlatformLoadImage(const char* filename) {
+	SDL_Surface* image = IMG_Load(filename);
 }
 
 #endif  //_SDL

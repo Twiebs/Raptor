@@ -7,3 +7,5 @@ void PlatformBeginFrame();
 void PlatformEndFrame();
 
 bool PlatformHandleInput();
+
+void PlatformLoadImage();

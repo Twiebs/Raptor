@@ -20,19 +20,6 @@
 # endif(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
 #
 #
-#
-# if(UNIX)
-#   set(RAPTOR_LIBS
-#       -lGL
-#       -lGLEW
-#       -lglfw
-#       -lfreetype
-#       -lfreeimage
-#       -lassimp
-#   )
-# endif(UNIX)
-#
-#
 
 #==============================================
 #                 Build Options
@@ -91,21 +78,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../CMake/Modules
 set(BUILD_TARGET "BuildTarget" CACHE STRING "Build target chosen by user at configure time")
 set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML5 Windows Linux Mac Android IOS XONE X360 PS3 PS4)
 
+add_definitions(-D_SDL)
+
 if(EMSCRIPTEN)
 set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif(EMSCRIPTEN)
-
-#We need to include SDL and glew
-#Do it the unix way if were not on windows
-
-#OpenGL does not keep to the convetion that its name is the same as its
-#variables so its included manualy
-# find_package(OpenGL REQUIRED)
-# if(NOT OPENGL_FOUND)
-#   message("Could not find OpenGL!" FATAL_ERROR)
-# endif(NOT OPENGL_FOUND)
-# list(APPEND INCS ${OPENGL_INCLUDE_DIRS})
-# list(APPEND LIBS ${OPENGL_LIBRARIES})
 
 #EMSCRIPTEN allready handles these and MSVC does its own thing...
 if(NOT EMSCRIPTEN AND NOT MSVC)
@@ -121,10 +98,9 @@ if(NOT EMSCRIPTEN AND NOT MSVC)
   endforeach(lib GLEW SDL)
 endif()
 
-
 #Now we add Dependencies that EMSCRIPTEN will not cover
 if(NOT MSVC)
-  foreach(lib FreeImage Freetype ASSIMP)
+  foreach(lib ASSIMP FreeImage Freetype )
     find_package(${lib} REQUIRED)
     string(TOUPPER ${lib} lib)
     if(NOT ${lib}_FOUND)
@@ -142,17 +118,14 @@ include_directories(${INCS})
 message("Included directories: " ${INCS})
 message("Using libaries: " ${LIBS})
 
-add_definitions(-D_SDL)
-
 #Setup the include directories
 include_directories(Engine)
 if(MSVC)
 	include_directories(../include)
 	include_directories(../include/freetype)
-else(MSVC)
+else()
 	include_directories(/usr/include/freetype2)
 endif(MSVC)
-
 
 set(CORE_SRCS
   Engine/Core/AssetManager.cpp
@@ -194,7 +167,6 @@ set(MATH_SRCS
 )
 add_library(math STATIC ${MATH_SRCS})
 
-
 set(BASE_SRCS
   Engine/Graphics/Color.hpp
   Engine/Core/AssetManager.hpp
@@ -219,7 +191,6 @@ set(BASE_SRCS
   # Engine/Base/PhysicsSystem3D.hpp
 )
 add_library(base STATIC ${BASE_SRCS})
-
 
 set(ECS_SRCS
   Engine/ECS/Component.hpp
