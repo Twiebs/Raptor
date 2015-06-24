@@ -2,6 +2,7 @@
 
 #include <typeindex>
 #include <unordered_map>
+#include <vector>
 #include <assert.h>
 #include <memory>
 
@@ -15,6 +16,7 @@
 #include <ECS/ComponentType.hpp>
 #include <ECS/Entity.hpp>
 #include <ECS/ISystem.hpp>
+
 #include <Utils/UnorderedArray.hpp>
 
 #define MAX_COMPONENTS 64
@@ -32,7 +34,10 @@
 
 //NOTE
 // - Components should not hold any data...
-// - They simply should just point to the data that they are refrencing...
+// - They simply should just point to the data that they are referencing...
+
+//TODO Consider moving template functions into an .inl header
+//This could increase the readability of this file considerably
 
 
 //NOTE Why do we even bother inheriting from some service thing?
@@ -98,21 +103,16 @@ public:
 		return component;
 	}
 
+	//TODO make sure that components are only registered once!
 	template<typename T>
 	void RegisterComponent(uint64 flags) {
 		static_assert(std::is_base_of<Component, T>::value, "You can not register a component that does not inherit from the base component class!");
-		const std::type_info& typeInfo = typeid(T);	//TODO make sure that components are only registered once!
-		componentTypes.emplace_back(ComponentType { flags, nextComponentTypeBit,
-				nextComponentTypeIndex, sizeof(T) });
-		componentTypeIndexMap[typeInfo] = nextComponentTypeIndex;
-		auto type = &componentTypes[nextComponentTypeIndex];
-		nextComponentTypeBit << 1;
-		nextComponentTypeIndex += 1;
+		assert(componentTypeIndexMap[typeid(T)] == 0);	//Ensure the component has not been registered already
 
-		ComponentBlock* block = componentBlocks[type->index];
-		//Block was already registered with the engine!
-		block = new ComponentBlock(type);
-		componentBlocks[type->index] = block;
+		const std::type_info& typeInfo = typeid(T);
+		componentTypes.emplace_back(ComponentType { flags, nextComponentTypeBit, ++componentTypeCount, sizeof(T) });
+		componentTypeIndexMap[typeInfo] = componentTypeCount;
+		nextComponentTypeBit << 1;
 	}
 
 	template<typename T>
@@ -120,16 +120,16 @@ public:
 
 	}
 
-	//static ComponentType& GetComponentType(const std::type_info& typeInfo);
-	//static ComponentGroup& GetComponetGroup(std::bitset<MAX_GROUPS> bits);
+
 	template<typename T>
 	ComponentType* ComponentTypeOf() {
-		//Make sure the user is providing an actual component
 		static_assert(std::is_base_of<Component, T>::value, "Type param must be derrived from Component!");
+
 		const std::type_info& typeInfo = typeid(T);
 		uint32 typeIndex = componentTypeIndexMap[typeInfo];
-		ComponentType* type = &componentTypes[typeIndex];
-		//Component types must be registered before use!
+		assert(typeIndex != 0);	//TypeIndices must not be zero!  If the typeIndex is zero it has not been registered with the manager yet!
+
+		ComponentType* type = &componentTypes[typeIndex - 1];
 		return type;
 	}
 
@@ -138,43 +138,60 @@ public:
 	std::vector<Entity*>* GetEntities();
 	std::vector<Entity*>* GetEntities(std::bitset<MAX_COMPONENTS>);
 
+	void Initalize();
+
 	void Update(double deltaTime);
 
 private:
-	//Any entitiy with an ID of zero was not created properly
-	EntityID nextEntityID = 1;//The entity id is the index of the created entitiy.  These are recycled
-	EntityUUID nextEntityUUID = 1;//This is a unique identifier everytime a entitiy is recycled or created
+	//Any entity with an ID of zero was not created properly
+	EntityID nextEntityID = 1;	//The entity id is the index of the created entity.  These are recycled
+	EntityUUID nextEntityUUID = 1;	//This is a unique identifier every time a entity is recycled or created
 
-	std::vector<ISystem*> systems;//Array of systems that have been created by the engine
-	std::vector<Entity> entities;//Array of all the entities ever created by the manager indexed by thier entity.id
-	std::vector<EntityID> removedEntities;//Array of entities that have been removed and are awaiting recylcing
-	std::vector<ComponentBlock*> componentBlocks;
+	std::vector<ISystem*> systems;	//Array of systems that have been created by the engine
+
+	//??? Why do we even care about what entities are??? At this point the only purpose they serve is to be indexes into components
+	// And essentially a way to retrieve those components associated with that entity
+	// If we do want to eventually go the entitySystem / Family route there might be a better way to determine the families that an entity belongs to...
+	// Instead of keeping that information inside the entity the information can be packed into a different array that holds the component bits of each entity
+	// indexed by the entities id.  This way iteration could happen over each bitset inside the array in order to iterate through all the entities...
+	// In order to determine if an entity is still valid in the world its uuid can be checked against its id to see if the entity is actually still participating in the world
+	// I'm going to do this for now in order to simplify this implementation further
+
+	//NOTE we could also do something where component blocks don't reside in a vector... we already know how many of them there should be so there is no reason to actually have the vector.
+
+	//Also why store componentBlockPtrs? we could allocate them by value... there is no reason not to...
+
+	std::vector<Entity> entities;					//Array of all the entities ever created by the manager indexed by their entity.id
+	std::vector<EntityID> removedEntities;			//Array of entities that have been removed and are awaiting recycling
+	ComponentBlock* componentBlocks;
 
 	std::vector<UnorderedArray<uint32>> componentsByEntityID;
 
 	//Component Type
-	std::bitset<MAX_COMPONENTS> nextComponentTypeBit; //The bit the next registered ComponentType will have
-	uint32 nextComponentTypeIndex = 0; //The index the next registered ComponentType will have
-	std::vector<ComponentType> componentTypes; //This is where the component types are stored in memory
-	std::unordered_map<std::type_index, uint32> componentTypeIndexMap; //The map of component types
+	uint32 componentTypeCount = 0;
+	std::bitset<MAX_COMPONENTS> nextComponentTypeBit; 					//The bit the next registered ComponentType will have
+	//uint32 nextComponentTypeIndex = 1; 									//The index the next registered ComponentType will have
+	std::vector<ComponentType> componentTypes; 							//This is where the component types are stored in memory
+	std::unordered_map<std::type_index, uint32> componentTypeIndexMap; 	//The map of component types
+
 public:
 #if _DEBUG
 	uint64 entitiesActive;		//Count of active entities
-	uint64 entitiesDisabled;//Count of the currently disabled entities
-	uint64 entitiesAdded;//Total amount of entites that were added during the lifetime of the manager
-	uint64 entitiesRemoved;//Total number of entites that were removed during the lifetime of the manager
-	uint64 entitiesCreated;//Total amount of entities ever created by the manager
-	uint64 entitiesDeleted;//Total number of entities ever deleted by the manager
+	uint64 entitiesDisabled;	//Count of the currently disabled entities
+	uint64 entitiesAdded;		//Total amount of entities that were added during the lifetime of the manager
+	uint64 entitiesRemoved;		//Total number of entities that were removed during the lifetime of the manager
+	uint64 entitiesCreated;		//Total amount of entities ever created by the manager
+	uint64 entitiesDeleted;		//Total number of entities ever deleted by the manager
 
-	uint64 componentsCreated;//Total number of components created by the manager
-	uint64 componentsDeleted;//Total number of components that were deleted by the engine
-	uint64 componentsActive;//Total number of components being used by entities
-	uint64 componentsDisabled;//Total number of components that are not being used by an entity
+	uint64 componentsCreated;	//Total number of components created by the manager
+	uint64 componentsDeleted;	//Total number of components that were deleted by the engine
+	uint64 componentsActive;	//Total number of components being used by entities
+	uint64 componentsDisabled;	//Total number of components that are not being used by an entity
 
-	uint64 systemsActive;//Count of the systems currently being updated within the manager
-	uint64 sytemsDisabled;//Count of systems in the manager that are not being updated by the manager
-	uint64 systemsCreated;//Count of all the systems created by the manager
-	uint64 systemsDeleted;//Count of all the systems deleted by the manager
+	uint64 systemsActive;		//Count of the systems currently being updated within the manager
+	uint64 sytemsDisabled;		//Count of systems in the manager that are not being updated by the manager
+	uint64 systemsCreated;		//Count of all the systems created by the manager
+	uint64 systemsDeleted;		//Count of all the systems deleted by the manager
 #endif
 
 #ifdef BENCHMARK

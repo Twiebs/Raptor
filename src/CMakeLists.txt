@@ -85,6 +85,12 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(Raptor)
 add_definitions(-std=c++14)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../CMake/Modules/")
+
+#User end configuration
+set(BUILD_TARGET "BuildTarget" CACHE STRING "Build target chosen by user at configure time")
+set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML5 Windows Linux Mac Android IOS XONE X360 PS3 PS4)
+
 if(EMSCRIPTEN)
 set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif(EMSCRIPTEN)
@@ -94,39 +100,83 @@ endif(EMSCRIPTEN)
 
 #OpenGL does not keep to the convetion that its name is the same as its
 #variables so its included manualy
-find_package(OpenGL REQUIRED)
-if(NOT OPENGL_FOUND)
-  message("Could not find OpenGL!" FATAL_ERROR)
-endif(NOT OPENGL_FOUND)
-list(APPEND INCS ${OPENGL_INCLUDE_DIRS})
-list(APPEND LIBS ${OPENGL_LIBRARIES})
+# find_package(OpenGL REQUIRED)
+# if(NOT OPENGL_FOUND)
+#   message("Could not find OpenGL!" FATAL_ERROR)
+# endif(NOT OPENGL_FOUND)
+# list(APPEND INCS ${OPENGL_INCLUDE_DIRS})
+# list(APPEND LIBS ${OPENGL_LIBRARIES})
 
+#EMSCRIPTEN allready handles these and MSVC does its own thing...
 if(NOT EMSCRIPTEN AND NOT MSVC)
-  foreach(lib GLEW SDL)
+  foreach(lib OpenGL GLEW SDL)
     find_package(${lib} REQUIRED)
+    string(TOUPPER ${lib} lib)
     if(NOT ${lib}_FOUND)
       message("Could not find" ${lib}! FATAL_ERROR)
     endif(NOT ${lib}_FOUND)
     list(APPEND INCS ${${lib}_INCLUDE_DIRS})
     list(APPEND LIBS ${${lib}_LIBRARIES})
     list(APPEND LIBS ${${lib}_LIBRARY})
-  endforeach(lib GLEW)
-  include_directories(${INCS})
-endif(NOT EMSCRIPTEN AND NOT MSVC)
+  endforeach(lib GLEW SDL)
+endif()
 
+
+#Now we add Dependencies that EMSCRIPTEN will not cover
+if(NOT MSVC)
+  foreach(lib FreeImage Freetype ASSIMP)
+    find_package(${lib} REQUIRED)
+    string(TOUPPER ${lib} lib)
+    if(NOT ${lib}_FOUND)
+      message("Could not find" ${lib}! FATAL_ERROR)
+    endif(NOT ${lib}_FOUND)
+    list(APPEND INCS ${${lib}_INCLUDE_DIRS})
+    list(APPEND LIBS ${${lib}_LIBRARIES})
+    list(APPEND LIBS ${${lib}_LIBRARY})
+  endforeach(lib FreeImage)
+endif()
+
+
+include_directories(${INCS})
 #Debug ouput the includes and libs that were found
 message("Included directories: " ${INCS})
 message("Using libaries: " ${LIBS})
 
 add_definitions(-D_SDL)
 
+#Setup the include directories
 include_directories(Engine)
 if(MSVC)
-      include_directories(../include)
-      include_directories(../include/freetype)
+	include_directories(../include)
+	include_directories(../include/freetype)
+else(MSVC)
+	include_directories(/usr/include/freetype2)
 endif(MSVC)
 
+
+set(CORE_SRCS
+  Engine/Core/AssetManager.cpp
+  Engine/Core/AssetManager.hpp
+  Engine/Core/TaskManager.cpp
+  Engine/Core/TaskManager.hpp
+  Engine/Assets/LoadShaderTask.cpp
+  Engine/Assets/LoadShaderTask.hpp
+  Engine/Assets/ModelLoader.cpp
+  Engine/Assets/ModelLoader.hpp
+  Engine/Assets/IAssetLoader.cpp
+  Engine/Assets/IAssetLoader.hpp
+)
+
+add_library(core STATIC ${CORE_SRCS})
+target_link_libraries(core ${LIBS} math graphics)
+
 set(GRAPHICS_SRCS
+      Engine/Assets/Font.hpp
+      Engine/Assets/Font.cpp
+      Engine/Graphics/Mesh.cpp
+      Engine/Graphics/Mesh.hpp
+      Engine/Graphics/Model.cpp
+      Engine/Graphics/Model.hpp
       Engine/Graphics/DebugRenderer.cpp
       Engine/Graphics/DebugRenderer.hpp
       Engine/Graphics/GLSLProgram.cpp
@@ -139,6 +189,8 @@ set(MATH_SRCS
       Engine/Math/Matrix4.cpp
       Engine/Math/Matrix4.hpp
       Engine/Math/Vector2.hpp
+      Engine/Math/Vector3.hpp
+      Engine/Math/Vector3.cpp
 )
 add_library(math STATIC ${MATH_SRCS})
 
@@ -155,7 +207,7 @@ set(BASE_SRCS
   Engine/Base/SpriteComponent.hpp
   Engine/Base/TextComponent.hpp
   #
-  # Engine/Base/Transform2D.hpp
+  Engine/Base/Transform2D.hpp
   # Engine/Base/Transform3D.hpp
 
   Engine/Base/RenderSystem2D.cpp
@@ -166,31 +218,35 @@ set(BASE_SRCS
   # Engine/Base/PhysicsSystem2D.cpp
   # Engine/Base/PhysicsSystem3D.hpp
 )
-# add_library(base STATIC ${BASE_SRCS})
+add_library(base STATIC ${BASE_SRCS})
+
 
 set(ECS_SRCS
   Engine/ECS/Component.hpp
   Engine/ECS/ComponentBlock.cpp
-  Engine/ECS/ComponentBlock.hpp
   Engine/ECS/ComponentType.hpp
   Engine/ECS/ECSManager.cpp
   Engine/ECS/ECSManager.hpp
-  Engine/ECS/Entity.cpp
+  Engine/ECS/Entity.hpp
   Engine/ECS/ISystem.hpp
 )
 add_library(ecs STATIC ${ECS_SRCS})
+
+#base depends on ecs
+target_link_libraries(base ecs graphics core)
 
 SET(PLATFORM_SRCS
   Engine/Platform/Platform.hpp
   Engine/Platform/SDLPlatform.cpp
 )
+
 add_library(run STATIC ${PLATFORM_SRCS})
 
-add_executable(app Tests/Main.cpp)
-target_link_libraries(app math)
-target_link_libraries(app graphics)
+add_executable(app Tests/GLTest.cpp)
 target_link_libraries(app run)
-target_link_libraries(app ecs)
+target_link_libraries(app ecs base)
+target_link_libraries(app graphics)
+target_link_libraries(app math)
 target_link_libraries(app ${LIBS})
 # target_link_libraries(app math)
 # target_link_libraries(app base)

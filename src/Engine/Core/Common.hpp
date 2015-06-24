@@ -31,17 +31,35 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
+
+//TODO Make a decision about using these terse typedefs
+typedef uint8_t  U8;
+typedef uint16_t U16;
+typedef uint32_t U32;
+typedef uint64_t U64;
+
+typedef int8_t 	S8;
+typedef int16_t S16;
+typedef int32_t S32;
+typedef int64_t S64;
+
+typedef float F32;
+typedef double F64;
+
+
 //EngineID system
 //Represents handles that index into arrays containing the requested data
-//Adds a level of indirection to remove dangaling ptrs and allow the engine
-//To restucture data as it needs
+//Adds a level of indirection to remove dangling ptrs and allow the engine
+//To restructure data as it needs
+//TODO these should no longer be exposed to the user so they should just be uint64s
 typedef uint64 AssetID;
 typedef uint64 TaskID;
-typedef uint64 EntityID;		//TODO these should no longer be exposed to the user so they should just be uint64s
+typedef uint64 EntityID;
 typedef uint64 EntityUUID;
 
 //Error logging
 #define LOG_ERROR(x) std::cout << "ERROR: " << x << "\n"
+#define LOG_INFO(x) std::cout << "INFO: " << x << "\n"
 
 //Bechmarking Macros to determine the time taken for a certin task to compleatedTasks
 #ifdef BENCHMARK

@@ -7,5 +7,5 @@ struct ComponentType {
 	std::bitset<64> flags;
 	std::bitset<64> bit;
 	uint32 index;
-	uint32 size;	//This could be enormous uint8 is unessecary
+	uint32 size;
 };

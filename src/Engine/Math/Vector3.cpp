@@ -41,7 +41,7 @@ Vector3& Vector3::Normalize() {
 }
 
 float Vector3::Length() {
-	return sqrtf((x * x) + (y * y) + (z * z));
+	return std::sqrt((x * x) + (y * y) + (z * z));
 }
 
 float Vector3::Distance(Vector3& other) {

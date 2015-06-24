@@ -2,17 +2,15 @@
 #include "ECSManager.hpp"
 
 ECSManager::ECSManager() :
-	componentBlocks(MAX_COMPONENTS, nullptr),
 	componentsByEntityID(MAX_COMPONENTS, UnorderedArray<uint32>()),
-	nextComponentTypeBit(1) {
-;
-	}
+	nextComponentTypeBit(1) { }
 
 ECSManager::~ECSManager() {
-
+	for(ISystem* system : systems)
+		delete system;
+	delete[] componentBlocks;
 }
 
-//TODO: Entity pooling
 EntityID ECSManager::CreateEntity() {
 	if (removedEntities.size() > 0) {
 		auto entityID = removedEntities[removedEntities.size() - 1];
@@ -26,6 +24,19 @@ EntityID ECSManager::CreateEntity() {
 	return entity.id;
 }
 
+//TODO also create default entity size etc...
+//which is actually meaningless....
+//Allocate something truly enormous here...
+void ECSManager::Initalize() {
+	componentBlocks = new ComponentBlock[componentTypeCount];
+	assert(componentTypes.size() == componentTypeCount);
+	for(uint32 i = 0; i < componentTypeCount; i++) {
+		componentBlocks[i].SetDataSize(componentTypes[i].size);
+	}
+}
+
+//Why do we need something silly like this?
+//Im still thinking like a java programmer...
 Entity* ECSManager::GetEntity(EntityID id) {
 	assert(id != 0);
 	return &entities[id];
@@ -33,7 +44,7 @@ Entity* ECSManager::GetEntity(EntityID id) {
 
 
 ComponentBlock* ECSManager::GetComponentBlock(uint32 index) const {
-	return componentBlocks[index];
+	return &componentBlocks[index - 1];
 }
 
 //FIXME now broken...

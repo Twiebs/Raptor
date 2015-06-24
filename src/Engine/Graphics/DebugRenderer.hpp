@@ -14,8 +14,13 @@
 
 struct DebugVertex {
   Vector2 position;
-  Color color;
 };
+
+const uint32 DEBUGIndices[] {
+	0, 3, 2,
+	0, 2, 1
+};
+
 
 class DebugRenderer {
 public:
@@ -27,35 +32,37 @@ public:
       void Flush();
 
       void PushRect(float x, float y, float width, float height);
+      void PushCircle(float centerX, float centerY, float radius);
 
       void DEBUGBuildRect();
+      void DEBUGDrawRect();
+      void DEBUGDrawRect(float x, float y, float width, float height);
 
 private:
-      uint8* memory;
+      //The vertices and indices ptrs are offsets into the memoryblock
       DebugVertex* vertices;
       uint32* indices;
+      uint8* memory;
 
       GLuint vertexArrayID = 0;
       GLuint vertexBufferID = 0;
       GLuint elementBufferID = 0;
+      GLuint DEBUGVertexArrayID;
+      GLuint DEBUGVertexBufferID;
+      GLuint DEBUGElementBufferID;
       GLSLProgram* shader;
-
-      GLuint debugVertexArrayID;
-      GLuint debugVertexBufferID;
 
       bool beginCalled = false;
       uint32 vertexIndex = 0;
 
       const std::string vertexShaderSource =
-      "#version 100\n"
-      "attribute vec2 position;"
+      "attribute vec4 position;"
       "void main() {"
-        "gl_Position = vec4(position.xy, 0.0, 1.0);"
+        "gl_Position = position;"
       "}";
 
       const std::string fragmentShaderSource =
-      "#version 100\n"
       "void main() {"
-        "gl_FragColor = vec4(1.0);"
+        "gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);"
       "}";
 };

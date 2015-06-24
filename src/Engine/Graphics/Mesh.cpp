@@ -1,6 +1,6 @@
 #include "Mesh.hpp"
 
-#include<sstream>
+#include <sstream>
 
 Mesh::Mesh() {
 }
@@ -71,7 +71,7 @@ void Mesh::Setup() {
 	//Vertex Texture Coord
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (GLvoid*)offsetof(Vertex3D, uv));
-	
+
 	//Disable buffers
 	glBindVertexArray(0);
 }

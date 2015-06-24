@@ -6,64 +6,65 @@
 #include <emscripten/emscripten.h>
 #endif
 
+#include <Core/Common.hpp>
 #include <SDL/SDL.h>
 #include <GL/glew.h>
-
 #include "Platform.hpp"
-//Initalizes the emscripten platform
+
+//Initializes the emscripten platform
 int PlatformInit(const char* title, int width, int height, bool fullscreen) {
-  if(SDL_Init(SDL_INIT_VIDEO) != 0) {
-    std::cout << "Unable to initalize SDL:" << SDL_GetError();
-    return -1;
-  }
+	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+		LOG_ERROR("Unable to initialize SDL:" << SDL_GetError());
+		return -1;
+	}
 
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  SDL_Surface* screen;
-  screen = SDL_SetVideoMode(1280, 720, 0, SDL_OPENGL);
-  if(!screen) {
-    std::cout << "Unabled to set video mode: " << SDL_GetError();
-    return -1;
-  }
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_Surface* screen;
+	screen = SDL_SetVideoMode(1280, 720, 0, SDL_OPENGL);
+	if (!screen) {
+		LOG_ERROR("Unable to set video mode: " << SDL_GetError());
+		return -1;
+	}
 
-  if(glewInit() != GLEW_OK) {
-    std::cout << "GLEW failed to initalize";
-    return -1;
-  }
+	glewExperimental = true;
+	if (glewInit() != GLEW_OK) {
+		LOG_ERROR("GLEW failed to initialize");
+		return -1;
+	}
 
-
-  //Platform was initalized suscuessfuly
-  return 0;
+	//Platform was initialized sucuessfuly
+	return 0;
 }
 
 bool PlatformHandleInput() {
-  SDL_Event event;
-  while(SDL_PollEvent(&event)) {
-    switch(event.type) {
-      case SDL_KEYDOWN:
-        break;
-      case SDL_KEYUP:
-        break;
-      case SDL_QUIT:
-        return false;
-        break;
-    }
-  }
-  return true;
+	SDL_Event event;
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+		case SDL_KEYDOWN:
+			break;
+		case SDL_KEYUP:
+			break;
+		case SDL_QUIT:
+			return false;
+			break;
+		}
+	}
+	return true;
 }
 
 int PlatformShutdown() {
-  SDL_Quit();
-  //Platform shutdown suscuessfuly
-  return 0;
+	SDL_Quit();
+	//Platform shutdown suscuessfuly
+	return 0;
 }
 
 void PlatformBeginFrame() {
-  glClearColor(1.0f, 0.1f, 0.1f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(1.0f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void PlatformEndFrame() {
-   SDL_GL_SwapBuffers();
+	SDL_GL_SwapBuffers();
 }
 
 #endif  //_SDL

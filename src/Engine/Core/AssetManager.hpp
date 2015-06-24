@@ -9,14 +9,12 @@
 
 #include <FreeImage.h>
 
-#include <freetype/ft2build.h>
-#include FT_FREETYPE_H
-
 #if _MSC_VER
 #include <freetype/ft2build.h>
 #else
-//#include <freetype2/ft2build.h>
+#include <freetype2/ft2build.h>
 #endif
+#include FT_FREETYPE_H
 
 #include <Core/IService.hpp>
 #include <Core/Common.hpp>
@@ -58,8 +56,7 @@ struct AssetRegistry {
 class LoadFontTask : public ITask {
 public:
 	LoadFontTask(AssetID id, AssetRegistry* registry, std::string filename, uint32 fontsize);
-	~LoadFontTask();
-
+	virtual ~LoadFontTask();
 
 	void Run(uint32 threadID) final;
 	void Finalize(uint32 threadID) final;
@@ -76,7 +73,7 @@ private:
 class LoadPixmapTask : public ITask {
 public:
 	LoadPixmapTask(AssetID, AssetRegistry* registry, std::string& filename);
-	~LoadPixmapTask();
+	virtual ~LoadPixmapTask();
 
 	void Run(uint32 threadID) override;
 	void Finalize(uint32 threadID) override;

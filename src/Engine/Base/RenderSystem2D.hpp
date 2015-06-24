@@ -1,7 +1,6 @@
 #pragma once
 
 #include <ECS/ECSManager.hpp>
-#include <Core/AssetManager.hpp>
 #include <ECS/ISystem.hpp>
 #include <ECS/ComponentBlock.hpp>
 
@@ -13,6 +12,7 @@
 #include <Graphics/GLTexture.hpp>
 #include <Graphics/GLSLProgram.hpp>
 #include <Assets/Font.hpp>
+#include <Core/AssetManager.hpp>
 
 #include <Math/Matrix4.hpp>
 #include <Math/Rectangle.hpp>
@@ -62,7 +62,6 @@ private:
 	GLuint isTextUniformLoc;
 
 	Matrix4 projection;
-
 	void Flush();
 	void CheckTexture(GLuint textureID);
 
