@@ -83,15 +83,15 @@ void DEBUGInitRenderer() {
 	shader = DEBUGLoadShaderFromSource(vertexShaderSource, fragmentShaderSource);
 }
 
-void MainLoop() {
+void MainLoop () {
 	running = PlatformHandleInput();
-	ecs->Update(0.1f);
 
-	//Render Phase
 	PlatformBeginFrame();
 	shader->Use();
 	DEBUGFillRect(-0.5f, -0.5f, 1.0f, 1.0f);
-	DEBUGFillRect(0.75f, 0.0f, 0.1f, 1.75f);
+	ecs->Update(0.1f);
+	//Render Phase
+	//DEBUGFillRect(0.75f, 0.0f, 0.1f, 1.75f);
 	PlatformEndFrame();
 }
 
@@ -106,7 +106,14 @@ int main () {
 	ecs->Initalize();
 	//TODO specifiy component registration params inside the systems?
 	ecs->CreateSystem<RenderSystem2D>();
+
 	auto entity = ecs->CreateEntity();
+	auto sprite =ecs->CreateComponent<SpriteComponent>(entity);
+	sprite->x = -0.5f;
+	sprite->y = -0.5f;
+	sprite->width = 1.0f;
+	sprite->height = 1.0f;
+	sprite->textureID = DEBUGLoadTexture("Assets/null.png");
 
 	DEBUGInitRenderer();
 

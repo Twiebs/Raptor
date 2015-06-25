@@ -30,7 +30,7 @@ bool ParseGLSLShader(const std::string& filename, std::string& outFile) {
 }
 
 //DEBUGstuff
-inline GLuint DEBUGCompileShader(std::string& shaderSource, GLenum shaderType) {
+GLuint DEBUGCompileShader(std::string& shaderSource, GLenum shaderType) {
   const GLchar* source = shaderSource.c_str();
   GLuint shaderID = glCreateShader(shaderType);
   glShaderSource(shaderID, 1, &source, NULL);
@@ -49,7 +49,7 @@ inline GLuint DEBUGCompileShader(std::string& shaderSource, GLenum shaderType) {
   return shaderID;
 }
 
-inline GLSLProgram* DEBUGLoadShaderFromSource(std::string& vertexShaderSource, std::string& fragmentShaderSource) {
+GLSLProgram* DEBUGLoadShaderFromSource(std::string& vertexShaderSource, std::string& fragmentShaderSource) {
   GLuint vertexShaderID = DEBUGCompileShader(vertexShaderSource, GL_VERTEX_SHADER);
   GLuint fragmentShaderID = DEBUGCompileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
 
@@ -81,4 +81,19 @@ GLSLProgram* DEBUGLoadShaderFromFile(const std::string& vertexFilename, const st
       ParseGLSLShader(fragmentFilename, fragmentShaderSource);
 
       return DEBUGLoadShaderFromSource(vertexShaderSource, fragmentShaderSource);
+}
+
+GLuint DEBUGLoadTexture(std::string filename) {
+	Pixmap* pixmap = PlatformLoadPixmap(filename);
+
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); //Disable byte-alignment restriction
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, pixmap->width, pixmap->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixmap->data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	return textureID;
 }

@@ -11,6 +11,7 @@ enum class PixmapFormat : uint8 {
 //Format of the image
 class Pixmap {
 public:
+	Pixmap() { }
 	Pixmap(uint16 width, uint16 height, PixmapFormat format) {
 		this->width = width;
 		this->height = height;

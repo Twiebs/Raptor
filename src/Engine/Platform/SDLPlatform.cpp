@@ -12,6 +12,8 @@
 #include <GL/glew.h>
 #include "Platform.hpp"
 
+#include <Graphics/Pixmap.hpp>
+
 //Initializes the emscripten platform
 int PlatformInit(const char* title, int width, int height, bool fullscreen) {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -68,8 +70,13 @@ void PlatformEndFrame() {
 	SDL_GL_SwapBuffers();
 }
 
-void PlatformLoadImage(const char* filename) {
-	SDL_Surface* image = IMG_Load(filename);
+Pixmap* PlatformLoadPixmap(std::string& filename) {
+	SDL_Surface* image = IMG_Load(filename.c_str());
+	Pixmap* pixmap = new Pixmap();
+	pixmap->width = image->w;
+	pixmap->height = image->h;
+	pixmap->data = (uint8*)image->pixels;
+	return pixmap;
 }
 
 #endif  //_SDL

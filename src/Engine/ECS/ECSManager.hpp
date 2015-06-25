@@ -77,12 +77,12 @@ public:
 	T* CreateComponent(EntityID entityID, Args ... args) {
 		static_assert(std::is_base_of<Component, T>::value, "You are trying to create a component that does not inherit from the base component interface!");
 		ComponentType* componentType = ComponentTypeOf<T>();
-		ComponentBlock* componentBlock = &componentBlocks[componentType->index];
+		ComponentBlock* componentBlock = &componentBlocks[componentType->index - 1];
 		T* component = (T*) componentBlock->Alloc<T>(args...);
 		component->ownerID = entityID;
 		uint32 componentIndex = componentBlock->Count();//Count is on purpose
 		//We set the componentIndex to +1 of the actual index so that 0 represents that the entity does not have a component of that type
-		componentsByEntityID[componentType->index].Set(entityID,
+		componentsByEntityID[componentType->index - 1].Set(entityID,
 				componentIndex);
 		return component;
 	}
@@ -92,8 +92,8 @@ public:
 	T* GetComponent(EntityID id) {
 		static_assert(std::is_base_of<Component, T>::value, "You are trying to get a component that does not inherit from the base component interface!");
 		ComponentType* componentType = ComponentTypeOf<T>();
-		ComponentBlock* componentBlock = &componentBlocks[componentType->index];
-		uint32 componentIndex = componentsByEntityID[componentType->index].Get(
+		ComponentBlock* componentBlock = &componentBlocks[componentType->index - 1];
+		uint32 componentIndex = componentsByEntityID[componentType->index - 1].Get(
 				id);
 		if (componentIndex == 0) {
 			//The entity does not have this component

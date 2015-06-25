@@ -144,6 +144,7 @@ endif(MSVC)
 # target_link_libraries(core ${LIBS} math graphics)
 
 set(GRAPHICS_SRCS
+      Engine/Graphics/Pixmap.hpp
       Engine/Graphics/Font.hpp
       Engine/Graphics/Font.cpp
       Engine/Graphics/Mesh.cpp

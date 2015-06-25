@@ -14,8 +14,7 @@ RenderSystem2D::RenderSystem2D(uint32 batchCapacity) :
 	indices = (GLuint*) (memory + verticesMemorySize);
 
 	//The indices will be static unlike the vertices so we set them now
-	for (uint32 i = 0, vertIndex = 0; i < batchCapacity * 6;
-			i += 6, vertIndex += 4) {
+	for (uint32 i = 0, vertIndex = 0; i < batchCapacity * 6; i += 6, vertIndex += 4) {
 		//Triangle A
 		indices[i + 0] = vertIndex + 0;
 		indices[i + 1] = vertIndex + 3;
@@ -39,19 +38,22 @@ RenderSystem2D::RenderSystem2D(uint32 batchCapacity) :
 
 	glGenBuffers(1, &elementBufferID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesMemorySize, &indices[0],GL_DYNAMIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesMemorySize, indices, GL_DYNAMIC_DRAW);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D),(GLvoid*) offsetof(Vertex2D, position));
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*) offsetof(Vertex2D, position));
 
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D),(GLvoid*) offsetof(Vertex2D, uv));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*) offsetof(Vertex2D, uv));
 
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex2D),(GLvoid*) offsetof(Vertex2D, color));
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*) offsetof(Vertex2D, color));
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
+
+	shader = DEBUGLoadShaderFromFile("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag");
+	isTextUniformLoc = shader->GetUniformLocation("isText");
 }
 
 //TODO: How will the shader be handled?
@@ -68,12 +70,11 @@ bool RenderSystem2D::Startup(ECSManager* manager) {
 	transformComponentID = manager->ComponentTypeOf<Transform2D>()->index;
 	textComponentID = manager->ComponentTypeOf<TextComponent>()->index;
 	spriteComponentID = manager->ComponentTypeOf<SpriteComponent>()->index;
-	REGISTER_SYSTEM_TAG(RenderSystem2D);
+	REGISTER_SYSTEM_TAG (RenderSystem2D);
 
 	// Get the id of the shader that we are going to use to renderer the entities in the system
-	shader = DEBUGLoadShaderFromFile("Assets/shaders/RnederSystem2D.vert", "Assets/shaders/RenderSystem2D.frag");
+
 	// shaderID = AssetManager::Instance().LoadShader("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag");
-	// URGENT RenderSystem2D never obtains a shaderID!
 	this->manager = manager;
 	return true;
 }
@@ -87,15 +88,6 @@ void RenderSystem2D::Update(double deltaTime) {
 #ifdef BENCHMARK
 	auto start = std::chrono::steady_clock::now();
 #endif
-
-	static bool isReady = false;
-	// GLSLProgram* shader = AssetManager::Instance().GetAsset<GLSLProgram>(shaderID);
-	if (shader != nullptr && !isReady) {
-		isReady = true;
-		shader->Use();
-		isTextUniformLoc = shader->GetUniformLocation("isText");
-		//shader->SetMatrix4("mvp", projection);
-	}
 
 	shader->Use();
 	glUniform1i(isTextUniformLoc, 0);
@@ -145,16 +137,14 @@ void RenderSystem2D::Update(double deltaTime) {
 
 void RenderSystem2D::Flush() {
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * sizeof(Vertex2D) * entryCount,
-			(GLvoid*) &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * sizeof(Vertex2D) * entryCount, (GLvoid*) &vertices[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindVertexArray(vertexArrayID);
 	//TODO WTF THE INDICIES IS NOT A MEMORY ADRESS!!!!!
 	//AND ITS FUCKING WORKINGGG!!!!!!
 	//IMPOSIBLE!
-	glDrawElements(GL_TRIANGLES, 6 * entryCount * 4, GL_UNSIGNED_INT,
-			(GLvoid*) indices[0]);
+	glDrawElements(GL_TRIANGLES, 6 * entryCount * 4, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 	entryCount = 0;
 }
@@ -162,7 +152,8 @@ void RenderSystem2D::Flush() {
 void RenderSystem2D::ProcessText(TextComponent& textComponent) {
 	Font* font = nullptr;
 	//Font* font = AssetManager::Instance().GetAsset<Font>(textComponent.fontID);
-	if (font == nullptr) return;
+	if (font == nullptr)
+		return;
 
 	//auto transform = manager->GetComponent<Transform2D>(textComponent.ownerID);
 	//auto transformX = transform->position.x;
@@ -176,14 +167,11 @@ void RenderSystem2D::ProcessText(TextComponent& textComponent) {
 		auto y = textComponent.y - (glyph.height - glyph.bearingY);
 
 		auto vertexIndex = entryCount * 4;
-		vertices[vertexIndex++] = Vertex2D { Vector2(x, y), glyph.uvs[0],
+		vertices[vertexIndex++] = Vertex2D { Vector2(x, y), glyph.uvs[0], textComponent.color };
+		vertices[vertexIndex++] = Vertex2D { Vector2(x + glyph.width, y), glyph.uvs[1], textComponent.color };
+		vertices[vertexIndex++] = Vertex2D { Vector2(x + glyph.width, y + glyph.height), glyph.uvs[2],
 				textComponent.color };
-		vertices[vertexIndex++] = Vertex2D { Vector2(x + glyph.width, y),
-				glyph.uvs[1], textComponent.color };
-		vertices[vertexIndex++] = Vertex2D { Vector2(x + glyph.width,
-				y + glyph.height), glyph.uvs[2], textComponent.color };
-		vertices[vertexIndex++] = Vertex2D { Vector2(x, y + glyph.height),
-				glyph.uvs[3], textComponent.color };
+		vertices[vertexIndex++] = Vertex2D { Vector2(x, y + glyph.height), glyph.uvs[3], textComponent.color };
 
 		cursorPos += glyph.advance;
 		entryCount++;
@@ -195,14 +183,13 @@ void RenderSystem2D::ProcessText(TextComponent& textComponent) {
 void RenderSystem2D::ProcessSprite(SpriteComponent& sprite) {
 	CheckTexture(sprite.textureID);
 	auto vertexIndex = entryCount * 4;
-	vertices[vertexIndex++] = Vertex2D { Vector2(sprite.x, sprite.y), Vector2(
-			0.0f, 0.0f), sprite.color };
-	vertices[vertexIndex++] = Vertex2D { Vector2(sprite.x + sprite.width,
-			sprite.y), Vector2(1.0f, 0.0f), sprite.color };
-	vertices[vertexIndex++] = Vertex2D { Vector2(sprite.x + sprite.width,
-			sprite.y + sprite.height), Vector2(1.0f, 1.0f), sprite.color };
-	vertices[vertexIndex++] = Vertex2D { Vector2(sprite.x,
-			sprite.y + sprite.height), Vector2(0.0f, 1.0f), sprite.color };
+	vertices[vertexIndex++] = Vertex2D { Vector2(sprite.x, sprite.y), Vector2(0.0f, 0.0f), sprite.color };
+	vertices[vertexIndex++] =
+			Vertex2D { Vector2(sprite.x + sprite.width, sprite.y), Vector2(1.0f, 0.0f), sprite.color };
+	vertices[vertexIndex++] = Vertex2D { Vector2(sprite.x + sprite.width, sprite.y + sprite.height), Vector2(1.0f,
+			1.0f), sprite.color };
+	vertices[vertexIndex++] =
+			Vertex2D { Vector2(sprite.x, sprite.y + sprite.height), Vector2(0.0f, 1.0f), sprite.color };
 	entryCount++;
 
 	if ((entryCount + 1) == batchCapacity)
