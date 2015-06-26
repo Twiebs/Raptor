@@ -99,10 +99,10 @@ void DEBUGFillRectWithStruct(float x, float y, float width, float height) {
 	Vector2 vectorVerts[] {
 		Vector2(x, y),
 		Vector2(0.0, 0.0),
-		
+
 		Vector2(x + width, y),
 		Vector2(1.0, 0.0),
-		
+
 		Vector2(x + width, y + height),
 		Vector2(1.0, 1.0),
 
@@ -191,9 +191,9 @@ void MainLoop () {
 	dt += 0.1f;
 
 	PlatformBeginFrame();
-	//shader->Use();
+	shader->Use();
 	//DEBUGDrawTexture(textureID, -0.5f, -0.5f, 1.0f, 1.0f);
-	//DEBUGFillRectWithStruct(xpos, -0.5f, 1.0f, 1.0f);
+	DEBUGFillRectWithStruct(xpos, -0.5f, 1.0f, 1.0f);
 	ecs->Update(0.1f);
 	//Render Phase
 	//DEBUGFillRect(0.75f, 0.0f, 0.1f, 1.75f);
@@ -227,7 +227,7 @@ int main () {
 	sprite->height = 512;
 	sprite->textureID = textureID;
 
-	//DEBUGInitRendererWithStruct();
+	DEBUGInitRendererWithStruct();
 	//DEBUGInitRendererWithVert();
 
 #ifndef __EMSCRIPTEN__
