@@ -19,10 +19,11 @@ std::string vertexShaderSource =
 "varying vec2 fragUV;"
 "void main() {"
 	"fragUV = uv;"
-	"gl_Position = vec4(position.xy, 0.0f, 1.0f);"
+	"gl_Position = vec4(position.xy, 0.0, 1.0);"
 "}";
 
 std::string fragmentShaderSource =
+"precision mediump float;"
 "varying vec2 fragUV;"
 "uniform sampler2D sampler;"
 "void main() {"
@@ -183,6 +184,13 @@ void DEBUGInitRenderer() {
 }
 
 void MainLoop () {
+	static double lastTime = emscripten_get_now();
+	static double frameTime = emscripten_get_now();
+
+	double currentTime = emscripten_get_now();
+	double deltaTime =  currentTime - lastTime;
+	lastTime - currentTime;
+
 	running = PlatformHandleInput();
 
 	static float x = -0.5f;
@@ -194,7 +202,7 @@ void MainLoop () {
 	shader->Use();
 	//DEBUGDrawTexture(textureID, -0.5f, -0.5f, 1.0f, 1.0f);
 	DEBUGFillRectWithStruct(xpos, -0.5f, 1.0f, 1.0f);
-	ecs->Update(0.1f);
+	//ecs->Update(deltaTime);
 	//Render Phase
 	//DEBUGFillRect(0.75f, 0.0f, 0.1f, 1.75f);
 	//renderer->Begin();
@@ -210,22 +218,22 @@ int main () {
 	renderer = new DebugRenderer();
 
 	//TODO specifiy component registration params inside the systems?
-	ecs = new ECSManager();
-	ecs->RegisterComponent<Transform2D>(0);
-	ecs->RegisterComponent<SpriteComponent>(0);
-	ecs->RegisterComponent<TextComponent>(0);
-	ecs->Initalize();
+	// ecs = new ECSManager();
+	// ecs->RegisterComponent<Transform2D>(0);
+	// ecs->RegisterComponent<SpriteComponent>(0);
+	// ecs->RegisterComponent<TextComponent>(0);
+	// ecs->Initalize();
 
 	textureID = DEBUGLoadTexture("Assets/null.png");
-	auto renderSystem = ecs->CreateSystem<RenderSystem2D>();
-	//renderSystem->SetProjectionMatrix(Matrix4::Ortho(0, 1270, 0, 720, 0.1, 1000, 1.0));
-	auto entity = ecs->CreateEntity();
-	auto sprite =ecs->CreateComponent<SpriteComponent>(entity);
-	sprite->x = 0;
-	sprite->y = 0;
-	sprite->width = 512;
-	sprite->height = 512;
-	sprite->textureID = textureID;
+	// auto renderSystem = ecs->CreateSystem<RenderSystem2D>();
+	// //renderSystem->SetProjectionMatrix(Matrix4::Ortho(0, 1270, 0, 720, 0.1, 1000, 1.0));
+	// auto entity = ecs->CreateEntity();
+	// auto sprite =ecs->CreateComponent<SpriteComponent>(entity);
+	// sprite->x = 0;
+	// sprite->y = 0;
+	// sprite->width = 512;
+	// sprite->height = 512;
+	// sprite->textureID = textureID;
 
 	DEBUGInitRendererWithStruct();
 	//DEBUGInitRendererWithVert();
@@ -236,7 +244,7 @@ int main () {
 		MainLoop();
 	}
 #else
-	emscripten_set_main_loop(MainLoop, 60, 1);
+	emscripten_set_main_loop(MainLoop, 0, 1);
 #endif
 
 }

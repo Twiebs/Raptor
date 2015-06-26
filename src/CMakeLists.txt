@@ -69,7 +69,10 @@
 
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(Raptor)
-add_definitions(-std=c++14)
+if(NOT MSVC)
+  add_definitions(-std=c++14)
+endif(NOT MSVC)
+
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../CMake/Modules/")
 
@@ -80,7 +83,7 @@ set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML5 Windows Linux Mac Android
 add_definitions(-D_SDL)
 
 if(EMSCRIPTEN)
-set(CMAKE_EXECUTABLE_SUFFIX ".html")
+  set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif(EMSCRIPTEN)
 
 #EMSCRIPTEN allready handles these and MSVC does its own thing...
@@ -226,9 +229,14 @@ SET(PLATFORM_SRCS
   Engine/Platform/SDLPlatform.cpp
 )
 
+set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
+
 add_library(run STATIC ${PLATFORM_SRCS})
 
 add_executable(app Tests/Main.cpp)
+#Ensure EMCSCRIPTEN is given enough memory to work with...
+target_link_libraries(app "-s TOTAL_MEMORY=134217728")
+target_link_libraries(app ${EMSCRIPTEN_ASSET_PACK_FLAG})
 target_link_libraries(app run)
 target_link_libraries(app ecs base)
 target_link_libraries(app graphics)
