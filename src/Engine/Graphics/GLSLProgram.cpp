@@ -57,3 +57,7 @@ void GLSLProgram::SetInt(const GLchar* name, GLint value){
 void GLSLProgram::SetVector3(const GLchar* name, Vector3& value){
 	glUniform3f(GetUniformLocation(name), value.x, value.y, value.z);
 }
+
+void GLSLProgram::SetMatrix4(const GLchar* name, Matrix4& matrix) {
+	glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &matrix[0][0]);
+}

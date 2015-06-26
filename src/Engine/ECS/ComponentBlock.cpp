@@ -12,9 +12,6 @@ void ComponentBlock::SetDataSize(uint32 size) {
 void ComponentBlock::Grow() {
 	Grow((capacity * 2) + 10);
 }
-
-
-
 void ComponentBlock::Grow(uint32 newCapacity) {
 	capacity = newCapacity;
 

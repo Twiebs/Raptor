@@ -46,7 +46,6 @@ typedef int64_t S64;
 typedef float F32;
 typedef double F64;
 
-
 //EngineID system
 //Represents handles that index into arrays containing the requested data
 //Adds a level of indirection to remove dangling ptrs and allow the engine

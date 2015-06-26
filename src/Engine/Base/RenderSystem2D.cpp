@@ -31,25 +31,23 @@ RenderSystem2D::RenderSystem2D(uint32 batchCapacity) :
 	glBindVertexArray(vertexArrayID);
 
 	//Generate the vertex buffer for the batch
-	//Vertices are dynamicly added durring the processing of components
+	//Vertex data is reserved but not set... verticies are dynamicly added durring the processing of components
 	glGenBuffers(1, &vertexBufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, verticesMemorySize, NULL, GL_DYNAMIC_DRAW);//No data is actualy buffered into the array...
+	glBufferData(GL_ARRAY_BUFFER, verticesMemorySize, NULL, GL_DYNAMIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*)offsetof(Vertex2D, position));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*)offsetof(Vertex2D, uv));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*)offsetof(Vertex2D, color));
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glGenBuffers(1, &elementBufferID);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferID);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesMemorySize, indices, GL_DYNAMIC_DRAW);
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*) offsetof(Vertex2D, position));
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*) offsetof(Vertex2D, uv));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex2D), (GLvoid*) offsetof(Vertex2D, color));
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	shader = DEBUGLoadShaderFromFile("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag");
@@ -137,13 +135,10 @@ void RenderSystem2D::Update(double deltaTime) {
 
 void RenderSystem2D::Flush() {
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * sizeof(Vertex2D) * entryCount, (GLvoid*) &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, 4 * sizeof(Vertex2D) * entryCount, (GLvoid*)vertices);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindVertexArray(vertexArrayID);
-	//TODO WTF THE INDICIES IS NOT A MEMORY ADRESS!!!!!
-	//AND ITS FUCKING WORKINGGG!!!!!!
-	//IMPOSIBLE!
 	glDrawElements(GL_TRIANGLES, 6 * entryCount * 4, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 	entryCount = 0;
@@ -198,6 +193,7 @@ void RenderSystem2D::ProcessSprite(SpriteComponent& sprite) {
 
 void RenderSystem2D::SetProjectionMatrix(Matrix4& matrix) {
 	projection = matrix;
+	shader->SetMatrix4("mvp", matrix);
 }
 
 void RenderSystem2D::CheckTexture(GLuint textureID) {

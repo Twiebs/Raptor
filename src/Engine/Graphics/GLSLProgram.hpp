@@ -4,6 +4,7 @@
 #include <string>
 #include <GL/glew.h>
 #include <Math/Vector3.hpp>
+#include <Math/Matrix4.hpp>
 
 #define SHADER_INFO_LOG_SIZE 512
 
@@ -22,6 +23,8 @@ public:
 	void SetFloat(const GLchar* name, GLfloat value);
 	void SetInt(const GLchar* name, GLint value);
 	void SetVector3(const GLchar* name, Vector3& value);
+	void SetMatrix4(const GLchar* name, Matrix4& matrix);
+
 private:
 	GLuint programID;
 	std::string tag;

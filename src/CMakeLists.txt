@@ -30,8 +30,7 @@
 #==============================================
 
 # include_directories(Engine)
-# include_directories(../include)
-# include_directories(/usr/include)
+
 # if(MSVC)
 #   link_directories(../lib)
 #   include_directories(../include/freetype)
@@ -112,6 +111,23 @@ if(NOT EMSCRIPTEN AND NOT MSVC)
   endforeach(lib FreeImage)
 endif()
 
+#That was the unix stuff
+#Here is what MSVC will do
+if(MSVC)
+  include_directories(../include)
+  link_directories(../lib)
+  set(LBIS
+glew32.lib
+glew32s.lib
+opengl32.lib
+freetype.lib
+SDL2.lib
+SDL2main.lib
+SDL2_image.lib
+glfw3.lib
+    )
+endif(MSVC)
+
 
 include_directories(${INCS})
 #Debug ouput the includes and libs that were found
@@ -120,12 +136,14 @@ message("Using libaries: " ${LIBS})
 
 #Setup the include directories
 include_directories(Engine)
+
+#This is to deal with freetypes sillyness...
+#not only is it silly but windows and linux want it two different ways!
 if(MSVC)
-	include_directories(../include)
 	include_directories(../include/freetype)
 else()
 	include_directories(/usr/include/freetype2)
-endif(MSVC)
+endif()
 
 # set(CORE_SRCS
 #   Engine/Core/AssetManager.cpp

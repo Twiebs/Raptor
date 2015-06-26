@@ -8,7 +8,6 @@
 #include <Application/GLFWApplication.hpp>
 #endif
 
-
 #include <Core/IService.hpp>
 #include <Core/EntityManager.hpp>
 #include <Core/AssetManager.hpp>
