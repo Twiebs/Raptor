@@ -73,6 +73,7 @@ if(NOT MSVC)
   add_definitions(-std=c++14)
 endif(NOT MSVC)
 
+add_subdirectory(imgui)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../CMake/Modules/")
 
@@ -139,6 +140,7 @@ message("Using libaries: " ${LIBS})
 
 #Setup the include directories
 include_directories(Engine)
+include_directories(imgui)
 
 #This is to deal with freetypes sillyness...
 #not only is it silly but windows and linux want it two different ways!
@@ -235,8 +237,11 @@ add_library(run STATIC ${PLATFORM_SRCS})
 
 add_executable(app Tests/Main.cpp)
 #Ensure EMCSCRIPTEN is given enough memory to work with...
-target_link_libraries(app "-s TOTAL_MEMORY=134217728")
-target_link_libraries(app ${EMSCRIPTEN_ASSET_PACK_FLAG})
+if(EMSCRIPTEN)
+  target_link_libraries(app "-s TOTAL_MEMORY=134217728")
+  target_link_libraries(app ${EMSCRIPTEN_ASSET_PACK_FLAG})
+endif()
+target_link_libraries(app imgui)
 target_link_libraries(app run)
 target_link_libraries(app ecs base)
 target_link_libraries(app graphics)

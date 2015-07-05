@@ -1,8 +1,5 @@
 #pragma once
 
-#include <vector>
-#include <Core/IInputListener.hpp>
-
 enum Keycode {
 		KEY_SPACE = 32,
 		KEY_APOSTROPHE = 39,
@@ -127,46 +124,44 @@ enum Keycode {
 		KEY_MENU = 348
 };
 
-enum class MouseButton {
-	BUTTON_1      = 0,
-	BUTTON_2      = 1,
-	BUTTON_3      = 2,
-	BUTTON_4      = 3,
-	BUTTON_5      = 4,
-	BUTTON_6      = 5,
-	BUTTON_7      = 6,
-	BUTTON_8      = 7,
-	BUTTON_LAST   = BUTTON_8,
-	BUTTON_LEFT   = BUTTON_1,
-	BUTTON_RIGHT  = BUTTON_2,
-	BUTTON_MIDDLE = BUTTON_3
+enum MouseButton {
+	MOUSE_BUTTON_1      = 0,
+	MOUSE_BUTTON_2      = 1,
+	MOUSE_BUTTON_3      = 2,
+	MOUSE_BUTTON_4      = 3,
+	MOUSE_BUTTON_5      = 4,
+	MOUSE_BUTTON_6      = 5,
+	MOUSE_BUTTON_7      = 6,
+	MOUSE_BUTTON_8      = 7,
+	MOUSE_BUTTON_LAST   = BUTTON_8,
+	MOUSE_BUTTON_LEFT   = BUTTON_1,
+	MOUSE_BUTTON_RIGHT  = BUTTON_2,
+	MOUSE_BUTTON_MIDDLE = BUTTON_3
 };
 
-
-//Interface the application layer implements to abstract out input handling across multipul platforms
-class InputService {
+class Application {
 public:
-	InputService();
-	~InputService();
+	Application();
+	~Application();
 
-	//TODO make sure that the input service owns its listeners...
-	void AddListener(IInputListener* listener);
-	bool RemoveListener(IInputListener* listener);
+	void Create(const char* tile, uint32 width, uint32 height);
+	void Destroy();
 
-	//Called by the platform notifies all registered listeners about the event
-	void FireKeyEvent(int keycode, bool isPressed, int mods);
-	void FireMouseButtonEvent(int button, bool isPressed, int mods);
-	void FireCursorPosEvent(double xpos, double ypos);
+	void BeginFrame();
+	void EndFrame();
 
-	bool IsKeyDown(int keycode) { return keysDown[keycode]; };
+	void PollEvents();
 
-	//Returns the position of the cursor in the window
-	double GetCursorX() { return cursorX; }
-	double GetCursorY() { return cursorY; }
-	void SetCursorPos(double x, double y) { cursorX = x; cursorY = y; }
+	uint32 GetWidth();
+	uint32 GetHeight();
+	float64 GetDeltaTime();
 
-protected:
-	std::vector<IInputListener*> listeners;
+private:
+#ifdef SDL_APP
+	SDL_Window* window;
+	SDL_GLContext context;
+#endif
+
 	bool keysDown[1024];
 	double cursorX, cursorY;
 };
