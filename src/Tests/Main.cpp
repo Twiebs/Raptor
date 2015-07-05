@@ -405,7 +405,6 @@ static void ImGUIRenderDrawLists(ImDrawList** const cmd_lists, int cmd_lists_cou
 int main () {
 	PlatformInit("Raptor GLTest", 1280, 720, false);
 	running = true;
-
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize.x = 1280.0f;
 	io.DisplaySize.y = 720.0f;
@@ -416,8 +415,8 @@ int main () {
 	io.KeyMap[ImGuiKey_RightArrow] = KEY_RIGHT;
 	io.KeyMap[ImGuiKey_UpArrow] = KEY_UP;
 	io.KeyMap[ImGuiKey_DownArrow] = KEY_DOWN;
-	// io.KeyMap[ImGuiKey_PageUp] = KEY_PAGE_UP;
-	// io.KeyMap[ImGuiKey_PageDown] = KEY_PAGE_DOWN;
+	//io.KeyMap[ImGuiKey_PageUp] = KEY_PAGE_UP;
+	//io.KeyMap[ImGuiKey_PageDown] = KEY_PAGE_DOWN;
 	io.KeyMap[ImGuiKey_Home] = KEY_HOME;
 	io.KeyMap[ImGuiKey_End] = KEY_END;
 	io.KeyMap[ImGuiKey_Delete] = KEY_DELETE;
@@ -431,7 +430,6 @@ int main () {
 	io.KeyMap[ImGuiKey_Y] = KEY_Y;
 	io.KeyMap[ImGuiKey_Z] = KEY_Z;
 	io.RenderDrawListsFn  = ImGUIRenderDrawLists;
-
 	CreateShaderObjects();
 
 	// io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
@@ -462,9 +460,10 @@ int main () {
 
 #ifndef __EMSCRIPTEN__
 	LOG_INFO("The main loop is running...");
-	while(running) {
+	while (running) {
 		MainLoop();
 	}
+
 #else
 	emscripten_set_main_loop(MainLoop, 0, 1);
 #endif

@@ -1,4 +1,4 @@
-#ifdef SDL_APP
+//#ifdef SDL_APP
 #include "Application.hpp"
 #include <SDL/SDL.h>
 
@@ -53,12 +53,13 @@ void Application::EndFrame() {
 
 void Application::PollEvents() {
 	SDL_Event event;
-
 	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
 		case SDL_KEYDOWN:
+			keysDown[event.key.keysym.sym] = true;
 			break;
 		case SDL_KEYUP:
+			keysDown[event.key.keysym.sym] = false;
 			break;
 		case SDL_QUIT:
 			break;
@@ -67,4 +68,4 @@ void Application::PollEvents() {
 
 }
 
-#endif SDL_APP
+//#endif SDL_APP

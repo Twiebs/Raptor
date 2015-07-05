@@ -1,3 +1,4 @@
 #include "Platform.hpp"
 
-static void ImGuiBeginFrame();
+static void GUIInit();
+static void GUIBeginFrame();

@@ -1,5 +1,10 @@
+#include "ImGui.hpp"
 
-static void ImGuiBeginFrame() {
+static void GUIInit() {
+
+}
+
+static void GUIBeginFrame() {
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2((float)PlatformGetWidth() (float)PlatformGetHeight());
 	io.DeltaTime = PlatformGetDeltaTime();

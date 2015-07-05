@@ -2,6 +2,11 @@
 
 #include <Core/Common.hpp>
 
+//struct Entity {
+//	uint32 id = 0;
+//	uint64 uuid = 0;
+//};
+
 class ECSManager;
 class Entity {
 	friend class ECSManager;
