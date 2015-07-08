@@ -1,16 +1,22 @@
 #pragma once
 
+#include <assert.h>
 #include <Math/Vector3.hpp>
 #include <Math/MathUtils.hpp>
 
 class Matrix4 {
 public:
-	float m[4][4];
+	float32 m[4][4];
 
 	inline const float* operator[](int i) const {
+		assert(i >= 0);
+		assert(i < 4);
 		return (const float*)&m[i];
 	}
+
 	inline float* operator[](int i) {
+		assert(i >= 0);
+		assert(i < 4);
 		return (float*)&m[i];
 	}
 
@@ -33,39 +39,82 @@ public:
 		return ret;
 	}
 
-	//Returns a identity matrix
+	//Returns an identity matrix
 	inline static Matrix4 Identity() {
 		static Matrix4 r = {
 			1.0f, 0.0f, 0.0f, 0.0f,
 			0.0f, 1.0f, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f, 0.0f,
 			0.0f, 0.0f, 0.0f, 1.0f
-		};
-
-		return r;
+		}; return r;
 	}
 
-	//Creates an Orthographic Projection matrix
-	inline static Matrix4 Ortho(float left, float right, float bottom, float top, float near, float far, float up) {
-		float x, y, z;
-		float tx, ty, tz;
+	//Returns a matrix with all zeros
+	inline static Matrix4 Zero() {
+			static Matrix4 r = {
+				0.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 0.0f
+			}; return r;
+		}
 
-		x = 2.0f / (right - left);
-		y = 2.0f / (top - bottom);
-		z = -2.0f / (far - near);
-		tx = -(right + left) / (right - left);
-		ty = -(top + bottom) / (top - bottom);
-		tz = -(far + near) / (far - near);
+
+
+
+	//Creates an Orthographic Projection matrix
+	inline static Matrix4 Ortho(float32 left, float32 right, float32 bottom, float32 top, float32 near, float32 far, float32 up) {
+		float32 x = 2.0f / (right - left);
+		float32 y = 2.0f / (top - bottom);
+		float32 z = -2.0f / (far - near);
+		float32 tx = -(right + left) / (right - left);
+		float32 ty = -(top + bottom) / (top - bottom);
+		float32 tz = -(far - near) / (far - near);
+
+		y *= up;
+		ty *= up;
+
+		Matrix4 r {
+			x, 		0.0f,	0.0f, 	tx,
+			0.0f, 	y, 		0.0f, 	ty,
+			0.0f, 	0.0f, 	z, 		tz,
+			0.0f, 	0.0f, 	0.0f, 	1.0f
+		}; return r;
+	}
+
+	inline static Matrix4 Ortho(float32 left, float32 right, float32 bottom, float32 top, float32 up) {
+		float32 x = 2.0f / (right - left);
+		float32 y = 2.0f / (top - bottom);
+		float32 tx = -(right + left) / (right - left);
+		float32 ty = -(top + bottom) / (top - bottom);
 
 		y *= up;
 		ty *= up;
 
 		Matrix4 r;
-		r[0][0] = x;	r[0][1] = 0.0f; r[0][2] = 0.0f; r[0][3] = tx;
-		r[1][0] = 0.0f; r[1][1] = y;	r[1][2] = 0.0f; r[1][3] = ty;
-		r[2][0] = 0.0f; r[2][1] = 0.0f; r[2][2] = z;	r[2][3] = tz;
-		r[3][0] = 0.0f; r[3][1] = 0.0f; r[3][2] = 0.0f; r[3][3] = 1.0f;
+		r.m[0][0] = x;    r.m[1][0] = 0.0f; r.m[2][0] = 0.0f; r.m[3][0] = tx;
+		r.m[0][1] = 0.0f; r.m[1][1] = y;    r.m[2][1] = 0.0f; r.m[3][1] = ty;
+		r.m[0][2] = 0.0f; r.m[1][2] = 0.0f; r.m[2][2] = -1.0f; r.m[3][2] = 1.0f;
+		r.m[0][3] = 0.0f; r.m[1][3] = 0.0f; r.m[2][3] = 0.0f; r.m[3][3] = 1.0f;
 		return r;
+	}
+
+	//Shorthand Orthographic projection
+	inline static Matrix4 Ortho(float32 width, float32 height) {
+		float32 x = 2.0f / width;
+		float32 y = 2.0f / height;
+		float32 z = -2.0f / 2.0f;
+		float32 tx = -width / width;
+		float32 ty = -height / height;
+		float32 tz = -2.0f/2.0f;
+
+
+		Matrix4 r {
+			x, 		0.0f,	0.0f, 	tx,
+			0.0f, 	y, 		0.0f, 	ty,
+			0.0f, 	0.0f, 	z, 		tz,
+			0.0f, 	0.0f, 	0.0f, 	1.0f
+		}; return r;
 	}
 
 	//Creates a translation transform matrix

@@ -1,5 +1,22 @@
 #include "IO.hpp"
 
+#ifdef SDL
+#include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
+Pixmap* LoadPixmap(std::string filename) {
+	SDL_Surface* image = IMG_Load(filename.c_str());
+	if (image == nullptr) {
+		LOG_ERROR("Could not open file: " << filename  << " :: "<< IMG_GetError());
+		return nullptr;
+	}
+
+	Pixmap* pixmap = new Pixmap();
+	pixmap->width = image->w;
+	pixmap->height = image->h;
+	pixmap->data = (uint8*)image->pixels;
+	return pixmap;
+}
+#endif
 
 bool ParseGLSLShader(const std::string& filename, std::string& outFile) {
       std::ifstream fileStream(filename);
@@ -49,7 +66,7 @@ GLuint DEBUGCompileShader(std::string& shaderSource, GLenum shaderType) {
   return shaderID;
 }
 
-GLSLProgram* DEBUGLoadShaderFromSource(std::string& vertexShaderSource, std::string& fragmentShaderSource) {
+GLuint DEBUGLoadShaderFromSource(std::string vertexShaderSource, std::string fragmentShaderSource) {
   GLuint vertexShaderID = DEBUGCompileShader(vertexShaderSource, GL_VERTEX_SHADER);
   GLuint fragmentShaderID = DEBUGCompileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
 
@@ -64,27 +81,26 @@ GLSLProgram* DEBUGLoadShaderFromSource(std::string& vertexShaderSource, std::str
   if (!success) {
     glGetProgramInfoLog(programID, SHADER_INFO_LOG_SIZE, NULL, infoLog);
     LOG_ERROR("SHADER PROGRAM LINK: " << infoLog);
-    return nullptr;
+    return 0;
   }
+
   glDetachShader(programID, vertexShaderID);
   glDetachShader(programID, fragmentShaderID);
   glDeleteShader(vertexShaderID);
   glDeleteShader(fragmentShaderID);
-
-  return new GLSLProgram(programID);
+  return programID;
 }
 
 
-GLSLProgram* DEBUGLoadShaderFromFile(const std::string& vertexFilename, const std::string& fragmentFilename) {
+GLuint DEBUGLoadShaderFromFile(const std::string& vertexFilename, const std::string& fragmentFilename) {
       std::string vertexShaderSource, fragmentShaderSource;
       ParseGLSLShader(vertexFilename, vertexShaderSource);
       ParseGLSLShader(fragmentFilename, fragmentShaderSource);
-
       return DEBUGLoadShaderFromSource(vertexShaderSource, fragmentShaderSource);
 }
 
 GLuint DEBUGLoadTexture(std::string filename) {
-	Pixmap* pixmap = PlatformLoadPixmap(filename);
+	Pixmap* pixmap = LoadPixmap(filename);
 
 	GLuint textureID;
 	glGenTextures(1, &textureID);

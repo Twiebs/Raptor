@@ -74,6 +74,7 @@ if(NOT MSVC)
 endif(NOT MSVC)
 
 add_subdirectory(imgui)
+add_subdirectory(Box2D)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../CMake/Modules/")
 
@@ -138,8 +139,9 @@ include_directories(${INCS})
 message("Included directories: " ${INCS})
 message("Using libaries: " ${LIBS})
 
-#Setup the include directories
+#Setup the include directoriess
 include_directories(Engine)
+include_directories(../src)
 include_directories(imgui)
 
 #This is to deal with freetypes sillyness...
@@ -170,21 +172,22 @@ set(GRAPHICS_SRCS
       Engine/Graphics/Pixmap.hpp
       Engine/Graphics/Font.hpp
       Engine/Graphics/Font.cpp
-      Engine/Graphics/Mesh.cpp
-      Engine/Graphics/Mesh.hpp
       Engine/Graphics/Model.cpp
       Engine/Graphics/Model.hpp
       Engine/Graphics/Color.hpp
-      Engine/Graphics/DebugRenderer.cpp
-      Engine/Graphics/DebugRenderer.hpp
+      Engine/Graphics/DEBUGRenderer.cpp
+      Engine/Graphics/DEBUGRenderer.hpp
       Engine/Graphics/GLSLProgram.cpp
       Engine/Graphics/GLSLProgram.hpp
 )
 add_library(graphics STATIC ${GRAPHICS_SRCS})
 
 set(MATH_SRCS
+	  Engine/Math/Noise.cpp
+	  Engine/Math/Noise.hpp
       Engine/Math/Matrix4.cpp
       Engine/Math/Matrix4.hpp
+      Engine/Math/Vector2.cpp
       Engine/Math/Vector2.hpp
       Engine/Math/Vector3.hpp
       Engine/Math/Vector3.cpp
@@ -205,10 +208,13 @@ set(BASE_SRCS
   # Engine/Base/RenderSystem3D.cpp
   # Engine/Base/RenderSystem3D.hpp
 
-  # Engine/Base/PhysicsSystem2D.cpp
+  Engine/Base/PhysicsSystem2D.cpp
+  Engine/Base/PhysicsSystem2D.hpp
   # Engine/Base/PhysicsSystem3D.hpp
 )
 add_library(base STATIC ${BASE_SRCS})
+target_link_libraries(base Box2D ecs graphics)
+
 
 set(ECS_SRCS
   Engine/ECS/Component.hpp
@@ -216,24 +222,22 @@ set(ECS_SRCS
   Engine/ECS/ComponentType.hpp
   Engine/ECS/ECSManager.cpp
   Engine/ECS/ECSManager.hpp
-  Engine/ECS/Entity.hpp
   Engine/ECS/ISystem.hpp
-)
+) 
 add_library(ecs STATIC ${ECS_SRCS})
 
-#base depends on ecs
-target_link_libraries(base ecs graphics)
-
 SET(PLATFORM_SRCS
+  Engine/Application/Application.hpp
+  #Engine/Application/SDLApplication.cpp
   Engine/Utils/IO.cpp
   Engine/Utils/IO.hpp
-  Engine/Platform/Platform.hpp
-  Engine/Platform/SDLPlatform.cpp
-)
+) 
+
+add_library(run STATIC ${PLATFORM_SRCS})
+
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
-add_library(run STATIC ${PLATFORM_SRCS})
 
 add_executable(app Tests/Main.cpp)
 #Ensure EMCSCRIPTEN is given enough memory to work with...
@@ -241,15 +245,14 @@ if(EMSCRIPTEN)
   target_link_libraries(app "-s TOTAL_MEMORY=134217728")
   target_link_libraries(app ${EMSCRIPTEN_ASSET_PACK_FLAG})
 endif()
+
 target_link_libraries(app imgui)
+target_link_libraries(app graphics)
+target_link_libraries(app Box2D)
 target_link_libraries(app run)
 target_link_libraries(app ecs base)
-target_link_libraries(app graphics)
 target_link_libraries(app math)
 target_link_libraries(app ${LIBS})
-# target_link_libraries(app math)
-# target_link_libraries(app base)
-# target_link_libraries(app graphics)
 
 # file(GLOB HTML_TESTS_SRCS_CPP HTMLTests/*.cpp)
 # file(GLOB HTML_TESTS_SRCS_HPP HTMLTests/*.hpp)

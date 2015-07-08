@@ -1,466 +1,487 @@
+#include <string>
+#include <sstream>
+#include <malloc.h>
 
+#include <Application/Application.hpp>
 #include <GL/glew.h>
-#include <Platform/Platform.hpp>
 #include <Utils/IO.hpp>
 
 #include <Core/Common.hpp>
-#include <Graphics/DebugRenderer.hpp>
+#include <Core/InputListener.hpp>
 
 #include <ECS/ECSManager.hpp>
+#include <Base/Transform2D.hpp>
 #include <Base/RenderSystem2D.hpp>
+#include <Base/PhysicsSystem2D.hpp>
 
-#include <Core/InputService.hpp>
+#include <Graphics/Color.hpp>
+
+#include <Math/MathUtils.hpp>
+#include <Math/Matrix4.hpp>
+#include <Math/Noise.hpp>
 
 #include <imgui.h>
+#include <Platform/ImGui.hpp>
 
-#if __EMSCRIPTEN__
-#include <emscripten/emscripten.h>
-#endif
 
-static GLuint       g_FontTexture = 0;
-static int          g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
-static int          g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
-static int          g_AttribLocationPosition = 0, g_AttribLocationUV = 0, g_AttribLocationColor = 0;
-static size_t       g_VboSize = 0;
-static unsigned int g_VboHandle = 0, g_VaoHandle = 0;
+Application app;
+ImGuiContext gImGuiContext;
 
-std::string vertexShaderSource =
-"attribute vec2 position;"
-"attribute vec2 uv;"
-"varying vec2 fragUV;"
-"void main() {"
-	"fragUV = uv;"
-	"gl_Position = vec4(position.xy, 0.0, 1.0);"
-"}";
+struct DEBUGRenderContext {
+	GLuint vertexArrayID;
+	GLuint vertexBufferID;
+	GLuint elementBufferID;
+	GLuint shaderProgramID;
 
-std::string fragmentShaderSource =
-"precision mediump float;"
-"varying vec2 fragUV;"
-"uniform sampler2D sampler;"
-"void main() {"
-	"gl_FragColor = texture2D(sampler, fragUV);"
-"}";
+	GLuint currentTextureID;
+	uint32 currentVertexCount;
+	uint32 maxVertexCount;
 
-GLuint vertexArrayID;
-GLuint vertexBufferID;
-GLuint elementBufferID;
+	Matrix4 projection;
+	GLuint projectionUniformLocation;
+	GLuint isTextureUniformLocation;
+	GLuint isWaterUniformLocation;
+	GLuint waveAngleUniformLocation;
+};
+
+
+DEBUGRenderContext gRenderContext;
+
+Transform2D gCameraTransform;
+Transform2D gPlayerTransform;
+
+const uint32 MAP_WIDTH = 512;
+const uint32 MAP_WIDTH_PLUS_ONE = 513;
+const uint32 MAP_HEIGHT = 512;
+const uint32 MAP_HEIGHT_PLUS_ONE = 513;
+float32* gHeightmap;
+Color* gTilemap;
+
+GLuint vertexMemorySize;
 GLuint textureID;
 GLSLProgram* shader;
 
-DebugRenderer* renderer;
-
 ECSManager* ecs;
-bool running = false;
-
-const float vertices[] {
-	-0.5f, -0.5f,
-	0.5f, -0.5f,
-	0.5f, 0.5f,
-	-0.5f, 0.5f,
-};
-
-const uint32 indices[] {
-	0, 3, 2,
-	0, 2, 1
-};
+PhysicsSystem2D* physics2D;
 
 struct Vert {
 	Vector2 position;
 	Vector2 uv;
+	Color color;
 };
 
+void DEBUGFlushContext(DEBUGRenderContext* context) {
+	glUseProgram(context->shaderProgramID);
+	if(context->currentTextureID != 0) {
+		glUniform1i(context->isTextureUniformLocation, 1);
+	} else {
+		glUniform1i(context->isTextureUniformLocation, 0);
+	}
 
-Vert verticesWithStruct[4] {
-	{ Vector2(-0.5f, -0.5f)/*, Vector2(0.0f, 0.0f)*/ },
-	{ Vector2(0.5f, -0.5f)/*, Vector2(1.0f, 0.0f)*/ },
-	{ Vector2(0.5f, 0.5f)/*, Vector2(1.0f, 1.0f) */},
-	{ Vector2(-0.5f, 0.5f)/*, Vector2(0.0f, 1.0f) */}
-};
+	glActiveTexture(0);
+	glBindTexture(GL_TEXTURE_2D, context->currentTextureID);
 
-
-void DEBUGDrawTexture(GLuint textureID, float x, float y, float width, float height) {
-	Vector2 vectorVerts[] {
-		Vector2(x, y),
-			Vector2(0.0, 0.0),
-
-			Vector2(x + width, y),
-			Vector2(1.0, 0.0),
-
-			Vector2(x + width, y + height),
-			Vector2(1.0, 1.0),
-
-			Vector2(x, y + height),
-			Vector2(0.0, 1.0)
-	};
-
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vert) * 4, (GLvoid*)vectorVerts);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glBindVertexArray(vertexArrayID);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(context->vertexArrayID);
+	glDrawElements(GL_TRIANGLES, (context->currentVertexCount / 4) * 6, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
-
-	glBindVertexArray(vertexArrayID);
+	context->currentVertexCount = 0;
 }
 
-void DEBUGFillRectWithStruct(float x, float y, float width, float height) {
-	Vector2 vectorVerts[] {
-		Vector2(x, y),
-		Vector2(0.0, 0.0),
 
-		Vector2(x + width, y),
-		Vector2(1.0, 0.0),
+void DEBUGPushVertices(DEBUGRenderContext* context, Vert* vertices, uint32 count) {
+	if(context->currentVertexCount + count > context->maxVertexCount)
+		DEBUGFlushContext(context);
 
-		Vector2(x + width, y + height),
-		Vector2(1.0, 1.0),
-
-		Vector2(x, y + height),
-		Vector2(0.0, 1.0)
-	};
-
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vert) * 4, (GLvoid*)vectorVerts);
+	glBindBuffer(GL_ARRAY_BUFFER, context->vertexBufferID);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(Vert) * context->currentVertexCount, sizeof(Vert) * count, (GLvoid*)vertices);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glBindVertexArray(vertexArrayID);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
+	context->currentVertexCount += count;
 }
 
-void DEBUGInitRendererWithStruct() {
-	glGenVertexArrays(1, &vertexArrayID);
-	glBindVertexArray(vertexArrayID);
+void DEBUGDrawTexture(GLuint textureID, float x, float y, float width, float height, Color color, DEBUGRenderContext* context) {
+	if(context->currentTextureID != textureID) {
+		DEBUGFlushContext(context);
+		context->currentTextureID = textureID;
+	}
 
-	glGenBuffers(1, &vertexBufferID);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * 4, vertices, GL_DYNAMIC_DRAW);
+	Vert verts[4];
+	verts[0] = Vert { Vector2(x, y), Vector2(0.0f, 0.0f), color };
+	verts[1] = Vert { Vector2(x + width, y), Vector2(1.0f, 0.0f), color };
+	verts[2] = Vert { Vector2(x + width, y + height), Vector2(1.0f, 1.0f), color };
+	verts[3] = Vert { Vector2(x, y + height), Vector2(0.0f, 1.0f), color };
+	DEBUGPushVertices(context, verts, 4);
+}
+
+void DEBUGFillRect(float32 x, float32 y, float32 width, float32 height, Color color, DEBUGRenderContext* context) {
+	if(context->currentTextureID != 0) {
+		DEBUGFlushContext(context);
+		context->currentTextureID = 0;
+	}
+
+	Vert verts[4];
+	verts[0] = Vert { Vector2(x, y), Vector2(0.0f, 0.0f), color };
+	verts[1] = Vert { Vector2(x + width, y), Vector2(1.0f, 0.0f), color };
+	verts[2] = Vert { Vector2(x + width, y + height), Vector2(1.0f, 1.0f), color };
+	verts[3] = Vert { Vector2(x, y + height), Vector2(0.0f, 1.0f), color };
+	DEBUGPushVertices(context, verts, 4);
+}
+
+
+void DEBUGInitRenderer(DEBUGRenderContext* context, uint32 maxVertexCount) {
+	const char* vertexShaderSource =
+	"attribute vec2 position;"
+	"attribute vec2 uv;"
+	"attribute vec4 color;"
+
+	"varying vec2 fragUV;"
+	"varying vec4 fragColor;"
+
+	"uniform mat4 projection;"
+	"uniform float waveAngle;"
+	"uniform bool isWater;"
+
+	"void main() {"
+		"fragUV = uv;"
+		"fragColor = color;"
+		"vec2 wavePos = vec2(position.x + sin(waveAngle + position.x + position.y), position.y + cos(waveAngle + position.x + position.y));"
+		"gl_Position = projection * vec4(isWater ? wavePos : position.xy, 0.0, 1.0);"
+	"}";
+
+	const char* fragmentShaderSource =
+	"precision mediump float;"
+	"varying vec2 fragUV;"
+	"varying vec4 fragColor;"
+	"uniform sampler2D sampler;"
+	"uniform bool isTexture;"
+	"void main() {"
+		"gl_FragColor = isTexture ? texture2D(sampler, fragUV) : fragColor;"
+	"}";
+
+	glGenVertexArrays(1, &context->vertexArrayID);
+	glBindVertexArray(context->vertexArrayID);
+
+	glGenBuffers(1, &context->vertexBufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, context->vertexBufferID);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * maxVertexCount, nullptr, GL_DYNAMIC_DRAW);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLvoid*)offsetof(Vert, position));
 	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLvoid*)offsetof(Vert, position));
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLvoid*)offsetof(Vert, uv));
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(Vert), (GLvoid*)offsetof(Vert, color));
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glGenBuffers(1, &elementBufferID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32) * 6, indices, GL_DYNAMIC_DRAW);
+	//TODO add facilities to obtain a block of temporary memory
+	//TODO look into mapping the address of the element buffer into our address space and
+	//Manually pushing the indices to it!
+	uint32 indexCount = (maxVertexCount / 4) * 6;
+	uint32* indices = new uint32[indexCount];
+	for(uint32 i = 0, v = 0; i < indexCount; i += 6, v += 4) {
+		indices[i + 0] = v + 0;
+		indices[i + 1] = v + 3;
+		indices[i + 2] = v + 2;
+		indices[i + 3] = v + 0;
+		indices[i + 4] = v + 2;
+		indices[i + 5] = v + 1;
+	}
 
+	glGenBuffers(1, &context->elementBufferID);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context->elementBufferID);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32) * indexCount, indices, GL_DYNAMIC_DRAW);
 	glBindVertexArray(0);
+	delete[] indices;
 
-	shader = DEBUGLoadShaderFromSource(vertexShaderSource, fragmentShaderSource);
+	context->currentVertexCount = 0;
+	context->maxVertexCount = maxVertexCount;
+	context->shaderProgramID = DEBUGLoadShaderFromSource(vertexShaderSource, fragmentShaderSource);
+	context->projectionUniformLocation = glGetUniformLocation(context->shaderProgramID, "projection");
+	context->isTextureUniformLocation = glGetUniformLocation(context->shaderProgramID, "isTexture");
+	context->isWaterUniformLocation = glGetUniformLocation(context->shaderProgramID, "isWater");
+	context->waveAngleUniformLocation = glGetUniformLocation(context->shaderProgramID, "waveAngle");
 }
 
+void DEBUGSetProjectionMatrix(DEBUGRenderContext* context, Matrix4& projection) {
+	glUseProgram(context->shaderProgramID);
+	glUniformMatrix4fv(context->projectionUniformLocation, 1, GL_FALSE, &projection[0][0]);
+}
 
+Matrix4 TransformToOrtho(Transform2D& transform, float32 zoom) {
+	float32 halfWidth = transform.size.x * 0.5f * zoom;
+	float32 halfHeight = transform.size.y * 0.5f * zoom;
+	return Matrix4::Ortho(
+			(transform.position.x - halfWidth),
+			(transform.position.x + halfWidth),
+			(transform.position.y - halfHeight),
+			(transform.position.y + halfHeight),
+			1.0f
+		);
+}
 
-void DEBUGFillRect(float32 x, float32 y, float32 width, float32 height) {
-	float newVerts[] {
-			x, y,
-			x + width, y,
-			x + width, y + height,
-			x, y + height
+Color GetColor(uint32 x, uint32 y) {
+	static float32 colorThresholds[] {
+		0.7,
+		0.65f,
+		0.5f,
+		0.35f,
+		0.25f,
+		0.15f,
+		-0.15f,
+		-1.0f
+	};
+	static Color colors[] {
+		Color(0.20f, 0.20f, 0.20f, 1.0f),
+		Color(0.31f, 0.25f, 0.19f, 1.0f),
+		Color(0.26f, 0.25f, 0.13f, 1.0f),
+		Color(0.25f, 0.21f, 0.13f, 1.0f),
+		Color(0.29f, 0.21f, 0.13f, 1.0f),
+		Color(0.80f, 0.60f, 0.29f, 1.0f),
+		Color(0.69f, 0.54f, 0.39f, 1.0f),
+		Color(0.38f, 0.54f, 0.67f, 1.0f)
 	};
 
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * 2 * 4, newVerts);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	uint32 index = (y * MAP_WIDTH) + x;
+	for(uint32 i = 0; i < 8; i++) {
+		if(gHeightmap[index] > colorThresholds[i])
+			return colors[i];
+	}
 
-	glBindVertexArray(vertexArrayID);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
+	return Color(1.0f, 1.0f, 1.0f, 1.0f);
 }
 
-void DEBUGInitRenderer() {
-	glGenVertexArrays(1, &vertexArrayID);
-	glBindVertexArray(vertexArrayID);
+Color SampleColor(uint32 x, uint32 y) {
+	static float32 colorThresholds[] {
+//		0.7,
+		0.5f,
+		0.35f,
+		0.25f,
+		0.15f,
+		0.0f,
+		-0.12f,
+		-0.15f,
+		-0.35f,
+		-1.0f
+	};
+	static Color colors[] {
+//		Color(0.20f, 0.20f, 0.20f, 1.0f),
+//		Color(0.31f, 0.25f, 0.19f, 1.0f),
+		Color(0.26f, 0.25f, 0.13f, 1.0f),
+		Color(0.25f, 0.21f, 0.13f, 1.0f),
+		Color(0.50f, 0.33f, 0.17f, 1.0f),
+		Color(0.60f, 0.43f, 0.27f, 1.0f),
+		Color(0.72f, 0.535f, 0.37f, 1.0f),
+		Color(0.69f, 0.54f, 0.39f, 1.0f),
+		Color(0.38f, 0.54f, 0.67f, 1.0f),
+		Color(0.24f, 0.30f, 0.51f, 1.0f),
+		Color(0.24f, 0.30f, 0.51f, 1.0f)
+	};
 
-	glGenBuffers(1, &vertexBufferID);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 2 * 4, vertices, GL_DYNAMIC_DRAW);
+	uint32 elementSize = 9;
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	uint32 index = (y * MAP_WIDTH) + x;
+	for(uint32 i = 0; i < elementSize; i++) {
+		if(gHeightmap[index] > colorThresholds[i]) {
+			if(i == 0) return colors[i];
+			Color fromColor = colors[i];
+			Color toColor = colors[i - 1];
+			Color colorDiff = toColor - fromColor;
+			float32 fromThresh = colorThresholds[i];
+			float32 toThresh = colorThresholds[i - 1];
+			float32 threshDiff = (toThresh - fromThresh);
+			threshDiff = (threshDiff >= 0) ? threshDiff : -threshDiff;
+			float32 threshCompletion = (gHeightmap[index] - colorThresholds[i]) / threshDiff;
+			Color addColor = (colorDiff * threshCompletion);
+			Color result = fromColor + addColor;
+			return result;
+		}
 
-	glGenBuffers(1, &elementBufferID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32) * 6, indices, GL_DYNAMIC_DRAW);
+	}
 
-	glBindVertexArray(0);
-
-	shader = DEBUGLoadShaderFromSource(vertexShaderSource, fragmentShaderSource);
+	return Color(1.0f, 1.0f, 1.0f, 1.0f);
 }
+
+uint32 XYToIndex(uint32 x, uint32 y) {
+	return (y * MAP_WIDTH) + x;
+}
+
 
 void MainLoop () {
-#ifdef __EMSCRIPTEN__
-	static double lastTime = emscripten_get_now();
-	static double frameTime = emscripten_get_now();
-	double currentTime = emscripten_get_now();
-#else
-	static double lastTime = 0;
-	static double frameTime = 0;
-	double currentTime = 0;
-#endif
-
-	double deltaTime =  currentTime - lastTime;
-	lastTime - currentTime;
-
-	running = PlatformHandleInput();
-
+	app.BeginFrame();
+	float64 deltaTime = app.GetDeltaTime();
+	app.PollEvents();
 	static float x = -0.5f;
 	static float dt = 0.0f;
 	float xpos =  x * sin(dt);
 	dt += 0.1f;
 
-	PlatformBeginFrame();
-	shader->Use();
-	//DEBUGDrawTexture(textureID, -0.5f, -0.5f, 1.0f, 1.0f);
-	DEBUGFillRectWithStruct(xpos, -0.5f, 1.0f, 1.0f);
-	//ecs->Update(deltaTime);
-	//Render Phase
-	//DEBUGFillRect(0.75f, 0.0f, 0.1f, 1.75f);
-	//renderer->Begin();
-	//renderer->PushRect(-0.5f, -0.5f, 1.0f, 1.0f);
-	//renderer->End();
-	PlatformEndFrame();
-}
+	const float32 ZOOM_SPEED = 0.5f;
+	static float32 cameraZoom = 1.0f;
+	if(app.IsButtonDown(MOUSE_WHEEL_UP)) {
+		cameraZoom -= ZOOM_SPEED;
+	} else if (app.IsButtonDown(MOUSE_WHEEL_DOWN)) {
+		cameraZoom += ZOOM_SPEED;
+	}
 
-void ImGui_ImplGlfwGL3_CreateFontsTexture()
-{
-    ImGuiIO& io = ImGui::GetIO();
+	const float32 PAN_SPEED = 0.05f;
+	static float64 cursorX = app.GetCursorX();
+	static float64 cursorY = app.GetCursorY();
+	float64 dx = app.GetCursorX() - cursorX;
+	float64 dy = app.GetCursorY() - cursorY;
+	cursorX = app.GetCursorX();
+	cursorY = app.GetCursorY();
+	if(app.IsButtonDown(MOUSE_BUTTON_RIGHT)) {
+		gCameraTransform.position.x -= dx * PAN_SPEED;
+		gCameraTransform.position.y += dy * PAN_SPEED;
+		Matrix4 projection = TransformToOrtho(gCameraTransform, cameraZoom);
+		DEBUGSetProjectionMatrix(&gRenderContext, projection);
+	}
 
-    unsigned char* pixels;
-    int width, height;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
+	const float64 MOVEMENT_SPEED = 0.1f;
+	const float64 SPRINT_MULTIPLIER = 3.0f;
+	Vector2 deltaPos;
+	if(app.IsKeyDown(KEY_W)) deltaPos.y += 1.0f;
+	if(app.IsKeyDown(KEY_S)) deltaPos.y -= 1.0f;
+	if(app.IsKeyDown(KEY_D)) deltaPos.x += 1.0f;
+	if(app.IsKeyDown(KEY_A)) deltaPos.x -= 1.0f;
+	deltaPos.Normalize();
+	deltaPos *= MOVEMENT_SPEED;
+	if(app.IsKeyDown(KEY_LSHIFT)) deltaPos *= SPRINT_MULTIPLIER;
+	gPlayerTransform.position += deltaPos;
+	gCameraTransform.position = gPlayerTransform.position + (gPlayerTransform.size * 0.5f);
+	Matrix4 projection = TransformToOrtho(gCameraTransform, cameraZoom);
+	DEBUGSetProjectionMatrix(&gRenderContext, projection);
 
-    glGenTextures(1, &g_FontTexture);
-    glBindTexture(GL_TEXTURE_2D, g_FontTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	ImGuiIO& io = ImGui::GetIO();
+	io.DisplaySize = ImVec2((float)app.GetWidth(), (float)app.GetHeight());
+	io.DeltaTime = app.GetDeltaTime() > 0.0 ? app.GetDeltaTime() : 1.0f/60.0f;
+	io.MousePos = ImVec2((float)app.GetCursorX(), (float)app.GetCursorY());
+	io.MouseWheel = app.GetMouseWheel();
+	io.MouseDown[0] = app.IsButtonDown(MOUSE_BUTTON_LEFT);
 
-    // Store our identifier
-    io.Fonts->TexID = (void *)(intptr_t)g_FontTexture;
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
-    // Cleanup (don't clear the input data if you want to append new fonts later)
-    io.Fonts->ClearInputData();
-    io.Fonts->ClearTexData();
-}
+	uint32 startX, endX;
+	uint32 startY, endY;
+	float32 halfWidth = (gCameraTransform.size.x * 0.5f) * cameraZoom;
+	float32 halfHeight = (gCameraTransform.size.y * 0.5f) * cameraZoom;
+	auto left = gCameraTransform.position.x - halfWidth;
+	auto right = gCameraTransform.position.x + halfWidth;
+	auto bottom = gCameraTransform.position.y - halfHeight;
+	auto top = gCameraTransform.position.y + halfHeight;
 
-bool CreateShaderObjects()
-{
-    const GLchar *vertex_shader =
-        "#version 330\n"
-        "uniform mat4 ProjMtx;\n"
-        "in vec2 Position;\n"
-        "in vec2 UV;\n"
-        "in vec4 Color;\n"
-        "out vec2 Frag_UV;\n"
-        "out vec4 Frag_Color;\n"
-        "void main()\n"
-        "{\n"
-        "	Frag_UV = UV;\n"
-        "	Frag_Color = Color;\n"
-        "	gl_Position = ProjMtx * vec4(Position.xy,0,1);\n"
-        "}\n";
+	startX = left > 0 ? left : 0;
+	endX = right < MAP_WIDTH ? right : MAP_WIDTH - 1;
+	startY = bottom > 0 ? bottom : 0;
+	endY = top < MAP_HEIGHT ? top : MAP_HEIGHT - 1;
 
-    const GLchar* fragment_shader =
-        "#version 330\n"
-        "uniform sampler2D Texture;\n"
-        "in vec2 Frag_UV;\n"
-        "in vec4 Frag_Color;\n"
-        "out vec4 Out_Color;\n"
-        "void main()\n"
-        "{\n"
-        "	Out_Color = Frag_Color * texture( Texture, Frag_UV.st);\n"
-        "}\n";
 
-    g_ShaderHandle = glCreateProgram();
-    g_VertHandle = glCreateShader(GL_VERTEX_SHADER);
-    g_FragHandle = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(g_VertHandle, 1, &vertex_shader, 0);
-    glShaderSource(g_FragHandle, 1, &fragment_shader, 0);
-    glCompileShader(g_VertHandle);
-    glCompileShader(g_FragHandle);
-    glAttachShader(g_ShaderHandle, g_VertHandle);
-    glAttachShader(g_ShaderHandle, g_FragHandle);
-    glLinkProgram(g_ShaderHandle);
+	static float32 waveAngle = 0.0f;
+	static float32 waveAmp = 0.1f;
+	waveAngle += deltaTime * 1.0f;
+	if(waveAngle > RADIANS(360)) waveAngle = 0;
+	glUseProgram(gRenderContext.shaderProgramID);
+	glUniform1f(gRenderContext.waveAngleUniformLocation, waveAngle);
 
-    g_AttribLocationTex = glGetUniformLocation(g_ShaderHandle, "Texture");
-    g_AttribLocationProjMtx = glGetUniformLocation(g_ShaderHandle, "ProjMtx");
-    g_AttribLocationPosition = glGetAttribLocation(g_ShaderHandle, "Position");
-    g_AttribLocationUV = glGetAttribLocation(g_ShaderHandle, "UV");
-    g_AttribLocationColor = glGetAttribLocation(g_ShaderHandle, "Color");
+	//Store height information at the corners!
+	//Then everything will just work...
+	Vert verts[4];
+	std::vector<Vector2> waterTiles;
+	for(uint32 x = startX; x <= endX; x++) {
+		for(uint32 y = startY; y <= endY; y++) {
+			if(gHeightmap[XYToIndex(x, y)] < -0.15f) {
+				waterTiles.push_back(Vector2(x, y));
+			}
+			uint32 index0 = XYToIndex(x, y);
+			uint32 index1 = XYToIndex(x + 1, y);
+			uint32 index2 = XYToIndex(x + 1, y + 1);
+			uint32 index3 = XYToIndex(x, y + 1);
+			verts[0] = Vert { Vector2(x, y), Vector2(0.0f, 0.0f), gTilemap[index0]};
+			verts[1] = Vert { Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), gTilemap[index1] };
+			verts[2] = Vert { Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), gTilemap[index2] };
+			verts[3] = Vert { Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), gTilemap[index3] };
+			DEBUGPushVertices(&gRenderContext, verts, 4);
 
-    glGenBuffers(1, &g_VboHandle);
+//			uint32 index = (y * MAP_WIDTH) + x;
+//			DEBUGFillRect(x, y, 1.0f, 1.0f, gTilemap[index], &gRenderContext);
+		}
+	}
 
-    glGenVertexArrays(1, &g_VaoHandle);
-    glBindVertexArray(g_VaoHandle);
-    glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
-    glEnableVertexAttribArray(g_AttribLocationPosition);
-    glEnableVertexAttribArray(g_AttribLocationUV);
-    glEnableVertexAttribArray(g_AttribLocationColor);
+	DEBUGFlushContext(&gRenderContext);
 
-#define OFFSETOF(TYPE, ELEMENT) ((size_t)&(((TYPE *)0)->ELEMENT))
-    glVertexAttribPointer(g_AttribLocationPosition, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)OFFSETOF(ImDrawVert, pos));
-    glVertexAttribPointer(g_AttribLocationUV, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)OFFSETOF(ImDrawVert, uv));
-    glVertexAttribPointer(g_AttribLocationColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)OFFSETOF(ImDrawVert, col));
-#undef OFFSETOF
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    ImGui_ImplGlfwGL3_CreateFontsTexture();
+	for(Vector2& tile : waterTiles)
+		DEBUGDrawTexture(textureID, tile.x, tile.y, 1.0f, 1.0f, Color(), &gRenderContext);
+	glUniform1i(gRenderContext.isWaterUniformLocation, 1);
+	DEBUGFlushContext(&gRenderContext);
+	glUniform1i(gRenderContext.isWaterUniformLocation, 0);
 
-    return true;
-}
+	DEBUGDrawTexture(textureID, (xpos * 5.0f) + 3.0f, 7.0f, 1.0f, 1.0f, Color(), &gRenderContext);
+	DEBUGFillRect(gPlayerTransform.position.x, gPlayerTransform.position.y, gPlayerTransform.size.x, gPlayerTransform.size.y, Color(0.0f, 1.0f, 0.0f, 1.0f), &gRenderContext);
+	DEBUGFlushContext(&gRenderContext);
 
-static void ImGUIRenderDrawLists(ImDrawList** const cmd_lists, int cmd_lists_count) {
-	if (cmd_lists_count == 0)
-		return;
+	static bool drawGrid = false;
+	if(drawGrid) {
+		for(uint32 x = startX; x <= endX; x++) {
+			for(uint32 y = startY; y <= endY; y++) {
+				DEBUGFillRect(x, y, 1.0f, 1.0f, Color(), &gRenderContext);
+				}
+			}
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		DEBUGFlushContext(&gRenderContext);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
 
-	GLint last_program, last_texture;
-  glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-  glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-  glEnable(GL_BLEND);
-  glBlendEquation(GL_FUNC_ADD);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glDisable(GL_CULL_FACE);
-  glDisable(GL_DEPTH_TEST);
-  glEnable(GL_SCISSOR_TEST);
-  glActiveTexture(GL_TEXTURE0);
 
-  // Setup orthographic projection matrix
-  const float width = ImGui::GetIO().DisplaySize.x;
-  const float height = ImGui::GetIO().DisplaySize.y;
-  const float ortho_projection[4][4] =
-  {
-      { 2.0f/width,	0.0f,			0.0f,		0.0f },
-      { 0.0f,			2.0f/-height,	0.0f,		0.0f },
-      { 0.0f,			0.0f,			-1.0f,		0.0f },
-      { -1.0f,		1.0f,			0.0f,		1.0f },
-  };
 
-	glUseProgram(g_ShaderHandle);
-    glUniform1i(g_AttribLocationTex, 0);
-    glUniformMatrix4fv(g_AttribLocationProjMtx, 1, GL_FALSE, &ortho_projection[0][0]);
+	std::stringstream stream;
+	ImGui::NewFrame();
+	stream << "Player Position: " << gPlayerTransform.position;
+	ImGui::Text(stream.str().c_str());
+	stream.str(std::string());
+	stream << "Tiles Drawn: " << (endX - startX) * (endY - startY);
+	ImGui::Text(stream.str().c_str());
+	stream.str(std::string());
+	stream << "DeltaTime: " << app.GetDeltaTime() << "  FPS: " << 1000.0f / app.GetDeltaTime();
+	ImGui::Text(stream.str().c_str());
 
-    // Grow our buffer according to what we need
-    size_t total_vtx_count = 0;
-    for (int n = 0; n < cmd_lists_count; n++)
-        total_vtx_count += cmd_lists[n]->vtx_buffer.size();
-    glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
-    size_t needed_vtx_size = total_vtx_count * sizeof(ImDrawVert);
-    if (g_VboSize < needed_vtx_size)
-    {
-        g_VboSize = needed_vtx_size + 5000 * sizeof(ImDrawVert);  // Grow buffer
-        glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)g_VboSize, NULL, GL_STREAM_DRAW);
-    }
+	ImGui::Checkbox("Draw grid", &drawGrid);
+	//ImGui::ShowTestWindow();
+	//ImGui::ShowStyleEditor();
+	ImGui::Render();
 
-    // Copy and convert all vertices into a single contiguous buffer
-    unsigned char* buffer_data = (unsigned char*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    if (!buffer_data)
-        return;
-    for (int n = 0; n < cmd_lists_count; n++)
-    {
-        const ImDrawList* cmd_list = cmd_lists[n];
-        memcpy(buffer_data, &cmd_list->vtx_buffer[0], cmd_list->vtx_buffer.size() * sizeof(ImDrawVert));
-        buffer_data += cmd_list->vtx_buffer.size() * sizeof(ImDrawVert);
-    }
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(g_VaoHandle);
-
-    int cmd_offset = 0;
-    for (int n = 0; n < cmd_lists_count; n++)
-    {
-        const ImDrawList* cmd_list = cmd_lists[n];
-        int vtx_offset = cmd_offset;
-        const ImDrawCmd* pcmd_end = cmd_list->commands.end();
-        for (const ImDrawCmd* pcmd = cmd_list->commands.begin(); pcmd != pcmd_end; pcmd++)
-        {
-            if (pcmd->user_callback)
-            {
-                pcmd->user_callback(cmd_list, pcmd);
-            }
-            else
-            {
-                glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->texture_id);
-                glScissor((int)pcmd->clip_rect.x, (int)(height - pcmd->clip_rect.w), (int)(pcmd->clip_rect.z - pcmd->clip_rect.x), (int)(pcmd->clip_rect.w - pcmd->clip_rect.y));
-                glDrawArrays(GL_TRIANGLES, vtx_offset, pcmd->vtx_count);
-            }
-            vtx_offset += pcmd->vtx_count;
-        }
-        cmd_offset = vtx_offset;
-    }
-
-    // Restore modified state
-    glBindVertexArray(0);
-    glUseProgram(last_program);
-    glDisable(GL_SCISSOR_TEST);
-    glBindTexture(GL_TEXTURE_2D, last_texture);
+	app.EndFrame();
 }
 
 int main () {
-	PlatformInit("Raptor GLTest", 1280, 720, false);
-	running = true;
-	ImGuiIO& io = ImGui::GetIO();
-	io.DisplaySize.x = 1280.0f;
-	io.DisplaySize.y = 720.0f;
-	io.DeltaTime = 1.0f/60.0f;
-	io.IniFilename = "imgui.ini";
-	io.KeyMap[ImGuiKey_Tab] = KEY_TAB;
-	io.KeyMap[ImGuiKey_LeftArrow] = KEY_LEFT;
-	io.KeyMap[ImGuiKey_RightArrow] = KEY_RIGHT;
-	io.KeyMap[ImGuiKey_UpArrow] = KEY_UP;
-	io.KeyMap[ImGuiKey_DownArrow] = KEY_DOWN;
-	//io.KeyMap[ImGuiKey_PageUp] = KEY_PAGE_UP;
-	//io.KeyMap[ImGuiKey_PageDown] = KEY_PAGE_DOWN;
-	io.KeyMap[ImGuiKey_Home] = KEY_HOME;
-	io.KeyMap[ImGuiKey_End] = KEY_END;
-	io.KeyMap[ImGuiKey_Delete] = KEY_DELETE;
-	io.KeyMap[ImGuiKey_Backspace] = KEY_BACKSPACE;
-	io.KeyMap[ImGuiKey_Enter] = KEY_ENTER;
-	io.KeyMap[ImGuiKey_Escape] = KEY_ESCAPE;
-	io.KeyMap[ImGuiKey_A] = KEY_A;
-	io.KeyMap[ImGuiKey_C] = KEY_C;
-	io.KeyMap[ImGuiKey_V] = KEY_V;
-	io.KeyMap[ImGuiKey_X] = KEY_X;
-	io.KeyMap[ImGuiKey_Y] = KEY_Y;
-	io.KeyMap[ImGuiKey_Z] = KEY_Z;
-	io.RenderDrawListsFn  = ImGUIRenderDrawLists;
-	CreateShaderObjects();
+	app.Create("Raptor ImGUI", 1280, 720, false);
+	ImGuiContextInit(&gImGuiContext);
 
-	// io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
-	// io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
+	DEBUGInitRenderer(&gRenderContext, 4096);
+	textureID = DEBUGLoadTexture("Assets/water.png");
 
-	renderer = new DebugRenderer();
+	const float32 WIDTH_IN_METERS = 30.0f;
+	float32 heightInMeters = WIDTH_IN_METERS * (app.GetHeight() / app.GetWidth());
+	gCameraTransform.size = Vector2(WIDTH_IN_METERS, heightInMeters);
+	Matrix4 projection = TransformToOrtho(gCameraTransform, 1.0f);
+	DEBUGSetProjectionMatrix(&gRenderContext, projection);
+	gPlayerTransform.size.x = 1.0f;
+	gPlayerTransform.size.y = 1.0f;
 
-	//TODO specifiy component registration params inside the systems?
-	// ecs = new ECSManager();
-	// ecs->RegisterComponent<Transform2D>(0);
-	// ecs->RegisterComponent<SpriteComponent>(0);
-	// ecs->RegisterComponent<TextComponent>(0);
-	// ecs->Initalize();
+	OpenSimplexNoise noise(0);
+	gHeightmap = new float32[MAP_WIDTH_PLUS_ONE * MAP_HEIGHT_PLUS_ONE];
+	gTilemap = new Color[MAP_WIDTH_PLUS_ONE * MAP_HEIGHT_PLUS_ONE];
 
-	textureID = DEBUGLoadTexture("Assets/null.png");
-	// auto renderSystem = ecs->CreateSystem<RenderSystem2D>();
-	// //renderSystem->SetProjectionMatrix(Matrix4::Ortho(0, 1270, 0, 720, 0.1, 1000, 1.0));
-	// auto entity = ecs->CreateEntity();
-	// auto sprite =ecs->CreateComponent<SpriteComponent>(entity);
-	// sprite->x = 0;
-	// sprite->y = 0;
-	// sprite->width = 512;
-	// sprite->height = 512;
-	// sprite->textureID = textureID;
-
-	DEBUGInitRendererWithStruct();
-	//DEBUGInitRendererWithVert();
+	for(uint32 i = 0; i < MAP_WIDTH_PLUS_ONE * MAP_HEIGHT_PLUS_ONE; i++) {
+		uint32 y = (i / MAP_WIDTH);
+		uint32 x = i - (y * MAP_WIDTH);
+		gHeightmap[i] = noise.FBM(x, y, 6, 0.01f, 0.5f);
+		gTilemap[i] = SampleColor(x, y);
+	}
 
 #ifndef __EMSCRIPTEN__
 	LOG_INFO("The main loop is running...");
-	while (running) {
+	while (app.isRunning) {
 		MainLoop();
 	}
 

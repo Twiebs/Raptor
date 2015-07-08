@@ -50,7 +50,7 @@ RenderSystem2D::RenderSystem2D(uint32 batchCapacity) :
 
 	glBindVertexArray(0);
 
-	shader = DEBUGLoadShaderFromFile("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag");
+	shader = new GLSLProgram(DEBUGLoadShaderFromFile("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag"));
 	isTextUniformLoc = shader->GetUniformLocation("isText");
 }
 
@@ -65,7 +65,7 @@ RenderSystem2D::~RenderSystem2D() {
 //Called by the entityManager when this system is added
 bool RenderSystem2D::Startup(ECSManager* manager) {
 	//Get the id of the components that the system will process
-	transformComponentID = manager->ComponentTypeOf<Transform2D>()->index;
+	//transformComponentID = manager->ComponentTypeOf<Transform2D>()->index;
 	textComponentID = manager->ComponentTypeOf<TextComponent>()->index;
 	spriteComponentID = manager->ComponentTypeOf<SpriteComponent>()->index;
 	REGISTER_SYSTEM_TAG (RenderSystem2D);

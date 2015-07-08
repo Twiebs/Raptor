@@ -14,7 +14,6 @@
 #include <ECS/Component.hpp>
 #include <ECS/ComponentBlock.hpp>
 #include <ECS/ComponentType.hpp>
-#include <ECS/Entity.hpp>
 #include <ECS/ISystem.hpp>
 
 #include <Utils/UnorderedArray.hpp>
@@ -32,6 +31,12 @@
 #define COMPONET_CREATED
 #endif
 
+struct Entity {
+	uint32 id = 0;
+	uint64 uuid = 0;
+};
+
+
 //NOTE
 // - Components should not hold any data...
 // - They simply should just point to the data that they are referencing...
@@ -42,7 +47,7 @@
 
 //NOTE Why do we even bother inheriting from some service thing?
 //it serves no value whatsoever
-class ECSManager{
+class ECSManager {
 public:
 	ECSManager();
 	~ECSManager();
@@ -60,41 +65,44 @@ public:
 		return (T*) system;
 	}
 
-	//This opperation should be delayed until the next Tick of the engine
+	//This operation should be delayed until the next Tick of the engine
 	//Destroys a system in the engine
 	template<typename T>
 	void DestroySystem();
 
 	//Entity stuff
-	EntityID CreateEntity();
-	Entity* GetEntity(EntityID id);
+	Entity CreateEntity();
 
-	void RemoveEntity(Entity* entity);
+	void RemoveEntity(Entity entity);
 
 	//Creates a component or reused one from a pool
 	//Creates a component and stores a ptr to it by the entityID
 	template<typename T, typename ... Args>
-	T* CreateComponent(EntityID entityID, Args ... args) {
+	T* CreateComponent(Entity entity, Args ... args) {
 		static_assert(std::is_base_of<Component, T>::value, "You are trying to create a component that does not inherit from the base component interface!");
+		//The entity provided has already been destroyed by the manager!
+		assert(entity.uuid == entities[entity.id].uuid);
+
 		ComponentType* componentType = ComponentTypeOf<T>();
 		ComponentBlock* componentBlock = &componentBlocks[componentType->index - 1];
 		T* component = (T*) componentBlock->Alloc<T>(args...);
-		component->ownerID = entityID;
+		component->ownerID = entity.id;	//TODO Do we actualy care?
 		uint32 componentIndex = componentBlock->Count();//Count is on purpose
 		//We set the componentIndex to +1 of the actual index so that 0 represents that the entity does not have a component of that type
-		componentsByEntityID[componentType->index - 1].Set(entityID,
+		componentsByEntityID[componentType->index - 1].Set(entity.id,
 				componentIndex);
 		return component;
 	}
 
 	//Gets a component from an entity id
 	template<typename T>
-	T* GetComponent(EntityID id) {
+	T* GetComponent(Entity entity) {
 		static_assert(std::is_base_of<Component, T>::value, "You are trying to get a component that does not inherit from the base component interface!");
+		assert(entity.uuid == entities[entity.id].uuid);
+
 		ComponentType* componentType = ComponentTypeOf<T>();
 		ComponentBlock* componentBlock = &componentBlocks[componentType->index - 1];
-		uint32 componentIndex = componentsByEntityID[componentType->index - 1].Get(
-				id);
+		uint32 componentIndex = componentsByEntityID[componentType->index - 1].Get(entity.id);
 		if (componentIndex == 0) {
 			//The entity does not have this component
 			return nullptr;
@@ -116,7 +124,7 @@ public:
 	}
 
 	template<typename T>
-	void RemoveComponent(EntityID id) {
+	void RemoveComponent(Entity entity) {
 
 	}
 
@@ -134,18 +142,14 @@ public:
 	}
 
 	ComponentBlock* GetComponentBlock(uint32 index) const;
-
-	std::vector<Entity*>* GetEntities();
-	std::vector<Entity*>* GetEntities(std::bitset<MAX_COMPONENTS>);
-
 	void Initalize();
 
 	void Update(double deltaTime);
 
 private:
 	//Any entity with an ID of zero was not created properly
-	EntityID nextEntityID = 1;	//The entity id is the index of the created entity.  These are recycled
-	EntityUUID nextEntityUUID = 1;	//This is a unique identifier every time a entity is recycled or created
+	uint32 nextEntityID = 1;	//The entity id is the index of the created entity.  These are recycled
+	uint64 nextEntityUUID = 1;	//This is a unique identifier every time a entity is recycled or created
 
 	std::vector<ISystem*> systems;	//Array of systems that have been created by the engine
 
@@ -162,9 +166,9 @@ private:
 	//Also why store componentBlockPtrs? we could allocate them by value... there is no reason not to...
 
 	std::vector<Entity> entities;					//Array of all the entities ever created by the manager indexed by their entity.id
-	std::vector<EntityID> removedEntities;			//Array of entities that have been removed and are awaiting recycling
-	ComponentBlock* componentBlocks;
+	std::vector<uint32> removedEntities;			//Array of entities that have been removed and are awaiting recycling
 
+	ComponentBlock* componentBlocks;
 	std::vector<UnorderedArray<uint32>> componentsByEntityID;
 
 	//Component Type

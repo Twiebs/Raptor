@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <Graphics/Mesh.hpp>
 #include <Graphics/GLSLProgram.hpp>
 #include <memory>
 
@@ -12,7 +11,7 @@ public:
 	Model();
 	~Model();
 
-	std::vector<std::unique_ptr<Mesh>> meshes;
+	//std::vector<std::unique_ptr<Mesh>> meshes;
 private:
 
 };

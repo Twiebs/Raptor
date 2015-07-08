@@ -5,6 +5,8 @@
 
 #define PI 3.14159265358979323846
 
+#define RADIANS(x) (PI / 180.f) * x
+
 namespace MathUtils {
 
 	float Clamp(float value, float min, float max);
@@ -28,6 +30,11 @@ namespace MathUtils {
 
 	inline static float Max(float value, float max) {
 		return value > max ? value : max;
+	}
+
+	inline static int FastFloor(float64 x) {
+		int xi = (int)x;
+		return x < xi ? xi - 1 : xi;
 	}
 
 };

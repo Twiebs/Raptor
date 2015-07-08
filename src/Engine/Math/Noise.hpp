@@ -1,13 +1,15 @@
 //Copyright 2015 Torin Wiebelt
 
 #pragma once
-#include <glm/gtc/noise.hpp>
+#include <Math/MathUtils.hpp>
 
 //Base class all noise implementations derrive from
 //This class provideds maniupulation functions to preforme on all types of noise
 //Derived classes must provide 2D and 3D noise; however, 1D and 4D are not required... mabye... for now...
 class Noise {
 public:
+	virtual ~Noise() { }
+
 	virtual float Eval(float x) = 0;
 	virtual float Eval(float x, float y) = 0;
 	virtual float Eval(float x, float y, float z) = 0;
@@ -54,28 +56,44 @@ public:
 	float Eval(float x, float y, float z, float w) final;
 };
 
-//Open Simplex noise implementation originaly created by Kurt Spencer
-//His Java Implementation : https://gist.github.com/KdotJPG/b1270127455a94ac5d19
-//This is based on Stephen M. Cameron port of Kurt Spencer's java implementation https://github.com/smcameron/open-simplex-noise-in-c/blob/master/open-simplex-noise.c
+//Open Simplex noise implementation ported from Kurt Spencers OpenSimplexNoise
+// https://gist.github.com/KdotJPG/b1270127455a94ac5d19
 class OpenSimplexNoise : public Noise {
 public:
-	OpenSimplexNoise(unsigned int seed);
-	virtual ~OpenSimplexNoise();
+	OpenSimplexNoise(uint64);
+	virtual ~OpenSimplexNoise() { }
 
 	float Eval(float x) final;
 	float Eval(float x, float y) final;
 	float Eval(float x, float y, float z) final;
 	float Eval(float x, float y, float z, float w) final;
-};
 
-//Wrapper class for glm simplex noise implementation
-class GLMSimplexNoise : public Noise {
-public:
-	GLMSimplexNoise(unsigned int seed = 0);
-	virtual ~GLMSimplexNoise();
+private:
+	uint16 perm[256];
+	uint16 permGradIndex3D[256];
 
-	float Eval(float x) final;
-	float Eval(float x, float y) final;
-	float Eval(float x, float y, float z) final;
-	float Eval(float x, float y, float z, float w) final;
+	float64 Extrapolate(int xsb, int ysb, double dx, double dy);
+
+	const float64 STRETCH_CONSTANT_2D = -0.211324865405187;    //(1/Math.sqrt(2+1)-1)/2;
+	const float64 SQUISH_CONSTANT_2D = 0.366025403784439;      //(Math.sqrt(2+1)-1)/2;
+	const float64 STRETCH_CONSTANT_3D = -1.0 / 6;              //(1/Math.sqrt(3+1)-1)/3;
+	const float64 SQUISH_CONSTANT_3D = 1.0 / 3;                //(Math.sqrt(3+1)-1)/3;
+	const float64 STRETCH_CONSTANT_4D = -0.138196601125011;    //(1/Math.sqrt(4+1)-1)/4;
+	const float64 SQUISH_CONSTANT_4D = 0.309016994374947;      //(Math.sqrt(4+1)-1)/4;
+
+	const float64 NORM_CONSTANT_2D = 47;
+	const float64 NORM_CONSTANT_3D = 103;
+	const float64 NORM_CONSTANT_4D = 30;
+
+	const uint64 DEFAULT_SEED = 0;
+
+	//Gradients for 2D. They approximate the directions to the
+	//vertices of an octagon from the center.
+	const int8 gradients2D[16] = {
+		 5,  2,    2,  5,
+		-5,  2,   -2,  5,
+		 5, -2,    2, -5,
+		-5, -2,   -2, -5,
+	};
+
 };

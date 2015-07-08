@@ -1,12 +1,13 @@
 #pragma once
 
+#include <iostream>
 #include <stdint.h>
 
 //#ifdef __EMSCRIPTEN__
 #define OPENGL_ES
 //#endif
 
-#define GLFW_APPLICATION
+//#define GLFW
 #define SDL
 
 //#define BENCHMARK
@@ -31,7 +32,6 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
-
 //TODO Make a decision about using these terse typedefs
 typedef uint8_t  U8;
 typedef uint16_t U16;
@@ -53,8 +53,6 @@ typedef double F64;
 //TODO these should no longer be exposed to the user so they should just be uint64s
 typedef uint64 AssetID;
 typedef uint64 TaskID;
-typedef uint64 EntityID;
-typedef uint64 EntityUUID;
 
 //Error logging
 #define LOG_ERROR(x) std::cout << "ERROR: " << x << "\n"

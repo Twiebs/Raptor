@@ -11,17 +11,16 @@ ECSManager::~ECSManager() {
 	delete[] componentBlocks;
 }
 
-EntityID ECSManager::CreateEntity() {
+Entity ECSManager::CreateEntity() {
 	if (removedEntities.size() > 0) {
 		auto entityID = removedEntities[removedEntities.size() - 1];
 		removedEntities.pop_back();
-		GetEntity(entityID)->uuid = nextEntityUUID++;
-		return entityID;
+		entities[entityID].uuid = nextEntityUUID++;
+		return entities[entityID];
 	}
-
-	entities.emplace_back(Entity(this, nextEntityUUID++, nextEntityID++));
+	entities.emplace_back(Entity{nextEntityID++, nextEntityUUID++});
 	auto& entity = entities[entities.size() - 1];
-	return entity.id;
+	return entity;
 }
 
 //TODO also create default entity size etc...
@@ -35,20 +34,12 @@ void ECSManager::Initalize() {
 	}
 }
 
-//Why do we need something silly like this?
-//Im still thinking like a java programmer...
-Entity* ECSManager::GetEntity(EntityID id) {
-	assert(id != 0);
-	return &entities[id];
-}
-
-
 ComponentBlock* ECSManager::GetComponentBlock(uint32 index) const {
 	return &componentBlocks[index - 1];
 }
 
 //FIXME now broken...
-void ECSManager::RemoveEntity(Entity* entity) {
+void ECSManager::RemoveEntity(Entity entity) {
 //	//TODO free entities components
 //	entity->componentBits = 0;
 //	entity->uuid = 0;	//UUID of zero is not provided by the engine
@@ -80,11 +71,7 @@ void ECSManager::RemoveEntity(Entity* entity) {
 //	}
 //}
 
-//Returns the actual array with the entities in it
-std::vector<Entity*>* ECSManager::GetEntities() {
-	//return &entities;
-	return nullptr;
-}
+
 
 //Gets or creates a new array with entities that contain the components
 //std::vector<Entity*>* ECSManager::GetEntities(std::bitset<MAX_COMPONENTS> componentMaskBits) {
