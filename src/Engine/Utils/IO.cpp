@@ -1,8 +1,8 @@
 #include "IO.hpp"
 
 #ifdef SDL
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 Pixmap* LoadPixmap(std::string filename) {
 	SDL_Surface* image = IMG_Load(filename.c_str());
 	if (image == nullptr) {

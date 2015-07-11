@@ -1,0 +1,19 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	0	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+main	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^#undef main$/;"	macro	line:8	file:
+window	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^SDL_Window* window;$/;"	variable	line:10
+context	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^SDL_GLContext context;$/;"	variable	line:11
+AUDIO_FREQUENCY	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^#define AUDIO_FREQUENCY /;"	macro	line:13	file:
+AUDIO_FORMAT	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^#define AUDIO_FORMAT /;"	macro	line:14	file:
+AUDIO_CHANNELS	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^#define AUDIO_CHANNELS /;"	macro	line:15	file:
+AUDIO_CHUNK_SIZE	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^#define AUDIO_CHUNK_SIZE /;"	macro	line:16	file:
+Create	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^int Application::Create(const char* title, uint32 width, uint32 height, bool fullscreen) {$/;"	function	line:18	class:Application	signature:(const char* title, uint32 width, uint32 height, bool fullscreen)
+Destroy	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^int Application::Destroy() {$/;"	function	line:57	class:Application	signature:()
+BeginFrame	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^void Application::BeginFrame() {$/;"	function	line:64	class:Application	signature:()
+EndFrame	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^void Application::EndFrame() {$/;"	function	line:71	class:Application	signature:()
+GetTime	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^float64 Application::GetTime() {$/;"	function	line:76	class:Application	signature:()
+PollEvents	/home/torin/workspace/Raptor/src/Engine/Application/SDLApplication.cpp	/^void Application::PollEvents() {$/;"	function	line:81	class:Application	signature:()

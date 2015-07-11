@@ -90,7 +90,7 @@ endif(EMSCRIPTEN)
 
 #EMSCRIPTEN allready handles these and MSVC does its own thing...
 if(NOT EMSCRIPTEN AND NOT MSVC)
-  foreach(lib OpenGL GLEW SDL SDLIMAGE)
+  foreach(lib OpenGL GLEW SDL2 SDL2_image SDL2_mixer)
     find_package(${lib} REQUIRED)
     string(TOUPPER ${lib} lib)
     if(NOT ${lib}_FOUND)

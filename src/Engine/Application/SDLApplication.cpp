@@ -3,8 +3,8 @@
 #include <Application/Application.hpp>
 
 #include <GL/glew.h>
-#include <SDL/SDL.h>
-#include <SDL/SDL_mixer.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
 #undef main
 
 SDL_Window* window;

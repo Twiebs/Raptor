@@ -1,4 +1,4 @@
-#include <Graphics\DEBUGRenderer.hpp>
+#include "DEBUGRenderer.hpp"
 
 void DEBUGFlushGroup(DEBUGRenderGroup* group) {
 	glActiveTexture(0);
