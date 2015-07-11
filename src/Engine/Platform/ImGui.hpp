@@ -34,7 +34,7 @@ static void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount)
     glUniform1i(imGuiContext->samplerUniformLoc, 0);
     glUniformMatrix4fv(imGuiContext->projectionUniformLoc, 1, GL_FALSE, &projection[0][0]);
 
-    uint32 vertexCount;
+    uint32 vertexCount = 0;
     for (int i = 0; i < drawListCount; i++) {
         vertexCount += drawList[i]->vtx_buffer.size();
     }

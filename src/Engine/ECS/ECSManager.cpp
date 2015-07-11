@@ -18,8 +18,11 @@ Entity ECSManager::CreateEntity() {
 		entities[entityID].uuid = nextEntityUUID++;
 		return entities[entityID];
 	}
-	entities.emplace_back(Entity{nextEntityID++, nextEntityUUID++});
-	auto& entity = entities[entities.size() - 1];
+
+	Entity entity;
+	entity.id = nextEntityID++;
+	entity.uuid = nextEntityUUID++;
+	entities.push_back(entity);
 	return entity;
 }
 

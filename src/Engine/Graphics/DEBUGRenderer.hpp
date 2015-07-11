@@ -3,22 +3,32 @@
 #include <Core/Common.hpp>
 #include <GL/glew.h>
 
-#include <Utils/IO.hpp>
-#include <Math/Vector2.hpp>
+#include <vector>
 #include <Graphics/Vertex2D.hpp>
+#include <Math/Vector2.hpp>
+#include <Math/Matrix4.hpp>
 
-struct GLRenderGroup {
+struct Vert {
+	Vector2 position;
+	Vector2 uv;
+	Color color;
+};
+
+struct DEBUGRenderGroup {
 	GLuint vertexArrayID;
 	GLuint vertexBufferID;
 	GLuint elementBufferID;
-	GLuint shaderProgramID;
-	GLuint currentVertexIndex;
-	GLuint currentVertexCount;
-	GLuint maxVertexCount;
+
+	GLuint currentTextureID;
+
+	U32 maxVertexCount;
+	U32 currentVertexCount = 0;
+	U32 drawCalls = 0;
 };
 
-void DEBUGInitGroup(GLRenderGroup* renderGroup, GLuint vertexCount, const char* vertexShaderSource, const char* fragmentShaderSource);
-void DEBUGDisposeGroup(GLRenderGroup* renderGroup);
-void DEBUGDrawTexture(GLuint textureID, float32 x, float32 y, float32 width, float32 height, GLRenderGroup* renderGroup);
-void DEBUGPushRect(float32 x, float32 y, float32 width, float32 height, GLRenderGroup* renderGroup);
-void DEBUGRenderGroup(GLRenderGroup* group);
+void DEBUGFlushGroup(DEBUGRenderGroup* group);
+void DEBUGPushVertices(DEBUGRenderGroup* group, Vert* vertices, uint32 count);
+void DEBUGDrawTexture(DEBUGRenderGroup* group, GLuint textureID, float32 x, float32 y, float32 width, float32 height, Color color);
+void DEBUGDrawCircle(DEBUGRenderGroup* group, float32 centerX, float32 centerY, float32 radius, uint32 numSegments);
+void DEBUGFillRect(DEBUGRenderGroup* group, float32 x, float32 y, float32 width, float32 height, Color color);
+void DEBUGCreateRenderGroup(DEBUGRenderGroup* group, uint32 maxVertexCount);

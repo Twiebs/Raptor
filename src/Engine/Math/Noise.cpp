@@ -48,6 +48,14 @@ float Fade(float t){
 }
 #pragma endregion
 
+
+const int8 OpenSimplexNoise::gradients2D[16] {
+		5, 2, 2, 5,
+		 -5, 2, -2, 5,
+		 5, -2, 2, -5,
+		 -5, -2, -2, -5,
+ };
+
 //OpenSimplex
 OpenSimplexNoise::OpenSimplexNoise(uint64 seed) {
 	uint16 source[256];

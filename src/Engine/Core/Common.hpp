@@ -3,14 +3,10 @@
 #include <iostream>
 #include <stdint.h>
 
-//#ifdef __EMSCRIPTEN__
-#define OPENGL_ES
-//#endif
+#define ASSET_DIR "../Assets/"
+#define ASSET(x) ASSET_DIR #x
 
-//#define GLFW
-#define SDL
-
-//#define BENCHMARK
+#define BENCHMARK 1
 #define CLOCK_RESOLUTION std::milli
 //#define MULTI_THREADED
 #define MINIMUM_THREADS 2
@@ -43,8 +39,8 @@ typedef int16_t S16;
 typedef int32_t S32;
 typedef int64_t S64;
 
-typedef float F32;
-typedef double F64;
+typedef float	F32;
+typedef double	F64;
 
 //EngineID system
 //Represents handles that index into arrays containing the requested data

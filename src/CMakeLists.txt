@@ -82,7 +82,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../CMake/Modules
 set(BUILD_TARGET "BuildTarget" CACHE STRING "Build target chosen by user at configure time")
 set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML5 Windows Linux Mac Android IOS XONE X360 PS3 PS4)
 
-add_definitions(-D_SDL)
+add_definitions(-DSDL)
 
 if(EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
@@ -122,15 +122,16 @@ if(MSVC)
   include_directories(../include)
   link_directories(../lib)
   set(LBIS
-glew32.lib
-glew32s.lib
-opengl32.lib
-freetype.lib
-SDL2.lib
-SDL2main.lib
-SDL2_image.lib
-glfw3.lib
-    )
+    glew32.lib
+    glew32s.lib
+    opengl32.lib
+    freetype.lib
+    SDL2.lib
+    SDL2main.lib
+    SDL2_image.lib
+    SDL2_mixer.lib
+    glfw3.lib
+  )
 endif(MSVC)
 
 
@@ -180,19 +181,23 @@ set(GRAPHICS_SRCS
       Engine/Graphics/GLSLProgram.cpp
       Engine/Graphics/GLSLProgram.hpp
 )
-add_library(graphics STATIC ${GRAPHICS_SRCS})
+add_library(Graphics STATIC ${GRAPHICS_SRCS})
+source_group(Graphics FILES ${GRAPHICS_SRCS})
 
 set(MATH_SRCS
-	  Engine/Math/Noise.cpp
-	  Engine/Math/Noise.hpp
-      Engine/Math/Matrix4.cpp
-      Engine/Math/Matrix4.hpp
-      Engine/Math/Vector2.cpp
-      Engine/Math/Vector2.hpp
-      Engine/Math/Vector3.hpp
-      Engine/Math/Vector3.cpp
+  Engine/Math/Noise.cpp
+  Engine/Math/Noise.hpp
+  Engine/Math/Random.cpp
+  Engine/Math/Random.hpp
+  Engine/Math/Matrix4.cpp
+  Engine/Math/Matrix4.hpp
+  Engine/Math/Vector2.cpp
+  Engine/Math/Vector2.hpp
+  Engine/Math/Vector3.hpp
+  Engine/Math/Vector3.cpp
 )
-add_library(math STATIC ${MATH_SRCS})
+add_library(Math STATIC ${MATH_SRCS})
+source_group(Math FILES ${MATH_SRCS})
 
 set(BASE_SRCS
   # Engine/Base/MeshComponent.hpp
@@ -212,9 +217,9 @@ set(BASE_SRCS
   Engine/Base/PhysicsSystem2D.hpp
   # Engine/Base/PhysicsSystem3D.hpp
 )
-add_library(base STATIC ${BASE_SRCS})
-target_link_libraries(base Box2D ecs graphics)
-
+add_library(Base STATIC ${BASE_SRCS})
+source_group(Base FILES ${BASE_SRCS})
+target_link_libraries(Base Box2D ECS Graphics)
 
 set(ECS_SRCS
   Engine/ECS/Component.hpp
@@ -223,21 +228,21 @@ set(ECS_SRCS
   Engine/ECS/ECSManager.cpp
   Engine/ECS/ECSManager.hpp
   Engine/ECS/ISystem.hpp
-) 
-add_library(ecs STATIC ${ECS_SRCS})
+)
+add_library(ECS STATIC ${ECS_SRCS})
+source_group(ECS FILES ${ECS_SRCS})
 
 SET(PLATFORM_SRCS
+  Engine/Application/SDLApplication.cpp
+  Engine/Application/EmscriptenApplication.cpp
   Engine/Application/Application.hpp
-  #Engine/Application/SDLApplication.cpp
   Engine/Utils/IO.cpp
   Engine/Utils/IO.hpp
-) 
-
-add_library(run STATIC ${PLATFORM_SRCS})
-
+)
+add_library(Platform STATIC ${PLATFORM_SRCS})
+source_group(Platform FILES ${PLATFORM_SRCS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
-
 
 add_executable(app Tests/Main.cpp)
 #Ensure EMCSCRIPTEN is given enough memory to work with...
@@ -247,11 +252,11 @@ if(EMSCRIPTEN)
 endif()
 
 target_link_libraries(app imgui)
-target_link_libraries(app graphics)
+target_link_libraries(app Graphics)
 target_link_libraries(app Box2D)
-target_link_libraries(app run)
-target_link_libraries(app ecs base)
-target_link_libraries(app math)
+target_link_libraries(app Platform)
+target_link_libraries(app ECS Base)
+target_link_libraries(app Math)
 target_link_libraries(app ${LIBS})
 
 # file(GLOB HTML_TESTS_SRCS_CPP HTMLTests/*.cpp)
@@ -266,4 +271,3 @@ target_link_libraries(app ${LIBS})
 # set(CMAKE_LIBRARY_PATH ../lib/${CMAKE_BUILD_TYPE})
 # target_link_libraries(RaptorTools ${RAPTOR_LIBS})
 #
-# source_group(Tools FILES ${TOOLS_SRCS})

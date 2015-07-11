@@ -3,9 +3,12 @@
 #include <cmath>
 #include <Core/Common.hpp>
 
-#define PI 3.14159265358979323846
+#define PI32 3.141592653589793238462643383f
+#define PI64 3.1415926535897932384626433832795028842
+#define TAU32 PI32 * 2
+#define TAU64 PI64 * 2
 
-#define RADIANS(x) (PI / 180.f) * x
+#define RADIANS(x) (PI32 / 180.f) * x
 
 namespace MathUtils {
 
@@ -25,11 +28,15 @@ namespace MathUtils {
 	}
 
 	inline static float Radians(float degrees) {
-		return (PI / 180.0f) * degrees;
+		return (PI32 / 180.0f) * degrees;
 	}
 
 	inline static float Max(float value, float max) {
 		return value > max ? value : max;
+	}
+
+	inline static F32 Min(F32 value, F32 min) {
+		return value < min ? value : min;
 	}
 
 	inline static int FastFloor(float64 x) {
