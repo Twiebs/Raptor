@@ -3,14 +3,13 @@
 #include <Core/Common.hpp>
 
 struct RGBA8 {
-	uint8 r;
-	uint8 g;
-	uint8 b;
-	uint8 a;
+	U8 r;
+	U8 g;
+	U8 b;
+	U8 a;
 };
 
-class Color {
-public:
+struct Color {
 	float r;
 	float g;
 	float b;
@@ -37,6 +36,7 @@ public:
 		result.a = left.a * scalar;
 		return result;
 	}
+
 	friend Color operator+(const Color& left, const Color& right) {
 		Color result;
 		result.r = left.r + right.r;

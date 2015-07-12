@@ -1,7 +1,9 @@
 #ifdef __EMSCRIPTEN__
+
 #include <GL/glew.h>
 #include <SDL/SDL.h>
 #include <emscripten/emscripten.h>
+#include <Application/Application.hpp>
 #undef main
 
 #define	KEY_UNKNOWN		0

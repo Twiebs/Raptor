@@ -11,7 +11,6 @@
 #include <Graphics/Pixmap.hpp>
 
 Pixmap* LoadPixmap(std::string filename);
-
 bool ParseGLSLShader(const std::string& filename, std::string& outFile);
 
 GLuint DEBUGCompileShader(std::string& shaderSource, GLenum shaderType);

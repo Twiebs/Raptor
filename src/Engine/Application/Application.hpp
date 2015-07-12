@@ -4,11 +4,8 @@
 #include <Core/Common.hpp>
 #include <Core/InputListener.hpp>
 
-
 #define AUDIO_STEREO 2
 #define AUDIO_MONO 1
-
-
 
 #ifdef SDL
 #define KEY_UNKOWN 0
@@ -176,6 +173,16 @@ public:
 
 	//Platform specific overrides
 	int Create(const char* tile, uint32 width, uint32 height, bool fullscreen);
+
+	void Run(void (*mainLoop)(void)) {
+		while(isRunning) {
+			BeginFrame();
+			PollEvents();
+			mainLoop();
+			EndFrame();
+		}
+	}
+
 	int Destroy();
 	void BeginFrame();
 	void EndFrame();

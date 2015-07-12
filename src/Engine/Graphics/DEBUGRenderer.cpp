@@ -106,3 +106,55 @@ void DEBUGCreateRenderGroup(DEBUGRenderGroup* group, uint32 maxVertexCount) {
 	group->currentVertexCount = 0;
 	group->maxVertexCount = maxVertexCount;
 }
+
+void DEBUGBindGroup(DEBUGRenderGroup* group) {
+	glBindVertexArray(group->vertexArrayID);
+}
+
+void DEBUGCreateBufferGroup(DEBUGBufferGroup* group, size_t size, U32 maxVertexCount) {
+	glGenVertexArrays(1, &group->vertexArrayID);
+	glBindVertexArray(group->vertexArrayID);
+
+	glGenBuffers(1, &group->vertexBufferID);
+	glBindBuffer(GL_ARRAY_BUFFER, group->vertexBufferID);
+	glBufferData(GL_ARRAY_BUFFER, size * maxVertexCount, nullptr, GL_DYNAMIC_DRAW);
+
+	uint32 indexCount = (maxVertexCount / 4) * 6;
+	uint32* indices = new uint32[indexCount];
+	for (uint32 i = 0, v = 0; i < indexCount; i += 6, v += 4) {
+		indices[i + 0] = v + 0;
+		indices[i + 1] = v + 3;
+		indices[i + 2] = v + 2;
+		indices[i + 3] = v + 0;
+		indices[i + 4] = v + 2;
+		indices[i + 5] = v + 1;
+	}
+	glGenBuffers(1, &group->elementBufferID);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, group->elementBufferID);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32) * indexCount, indices, GL_DYNAMIC_DRAW);
+	glBindVertexArray(0);
+	delete[] indices;
+}
+
+void DEBUGAddAttribute(DEBUGBufferGroup* group, U32 index, U32 type, U32 count, size_t size, void* offset) {
+		glBindBuffer(GL_ARRAY_BUFFER, group->vertexBufferID);
+		glEnableVertexAttribArray(index);
+		glVertexAttribPointer(index, count, type, GL_FALSE, size, (GLvoid*)offset);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void DEBUGDrawGroup(DEBUGBufferGroup* group) {
+	glBindVertexArray(group->vertexArrayID);
+	glDrawElements(GL_TRIANGLES, (group->currentVertexCount / 4) * 6, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(0);
+	group->currentVertexCount = 0;
+}
+
+void DEBUGPushVertices(DEBUGBufferGroup* group, void* vertices, U32 count) {
+	if (group->currentVertexCount + count > group->maxVertexCount)
+		DEBUGDrawGroup(group);
+	glBindBuffer(GL_ARRAY_BUFFER, group->vertexBufferID);
+	glBufferSubData(GL_ARRAY_BUFFER, group->vertexTypeSize * group->currentVertexCount, group->vertexTypeSize * count, (GLvoid*)vertices);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	group->currentVertexCount += count;
+}

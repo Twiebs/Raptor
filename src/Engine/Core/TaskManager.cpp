@@ -22,7 +22,6 @@ void TaskManager::Startup() {
 
 }
 
-
 void TaskManager::Update(double deltaTime) {
 #ifdef MULTI_THREADED
 	while (compleatedTasks.size() > 0) {

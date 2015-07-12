@@ -10,6 +10,8 @@ Pixmap* LoadPixmap(std::string filename) {
 		return nullptr;
 	}
 
+	//TODO we dont need to heap allocated this pixmap...
+	//We only need to allocate... wait... absoulty nothing...
 	Pixmap* pixmap = new Pixmap();
 	pixmap->width = image->w;
 	pixmap->height = image->h;
@@ -17,6 +19,8 @@ Pixmap* LoadPixmap(std::string filename) {
 	return pixmap;
 }
 #endif
+
+
 
 bool ParseGLSLShader(const std::string& filename, std::string& outFile) {
       std::ifstream fileStream(filename);

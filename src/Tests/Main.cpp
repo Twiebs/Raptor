@@ -42,7 +42,7 @@ struct BiomeEntry {
 
 template<class Archive>
 void serialize(Archive& archive, Vector2& vector) {
-	archive(cereal::make_nvp("X", vector.x), 
+	archive(cereal::make_nvp("X", vector.x),
 			cereal::make_nvp("Y", vector.y));
 }
 
@@ -143,7 +143,7 @@ struct GPUProgram {
 
 struct TextureRegion {
 	Vector2 uvs[4];
-};	
+};
 TextureRegion* regions;
 
 void UseProgram(GPUProgram* program) {
@@ -277,7 +277,7 @@ void CreateBiome(Biome* biome) {
 	{
 		std::ofstream os(ASSET("test.json"));
 		cereal::JSONOutputArchive archive(os);
-		
+
 		archive(cereal::make_nvp("Texture", "Textureid..."));
 		archive(cereal::make_nvp("Entries", *biome));
 	}
@@ -435,7 +435,7 @@ void CreateMap(Terrain2D* terrain, U32 width, U32 height) {
 	gTilemap = new Tile[(width + 1) * (height + 1)];
 	gAlphamap = new float32[(width + 1) * (height + 1)];
 	regions = new TextureRegion[4];
-	
+
 	ReloadHeightmap();
 	ReloadBiome();
 }
@@ -460,7 +460,7 @@ void MainLoop () {
 
 	const float32 ZOOM_SPEED = 0.5f;
 	static float32 cameraZoom = 1.0f;
-	float32 zoomSpeed = (cameraZoom) * ZOOM_SPEED; 
+	float32 zoomSpeed = (cameraZoom) * ZOOM_SPEED;
 	cameraZoom -= app.GetMouseWheel() * zoomSpeed;
 
 	const float32 PAN_SPEED = 0.05f;
@@ -575,8 +575,8 @@ void MainLoop () {
 
 					DEBUGFlushGroup(&gRenderGroup);
 					//glUniform1i(terrainShader.isWaterUniformLocation, 0);
-				} 
-				
+				}
+
 			}
 		}
 	}
@@ -609,7 +609,7 @@ void MainLoop () {
 		PlaySound(soundEffects[soundIndex]);
 		waveTime = 0;
 		nextWaveTime = rng.Range(1.5f, 3.0f);
-	} 
+	}
 
 	BENCHMARK_END(mainLoop);
 	std::stringstream stream;
@@ -714,7 +714,6 @@ int main () {
 	music = LoadMusic(ASSET("music/celestial.mp3"));
 	PlayMusic(music);
 
-
 	nullTextureID = DEBUGLoadTexture(ASSET("textures/null.png"));
 	waterTextureID = DEBUGLoadTexture(ASSET("textures/water.png"));
 	sandTextureID = DEBUGLoadTexture(ASSET("textures/sand.png"));
@@ -725,12 +724,8 @@ int main () {
 	gPlayerTransform.size.x = 1.0f;
 	gPlayerTransform.size.y = 1.0f;
 
-
-
 	CreateMap(&gTerrain, 512, 512);
 	mapTextureID = TerrainToTexture(&gTerrain);
-
-
 
 #ifndef __EMSCRIPTEN__
 	LOG_INFO("The main loop is running...");

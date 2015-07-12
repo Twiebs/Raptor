@@ -19,7 +19,6 @@ LoadFontTask::~LoadFontTask() {
 
 }
 
-
 LoadPixmapTask::LoadPixmapTask(AssetID id, AssetRegistry* registry, std::string& filename) :
 	id(id), registry(registry), filename(filename) {
 }

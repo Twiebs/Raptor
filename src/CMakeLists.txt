@@ -21,13 +21,13 @@
 #
 #
 
-#==============================================
+# =============================================
 #                 Build Options
-#==============================================
+# =============================================
 
-#==============================================
+# =============================================
 # --------------------------------------------
-#==============================================
+# =============================================
 
 # include_directories(Engine)
 
@@ -82,10 +82,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../CMake/Modules
 set(BUILD_TARGET "BuildTarget" CACHE STRING "Build target chosen by user at configure time")
 set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML5 Windows Linux Mac Android IOS XONE X360 PS3 PS4)
 
-add_definitions(-DSDL)
-
 if(EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
+else(EMSCRPITEN)
+  add_definitions(-DSDL)
 endif(EMSCRIPTEN)
 
 #EMSCRIPTEN allready handles these and MSVC does its own thing...
@@ -244,7 +244,7 @@ source_group(Platform FILES ${PLATFORM_SRCS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
-add_executable(app Tests/Main.cpp)
+add_executable(app Tests/GLArrayTexture.cpp)
 #Ensure EMCSCRIPTEN is given enough memory to work with...
 if(EMSCRIPTEN)
   target_link_libraries(app "-s TOTAL_MEMORY=134217728")
