@@ -26,25 +26,69 @@
 #include <SDL/SDL_mixer.h>
 #include <Math/Random.hpp>
 
-#include <rapidjson/document.h>
-#include <rapidjson/prettywriter.h>
+#include <cereal/cereal.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/archives/json.hpp>\
 
-static size_t memUsed;
-static size_t memAllocated;
-static size_t memFreed;
+#define TILE_SIZE_METERS 2
 
 struct BiomeEntry {
+	U32 regionIndex;
 	F32 startHeight;
 	F32 fadeBeginHeight;
 	F32 fadeEndHeight;
-	GLuint textureID;
 	Color color;
 };
 
+template<class Archive>
+void serialize(Archive& archive, Vector2& vector) {
+	archive(cereal::make_nvp("X", vector.x), 
+			cereal::make_nvp("Y", vector.y));
+}
+
+template<class Archive>
+void serialize(Archive & archive, BiomeEntry& entry) {
+	archive(cereal::make_nvp("StartHeight", entry.startHeight),
+			cereal::make_nvp("FadeBegin", entry.fadeBeginHeight),
+			cereal::make_nvp("FadeEnd", entry.fadeEndHeight),
+			cereal::make_nvp("Color" , entry.color),
+			cereal::make_nvp("RegionIndex", entry.regionIndex));
+}
+
 struct Biome {
+	GLuint textureID;
 	U32 entryCount;
 	BiomeEntry* entries;
 };
+
+template<class Archive>
+void serialize(Archive& archive, Color& color) {
+	archive(
+			cereal::make_nvp("r", color.r),
+			cereal::make_nvp("g", color.g),
+			cereal::make_nvp("b", color.b),
+			cereal::make_nvp("a", color.a)
+		);
+}
+
+template<class Archive>
+void save(Archive& archive, const Biome& biome) {
+	archive(cereal::make_size_tag(biome.entryCount));
+	for (auto i = 0; i < biome.entryCount; i++) {
+		archive(biome.entries[i]);
+	}
+}
+
+template<class Archive>
+void load(Archive& archive, Biome& biome) {
+	cereal::size_type size;
+	archive(cereal::make_size_tag(size));
+	biome.entryCount = (U32)size;
+	biome.entries = (BiomeEntry*)malloc(sizeof(BiomeEntry) * size);
+	for (auto i = 0; i < biome.entryCount; i++) {
+		archive(biome.entries[i]);
+	}
+}
 
 struct Terrain2D {
 	uint32 width, height;
@@ -61,15 +105,13 @@ struct Tile {
 	//Probably should use some type of drawlist thingy magihhuarrr nuggg
 };
 
-
+GLuint spriteProgramID;
 Terrain2D gTerrain;
 
 Application app;
 
 ImGuiContext gImGuiContext;
 DEBUGRenderGroup gRenderGroup;
-DEBUGRenderGroup terrainRenderGroup;
-DEBUGRenderGroup guiRenderGroup;
 
 Transform2D gCameraTransform;
 Transform2D gPlayerTransform;
@@ -80,6 +122,8 @@ F32* gAlphamap;
 GLuint vertexMemorySize;
 GLuint waterTextureID;
 GLuint sandTextureID;
+GLuint mapTextureID;
+GLuint nullTextureID;
 GLSLProgram* shader;
 
 Tile* gTilemap;
@@ -93,31 +137,17 @@ PhysicsSystem2D* physics2D;
 bool gSoundEnabled = false;
 bool gMusicEnabled = false;
 
-void Deserialize(const char* filename) {
-	using namespace rapidjson;
-	std::ifstream stream;
-	std::string json;
-	stream.open(filename);
-	if (stream.is_open()) {
-		while (!stream.eof()) {
-			json.push_back(stream.get());
-		}
-	}
+struct GPUProgram {
+	GLuint id;
+};
 
-	auto entryCount = 0;
-	Document document;
-	document.Parse(json.c_str());
-	auto& biomeObj = document["biome"];
-	if (biomeObj.IsArray()) {
-		for (auto i = 0; i < biomeObj.Size(); i++) {
-			auto& entry = biomeObj[i];
-			
-		}
-	}
-	else {
-		LOG_ERROR("Could not parse biome file correctly!");
-	}
+struct TextureRegion {
+	Vector2 uvs[4];
+};	
+TextureRegion* regions;
 
+void UseProgram(GPUProgram* program) {
+	glUseProgram(program->id);
 }
 
 struct Terrain2DShaderProgram {
@@ -128,7 +158,7 @@ struct Terrain2DShaderProgram {
 	GLuint waveAngleUniformLocation;
 
 	void Create() {
-		shaderProgramID = DEBUGLoadShaderFromFile(ASSET(shaders/Terrain2DVertex.glsl), ASSET(shaders/Terrain2DFragment.glsl));
+		shaderProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Terrain2DVertex.glsl"), ASSET("shaders/Terrain2DFragment.glsl"));
 		projectionUniformLocation = glGetUniformLocation(shaderProgramID, "projection");
 		isTextureUniformLocation = glGetUniformLocation(shaderProgramID, "isTexture");
 		isWaterUniformLocation = glGetUniformLocation(shaderProgramID, "isWater");
@@ -187,6 +217,34 @@ Matrix4 TransformToOrtho(Transform2D& transform, float32 zoom) {
 		);
 }
 
+GLuint CreateTextureFromPixels(U32 width, U32 height, U8* pixels) {
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	return textureID;
+}
+
+GLuint TerrainToTexture(Terrain2D* terrain) {
+	U8* pixels = new U8[terrain->width * terrain->height * 4];
+	for (U32 i = 0; i < terrain->width * terrain->height * 4; i+=4) {
+		U32 index = i / 4;
+		auto& entry = terrain->biome.entries[gTilemap[index].biomeEntryID - 1];
+		pixels[i + 0] = entry.color.r * 255;
+		pixels[i + 1] = entry.color.g * 255;
+		pixels[i + 2] = entry.color.b * 255;
+		pixels[i + 3] = entry.color.a * 255;
+
+	}
+	auto result = CreateTextureFromPixels(terrain->width, terrain->height, pixels);
+	delete[] pixels;
+	return result;
+}
+
 class Console {
 public:
 	void Draw();
@@ -209,14 +267,20 @@ void CreateBiome(Biome* biome) {
 	biome->entries[0].startHeight = 0.0f;
 	biome->entries[0].fadeBeginHeight = 0.9f;
 	biome->entries[0].fadeEndHeight = 1.0f;
-	biome->entries[0].color = Color(0.69f, 0.54f, 0.39f, 1.0f),
-	biome->entries[0].textureID = sandTextureID;
+	biome->entries[0].color = Color(0.69f, 0.54f, 0.39f, 1.0f);
 
 	biome->entries[1].startHeight = -1.0f;
 	biome->entries[1].fadeBeginHeight = -0.05f;
 	biome->entries[1].fadeEndHeight = 0.0f;
 	biome->entries[1].color = Color(0.38f, 0.54f, 0.67f, 1.0f);
-	biome->entries[1].textureID = waterTextureID;
+
+	{
+		std::ofstream os(ASSET("test.json"));
+		cereal::JSONOutputArchive archive(os);
+		
+		archive(cereal::make_nvp("Texture", "Textureid..."));
+		archive(cereal::make_nvp("Entries", *biome));
+	}
 }
 
 
@@ -251,31 +315,55 @@ U32 GetBiomeEntryID(Biome* biome, F32 height) {
 	return 0;
 }
 
+Vector2 GetTexelCoords(U32 x, U32 y, U32 width, U32 height) {
+	F32 u = (F32)(x) / (F32)width;
+	F32 v = (F32)(y) / (F32)height;
+	return Vector2(u, v);
+}
 
-void CreateMap(Terrain2D* terrain, U32 width, U32 height) {
-	terrain->width = width;
-	terrain->height = height;
-	CreateBiome(&terrain->biome);
 
-	OpenSimplexNoise noise(17);
-	gHeightmap = (F32*)malloc(sizeof(F32) * (width + 1) * (height + 1));
-	//gHeightmap = new float32[(width + 1) * (height + 1)];
-	gTilemap = new Tile[(width + 1) * (height + 1)];
-	gAlphamap = new float32[(width + 1) * (height + 1)];
+void ReloadBiome() {
+	auto terrain = &gTerrain;
 
-	for (U32 i = 0; i < (width + 1) * (height + 1); i++) {
-		U32 y = (i / width);
-		U32 x = i - (y * height);
-		gHeightmap[i] = noise.FBM(x, y, 6, 0.01f, 0.5f);
+	const U32 textureWidth = 128;
+	const U32 textureHeight = 128;
+	regions[0].uvs[0] = GetTexelCoords(0, 0, textureWidth, textureHeight);
+	regions[0].uvs[1] = GetTexelCoords(64, 0, textureWidth, textureHeight);
+	regions[0].uvs[2] = GetTexelCoords(64, 64, textureWidth, textureHeight);
+	regions[0].uvs[3] = GetTexelCoords(0, 64, textureWidth, textureHeight);
+
+	regions[1].uvs[0] = GetTexelCoords(64, 0, textureWidth, textureHeight);
+	regions[1].uvs[1] = GetTexelCoords(128, 0, textureWidth, textureHeight);
+	regions[1].uvs[2] = GetTexelCoords(128, 64, textureWidth, textureHeight);
+	regions[1].uvs[3] = GetTexelCoords(64, 64, textureWidth, textureHeight);
+
+	regions[2].uvs[0] = GetTexelCoords(0, 64, textureWidth, textureHeight);
+	regions[2].uvs[1] = GetTexelCoords(64, 64, textureWidth, textureHeight);
+	regions[2].uvs[2] = GetTexelCoords(64, 128, textureWidth, textureHeight);
+	regions[2].uvs[3] = GetTexelCoords(0, 128, textureWidth, textureHeight);
+
+	regions[3].uvs[0] = GetTexelCoords(64, 64, textureWidth, textureHeight);
+	regions[3].uvs[1] = GetTexelCoords(128, 64, textureWidth, textureHeight);
+	regions[3].uvs[2] = GetTexelCoords(128, 128, textureWidth, textureHeight);
+	regions[3].uvs[3] = GetTexelCoords(64, 128, textureWidth, textureHeight);
+
+	std::string textureFilename;
+	{
+		std::ifstream is(ASSET("biome.json"));
+		cereal::JSONInputArchive archive(is);
+		archive(cereal::make_nvp("Texture", textureFilename));
+		archive(cereal::make_nvp("Entries", terrain->biome));
 	}
+	//terrain->biome.textureID = DEBUGLoadTexture(std::string(ASSET_DIR) + textureFilename);
+	terrain->biome.textureID = DEBUGLoadTexture(ASSET("textures/biome.png"));
 
-	for (U32 x = 0; x < width; x++) {
-		for (U32 y = 0; y < height; y++) {
+	for (U32 x = 0; x < terrain->width; x++) {
+		for (U32 y = 0; y < terrain->height; y++) {
 			U32 index0 = XYToIndex(terrain, x, y);
 			U32 index1 = XYToIndex(terrain, x + 1, y);
 			U32 index2 = XYToIndex(terrain, x + 1, y + 1);
 			U32 index3 = XYToIndex(terrain, x, y + 1);
-			
+
 			//The min height is proably all we need
 			F32 minHeight = gHeightmap[index0];
 			minHeight = MathUtils::Min(gHeightmap[index1], minHeight);
@@ -283,29 +371,12 @@ void CreateMap(Terrain2D* terrain, U32 width, U32 height) {
 			minHeight = MathUtils::Min(gHeightmap[index3], minHeight);
 			U32 id = GetBiomeEntryID(&terrain->biome, minHeight);
 
-#if 0
-			F32 maxHeight = gHeightmap[index0];
-
-			maxHeight = MathUtils::Max(gHeightmap[index1], maxHeight);
-			maxHeight = MathUtils::Max(gHeightmap[index2], maxHeight);
-			maxHeight = MathUtils::Max(gHeightmap[index3], maxHeight);
-			//I dont think its nessecary to actauly check this!
-			//Asume the biome creator is not mentaly retarted!
-			U32 minID = GetBiomeEntryID(&terrain->biome, minHeight);
-			U32 maxID = GetBiomeEntryID(&terrain->biome, maxHeight);
-
-			if (minID != maxID)  
-				gTilemap[index0].overlaps = true;
-			else 
-				gTilemap[index0].overlaps = false;
-			gTilemap[index0].biomeEntryID = minID;
-#endif
 			gTilemap[index0].biomeEntryID = id;
 			auto& entry = terrain->biome.entries[id - 1];
 			if (gHeightmap[index0] > entry.fadeBeginHeight ||
 				gHeightmap[index1] > entry.fadeBeginHeight ||
 				gHeightmap[index2] > entry.fadeBeginHeight ||
-				gHeightmap[index3] > entry.fadeBeginHeight ) {
+				gHeightmap[index3] > entry.fadeBeginHeight) {
 				gTilemap[index0].overlaps = true;
 			}
 			else {
@@ -318,7 +389,58 @@ void CreateMap(Terrain2D* terrain, U32 width, U32 height) {
 			gTilemap[index0].alpha3 = SampleAlpha(&terrain->biome, id, gHeightmap[index3]);
 		}
 	}
+
+	glDeleteTextures(1, &mapTextureID);
+	mapTextureID = TerrainToTexture(terrain);
 }
+
+void ReloadHeightmap() {
+	auto terrain = &gTerrain;
+	OpenSimplexNoise noise(time(NULL));
+	for (U32 i = 0; i < (terrain->width + 1) * (terrain->height + 1); i++) {
+		U32 y = (i / terrain->width);
+		U32 x = i - (y * terrain->height);
+		gHeightmap[i] = noise.FBM(x, y, 6, 0.006f, 0.5f);
+	}
+
+	OpenSimplexNoise otherNoise(time(NULL));
+	for (U32 i = 0; i < (terrain->width + 1) * (terrain->height + 1); i++) {
+		U32 y = (i / terrain->width);
+		U32 x = i - (y * terrain->height);
+		gHeightmap[i] += otherNoise.FBM(x, y, 6, 0.0006f, 0.5f) * 0.45f;
+		gHeightmap[i] = MathUtils::Clamp(gHeightmap[i], -1.0f, 1.0f);
+	}
+
+	OpenSimplexNoise low(time(NULL));
+	for (U32 i = 0; i < (terrain->width + 1) * (terrain->height + 1); i++) {
+		U32 y = (i / terrain->width);
+		U32 x = i - (y * terrain->height);
+		gHeightmap[i] -= low.RidgedNoise(x, y, 6, 0.06f, 0.5f) * 0.025f;
+		gHeightmap[i] = MathUtils::Clamp(gHeightmap[i], -1.0f, 1.0f);
+	}
+
+
+
+	ReloadBiome();
+}
+
+void CreateMap(Terrain2D* terrain, U32 width, U32 height) {
+	terrain->width = width;
+	terrain->height = height;
+
+	//CreateBiome(&terrain->biome);
+
+	gHeightmap = (F32*)malloc(sizeof(F32) * (width + 1) * (height + 1));
+	//gHeightmap = new float32[(width + 1) * (height + 1)];
+	gTilemap = new Tile[(width + 1) * (height + 1)];
+	gAlphamap = new float32[(width + 1) * (height + 1)];
+	regions = new TextureRegion[4];
+	
+	ReloadHeightmap();
+	ReloadBiome();
+}
+
+
 
 
 
@@ -331,8 +453,6 @@ void MainLoop () {
 		app.isRunning = false;
 	}
 
-	glUseProgram(terrainShader.shaderProgramID);
-
 	static float x = -0.5f;
 	static float dt = 0.0f;
 	float xpos =  x * sin(dt);
@@ -340,7 +460,8 @@ void MainLoop () {
 
 	const float32 ZOOM_SPEED = 0.5f;
 	static float32 cameraZoom = 1.0f;
-	cameraZoom -= app.GetMouseWheel() * ZOOM_SPEED;
+	float32 zoomSpeed = (cameraZoom) * ZOOM_SPEED; 
+	cameraZoom -= app.GetMouseWheel() * zoomSpeed;
 
 	const float32 PAN_SPEED = 0.05f;
 	static float64 cursorX = app.GetCursorX();
@@ -366,8 +487,7 @@ void MainLoop () {
 	if(app.IsKeyDown(KEY_LSHIFT)) deltaPos *= SPRINT_MULTIPLIER;
 	gPlayerTransform.position += deltaPos;
 	gCameraTransform.position = gPlayerTransform.position + (gPlayerTransform.size * 0.5f);
-	Matrix4 projection = TransformToOrtho(gCameraTransform, cameraZoom);
-	glUniformMatrix4fv(terrainShader.projectionUniformLocation, 1, GL_FALSE, &projection[0][0]);
+
 
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2((float)app.GetWidth(), (float)app.GetHeight());
@@ -400,145 +520,68 @@ void MainLoop () {
 	glUseProgram(terrainShader.shaderProgramID);
 	glUniform1f(terrainShader.waveAngleUniformLocation, waveAngle);
 
-	static bool drawBaseColor = true;
 
 	BENCHMARK_START(draw);
-	Vert verts[4];
+	static bool drawMapTexture = true;
 	static bool drawWater = true;
 	static bool drawSand = true;
-	for(U32 x = startX; x <= endX; x++) {
-		for(U32 y = startY; y <= endY; y++) {
-			auto& tile = gTilemap[XYToIndex(&gTerrain, x, y)];
-			if (tile.overlaps) {
-				U32 id = tile.biomeEntryID - 1;
-				if (id != 0) {
-					auto& baseEntry = gTerrain.biome.entries[id - 1];
-					verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), baseEntry.color };
-					verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), baseEntry.color };
-					verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), baseEntry.color };
-					verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), baseEntry.color };
-					DEBUGPushVertices(&gRenderGroup, verts, 4);
-					gRenderGroup.currentTextureID = baseEntry.textureID;
-					DEBUGFlushGroup(&gRenderGroup);
+	if (drawMapTexture) {
+		glUseProgram(spriteProgramID);
+		Matrix4 projection = TransformToOrtho(gCameraTransform, cameraZoom);
+		glUniformMatrix4fv(glGetUniformLocation(spriteProgramID, "projection"), 1, GL_FALSE, &projection[0][0]);
+		DEBUGDrawTexture(&gRenderGroup, mapTextureID, 0, 0, 512, 512, Color());
+		DEBUGFlushGroup(&gRenderGroup);
+	} else {
+		glUseProgram(terrainShader.shaderProgramID);
+		glUniform1i(terrainShader.isWaterUniformLocation, 1);
+		Matrix4 projection = TransformToOrtho(gCameraTransform, cameraZoom);
+		glUniformMatrix4fv(terrainShader.projectionUniformLocation, 1, GL_FALSE, &projection[0][0]);
+		gRenderGroup.currentTextureID = gTerrain.biome.textureID;
+
+
+		std::vector<U32> waterTiles;
+		Vert verts[4];
+		for (U32 x = startX; x <= endX; x++) {
+			for (U32 y = startY; y <= endY; y++) {
+				auto& tile = gTilemap[XYToIndex(&gTerrain, x, y)];
+				if (tile.biomeEntryID == 1 || tile.biomeEntryID == 2) {
+					waterTiles.push_back(XYToIndex(&gTerrain, x, y));
+					continue;
 				}
+
+				if (tile.overlaps) {
+					U32 id = tile.biomeEntryID - 1;
+					if (id != 0) {
+						auto& baseEntry = gTerrain.biome.entries[id - 1];
+						verts[0] = Vert{ Vector2(x, y), regions[baseEntry.regionIndex].uvs[0], baseEntry.color };
+						verts[1] = Vert{ Vector2(x + 1.0, y), regions[baseEntry.regionIndex].uvs[1], baseEntry.color };
+						verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), regions[baseEntry.regionIndex].uvs[2], baseEntry.color };
+						verts[3] = Vert{ Vector2(x, y + 1.0), regions[baseEntry.regionIndex].uvs[3], baseEntry.color };
+						DEBUGPushVertices(&gRenderGroup, verts, 4);
+
+					}
+				}
+
+
+				if (!drawWater && tile.biomeEntryID == 2) continue;
+				if (!drawSand && tile.biomeEntryID == 1) continue;
+				BiomeEntry& entry = gTerrain.biome.entries[tile.biomeEntryID - 1];
+				verts[0] = Vert{ Vector2(x, y), regions[entry.regionIndex].uvs[0], Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha0) };
+				verts[1] = Vert{ Vector2(x + 1.0, y), regions[entry.regionIndex].uvs[1], Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha1) };
+				verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), regions[entry.regionIndex].uvs[2], Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha2) };
+				verts[3] = Vert{ Vector2(x, y + 1.0), regions[entry.regionIndex].uvs[3], Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha3) };
+				DEBUGPushVertices(&gRenderGroup, verts, 4);
+				{
+
+					DEBUGFlushGroup(&gRenderGroup);
+					//glUniform1i(terrainShader.isWaterUniformLocation, 0);
+				} 
+				
 			}
-
-			if (!drawWater && tile.biomeEntryID == 2) continue;
-			if (!drawSand && tile.biomeEntryID == 1) continue;
-			BiomeEntry& entry = gTerrain.biome.entries[tile.biomeEntryID - 1];
-			verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha0) };
-			verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha1) };
-			verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha2) };
-			verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha3) };
-			DEBUGPushVertices(&gRenderGroup, verts, 4);
-			gRenderGroup.currentTextureID = entry.textureID;
-			DEBUGFlushGroup(&gRenderGroup);
-
 		}
 	}
+	DEBUGFlushGroup(&gRenderGroup);
 	BENCHMARK_END(draw);
-
-
-	//glUniform1i(terrainShader.isTextureUniformLocation, 1);
-	//static bool drawSand = true;
-	//if (drawSand) {
-	//	for (Vector2& tile : sandTiles) {
-	//		uint32 x = tile.x;
-	//		uint32 y = tile.y;
-	//		uint32 index0 = XYToIndex(&gTerrain, x, y);
-	//		uint32 index1 = XYToIndex(&gTerrain, x + 1, y);
-	//		uint32 index2 = XYToIndex(&gTerrain, x + 1, y + 1);
-	//		uint32 index3 = XYToIndex(&gTerrain, x, y + 1);
-
-	//		float32 from = 0.0f;
-	//		float32 to = -0.15f;
-	//		float32 diff = (to - from);
-	//		float32 alpha0 = 1.0 - ((gHeightmap[index0] - from) / diff);
-	//		float32 alpha1 = 1.0 - ((gHeightmap[index1] - from) / diff);
-	//		float32 alpha2 = 1.0 - ((gHeightmap[index2] - from) / diff);
-	//		float32 alpha3 = 1.0 - ((gHeightmap[index3] - from) / diff);
-	//		//verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), Color(gTilemap[index0].r, gTilemap[index0].g, gTilemap[index0].b, gAlphamap[index0]) };
-	//		//verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), Color(gTilemap[index1].r, gTilemap[index1].g, gTilemap[index1].b, gAlphamap[index1]) };
-	//		//verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), Color(gTilemap[index2].r, gTilemap[index2].g, gTilemap[index2].b, gAlphamap[index2]) };
-	//		//verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), Color(gTilemap[index3].r, gTilemap[index3].g, gTilemap[index3].b, gAlphamap[index3]) };
-
-	//		verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), Color(0.69f, 0.54f, 0.39f, 1.0f) };
-	//		verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), Color(0.69f, 0.54f, 0.39f, 1.0f) };
-	//		verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), Color(0.69f, 0.54f, 0.39f, 1.0f) };
-	//		verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), Color(0.69f, 0.54f, 0.39f, 1.0f) };
-
-	//		/*
-	//		verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), gTilemap[index0]};
-	//		verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), gTilemap[index1] };
-	//		verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), gTilemap[index2] };
-	//		verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), gTilemap[index3] };
-	//		*/
-	//		//verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, gAlphamap[index0]) };
-	//		//verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, gAlphamap[index1]) };
-	//		//verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), Color(1.0f, 1.0f, 1.0f, gAlphamap[index2]) };
-	//		//verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), Color(1.0f, 1.0f, 1.0f, gAlphamap[index3]) };
-
-	//		//verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), Color(gTilemap[index0].r, gTilemap[index0].g, gTilemap[index0].b, alpha0) };
-	//		//verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), Color(gTilemap[index1].r, gTilemap[index1].g, gTilemap[index1].b, alpha1) };
-	//		//verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), Color(gTilemap[index2].r, gTilemap[index2].g, gTilemap[index2].b, alpha2) };
-	//		//verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), Color(gTilemap[index3].r, gTilemap[index3].g, gTilemap[index3].b, alpha3) };
-
-	//		DEBUGPushVertices(&gRenderGroup, verts, 4);
-	//	}
-
-	//	gRenderGroup.currentTextureID = sandTextureID;
-	//	DEBUGFlushGroup(&gRenderGroup);
-	//}
-
-
-	//static bool drawWater = true;
-	//if (drawWater) {
-	//	for (Vector2& tile : waterTiles) {
-	//		uint32 x = tile.x;
-	//		uint32 y = tile.y;
-	//		uint32 index0 = XYToIndex(&gTerrain, x, y);
-	//		uint32 index1 = XYToIndex(&gTerrain, x + 1, y);
-	//		uint32 index2 = XYToIndex(&gTerrain, x + 1, y + 1);
-	//		uint32 index3 = XYToIndex(&gTerrain, x, y + 1);
-
-	//		float32 from = -0.12f;
-	//		float32 to = -0.15f;
-	//		float32 diff = (to - from);
-	//		float32 alpha0 = ((gHeightmap[index0] - from) / diff);
-	//		float32 alpha1 = ((gHeightmap[index1] - from) / diff);
-	//		float32 alpha2 = ((gHeightmap[index2] - from) / diff);
-	//		float32 alpha3 = ((gHeightmap[index3] - from) / diff);
-	//		//verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), Color(gTilemap[index0].r, gTilemap[index0].g, gTilemap[index0].b, gAlphamap[index0]) };
-	//		//verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), Color(gTilemap[index1].r, gTilemap[index1].g, gTilemap[index1].b, gAlphamap[index1]) };
-	//		//verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), Color(gTilemap[index2].r, gTilemap[index2].g, gTilemap[index2].b, gAlphamap[index2]) };
-	//		//verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), Color(gTilemap[index3].r, gTilemap[index3].g, gTilemap[index3].b, gAlphamap[index3]) };
-
-	//		//verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), gTilemap[index0]};
-	//		//verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), gTilemap[index1] };
-	//		//verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), gTilemap[index2] };
-	//		//verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), gTilemap[index3] };
-
-	//		//verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, gAlphamap[index0]) };
-	//		//verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), Color(1.0f, 1.0f, 1.0f, gAlphamap[index1]) };
-	//		//verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), Color(1.0f, 1.0f, 1.0f, gAlphamap[index2]) };
-	//		//verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), Color(1.0f, 1.0f, 1.0f, gAlphamap[index3]) };
-
-	//		
-
-	//		verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), Color(0.38f, 0.54f, 0.67f, alpha0) };
-	//		verts[1] = Vert{ Vector2(x + 1.0, y), Vector2(1.0f, 0.0f), Color(0.38f, 0.54f, 0.67f, alpha1) };
-	//		verts[2] = Vert{ Vector2(x + 1.0, y + 1.0), Vector2(1.0f, 1.0f), Color(0.38f, 0.54f, 0.67f, alpha2) };
-	//		verts[3] = Vert{ Vector2(x, y + 1.0), Vector2(0.0f, 1.0f), Color(0.38f, 0.54f, 0.67f, alpha3) };
-
-	//		DEBUGPushVertices(&gRenderGroup, verts, 4);
-	//	}
-
-	//	glUniform1i(terrainShader.isWaterUniformLocation, 1);
-	//	gRenderGroup.currentTextureID = waterTextureID;
-	//	DEBUGFlushGroup(&gRenderGroup);
-	//	glUniform1i(terrainShader.isWaterUniformLocation, 0);
-	//}
-
 
 	DEBUGFillRect(&gRenderGroup, gPlayerTransform.position.x, gPlayerTransform.position.y, gPlayerTransform.size.x, gPlayerTransform.size.y, Color(0.0f, 1.0f, 0.0f, 1.0f));
 	DEBUGFlushGroup(&gRenderGroup);
@@ -574,6 +617,9 @@ void MainLoop () {
 	stream << "Player Position: " << gPlayerTransform.position;
 	ImGui::Text(stream.str().c_str());
 	stream.str(std::string());
+	stream << "Camera Zoom: " << cameraZoom;
+	ImGui::Text(stream.str().c_str());
+	stream.str(std::string());
 	stream << "Tiles Drawn: " << (endX - startX) * (endY - startY);
 	ImGui::Text(stream.str().c_str());
 	stream.str(std::string());
@@ -585,21 +631,26 @@ void MainLoop () {
 	gRenderGroup.drawCalls = 0;
 
 	ImGui::Checkbox("Draw grid", &drawGrid);
-	ImGui::Checkbox("Draw base color", &drawBaseColor);
+	ImGui::Checkbox("Draw base color", &drawMapTexture);
 	ImGui::Checkbox("Draw water", &drawWater);
 	ImGui::Checkbox("Draw sand", &drawSand);
 
+	//@BUTTONS
 	if (ImGui::Button("Reload Shader")) {
 		terrainShader.Destroy();
 		terrainShader.Create();
 	}
-
 	if (ImGui::Button("Reload textures")) {
 		glDeleteTextures(1, &waterTextureID);
 		glDeleteTextures(1, &sandTextureID);
-		waterTextureID = DEBUGLoadTexture(ASSET(textures/water.png));
-		sandTextureID = DEBUGLoadTexture(ASSET(textures/sand.png));
+		waterTextureID = DEBUGLoadTexture(ASSET("textures/water.png"));
+		sandTextureID = DEBUGLoadTexture(ASSET("textures/sand.png"));
 	}
+
+	if (ImGui::Button("Reload Biome")) ReloadBiome();
+	if (ImGui::Button("Reload Heightmap")) ReloadHeightmap();
+
+
 
 	ImGui::Begin("Profiler");
 	static const uint32 resolution = 32;
@@ -640,6 +691,7 @@ void MainLoop () {
 	app.EndFrame();
 }
 
+
 int main () {
 	app.Create("Raptor ImGUI", 1280, 720, true);
 	glEnable(GL_BLEND);
@@ -648,22 +700,24 @@ int main () {
 
 	DEBUGCreateRenderGroup(&gRenderGroup, 4096);
 	terrainShader.Create();
+	spriteProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Sprite.vert"), ASSET("shaders/Sprite.frag"));
 
-	soundEffects[0] = LoadSound(ASSET(sounds/wave00.ogg));
-	soundEffects[1] = LoadSound(ASSET(sounds/wave01.ogg));
-	soundEffects[2] = LoadSound(ASSET(sounds/wave02.ogg));
-	soundEffects[3] = LoadSound(ASSET(sounds/wave03.ogg));
-	soundEffects[4] = LoadSound(ASSET(sounds/wave04.ogg));
-	soundEffects[5] = LoadSound(ASSET(sounds/wave05.ogg));
-	soundEffects[6] = LoadSound(ASSET(sounds/wave06.ogg));
-	soundEffects[7] = LoadSound(ASSET(sounds/wave07.ogg));
+	soundEffects[0] = LoadSound(ASSET("sounds/wave00.ogg"));
+	soundEffects[1] = LoadSound(ASSET("sounds/wave01.ogg"));
+	soundEffects[2] = LoadSound(ASSET("sounds/wave02.ogg"));
+	soundEffects[3] = LoadSound(ASSET("sounds/wave03.ogg"));
+	soundEffects[4] = LoadSound(ASSET("sounds/wave04.ogg"));
+	soundEffects[5] = LoadSound(ASSET("sounds/wave05.ogg"));
+	soundEffects[6] = LoadSound(ASSET("sounds/wave06.ogg"));
+	soundEffects[7] = LoadSound(ASSET("sounds/wave07.ogg"));
 
-	music = LoadMusic(ASSET(music/celestial.mp3));
+	music = LoadMusic(ASSET("music/celestial.mp3"));
 	PlayMusic(music);
 
 
-	waterTextureID = DEBUGLoadTexture(ASSET(textures/water.png));
-	sandTextureID = DEBUGLoadTexture(ASSET(textures/sand.png));
+	nullTextureID = DEBUGLoadTexture(ASSET("textures/null.png"));
+	waterTextureID = DEBUGLoadTexture(ASSET("textures/water.png"));
+	sandTextureID = DEBUGLoadTexture(ASSET("textures/sand.png"));
 
 	const float32 WIDTH_IN_METERS = 30.0f;
 	float32 heightInMeters = WIDTH_IN_METERS * (app.GetHeight() / app.GetWidth());
@@ -672,7 +726,10 @@ int main () {
 	gPlayerTransform.size.y = 1.0f;
 
 
+
 	CreateMap(&gTerrain, 512, 512);
+	mapTextureID = TerrainToTexture(&gTerrain);
+
 
 
 #ifndef __EMSCRIPTEN__

@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define ASSET_DIR "../Assets/"
-#define ASSET(x) ASSET_DIR #x
+#define ASSET(x) ASSET_DIR x
 
 #define BENCHMARK 1
 #define CLOCK_RESOLUTION std::milli

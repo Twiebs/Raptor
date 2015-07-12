@@ -1,5 +1,4 @@
 #pragma once
-
 #include <cmath>
 #include <Core/Common.hpp>
 
@@ -12,9 +11,21 @@
 
 namespace MathUtils {
 
-	float Clamp(float value, float min, float max);
+	inline static F32 Clamp(F32 value, F32 min, F32 max) {
+		F32 clamped = value;
+		if (value > max)
+			clamped = max;
+		else if (value < min)
+			clamped = min;
+		return clamped;
+	}
 
-	bool EpsilonEquals(float a, float b, float epsilon = 0.1);
+	inline static bool EpsilonEquals(F32 a, F32 b, F32 epsilon = 0.1) {
+		F32 difference = std::abs(a - b);
+		if (difference < epsilon)
+			return true;
+		return false;
+	}
 
 	inline static uint32 NextPowerOfTwo(uint32 n) {
 		n--;

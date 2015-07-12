@@ -11,5 +11,5 @@ uniform mat4 mvp;
 void main() {
 	vertexUV = uv;
 	vertexColor = color;
-    gl_Position	= mvp * vec4(position.xy, 0.0, 1.0);
+  gl_Position	= mvp * vec4(position.xy, 0.0, 1.0);
 } 
