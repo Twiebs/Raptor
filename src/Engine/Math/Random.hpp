@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Core/Common.hpp>
 #include <random>
 
 //Generates random numbers

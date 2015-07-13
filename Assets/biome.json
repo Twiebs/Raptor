@@ -1,7 +1,7 @@
 {
-  "Texture": "textures/biome.png",
   "Entries": [
     {
+        "Texture": "textures/grass.png",
         "StartHeight": 0.45,
         "FadeBegin": 0.90,
         "FadeEnd": 1,
@@ -10,10 +10,10 @@
             "g": 0.25,
             "b": 0.13,
             "a": 1.0
-        },
-        "RegionIndex": 3
+        }
     },
     {
+        "Texture": "textures/stone.png",
         "StartHeight": 0.35,
         "FadeBegin": 0.40,
         "FadeEnd": 0.45,
@@ -22,10 +22,10 @@
             "g": 0.21,
             "b": 0.13,
             "a": 1.0
-        },
-        "RegionIndex": 2
+        }
     },
     {
+        "Texture": "textures/stone.png",
         "StartHeight": 0.25,
         "FadeBegin": 0.30,
         "FadeEnd": 0.35,
@@ -34,10 +34,10 @@
             "g": 0.3,
             "b": 0.2,
             "a": 1.0
-        },
-        "RegionIndex": 2
+        }
     },
     {
+        "Texture": "textures/sand.png",
         "StartHeight": 0.1,
         "FadeBegin": 0.2,
         "FadeEnd": 0.25,
@@ -46,22 +46,22 @@
           "g": 0.48,
           "b": 0.32,
           "a": 1.0
-        },
-        "RegionIndex": 0
+        }
     },
     {
+        "Texture": "textures/sand.png",
         "StartHeight": 0,
-        "FadeBegin": 0.1,
+        "FadeBegin": 0.05,
         "FadeEnd": 0.1,
         "Color": {
             "r": 0.69,
             "g": 0.54,
             "b": 0.39,
             "a": 1.0
-        },
-        "RegionIndex": 0
+        }
     },
     {
+        "Texture": "textures/water.png",
         "StartHeight": -0.10,
         "FadeBegin": -0.05,
         "FadeEnd": 0,
@@ -70,11 +70,11 @@
             "g": 0.54,
             "b": 0.67,
             "a": 1.0
-        },
-        "RegionIndex": 1
+        }
     },
     {
-        "StartHeight": -1,
+        "Texture": "textures/water.png",
+        "StartHeight": -1.0,
         "FadeBegin": -0.5,
         "FadeEnd": -0.10,
         "Color": {
@@ -82,8 +82,7 @@
             "g": 0.30,
             "b": 0.51,
             "a": 1.0
-        },
-        "RegionIndex": 1
+        }
     }
   ]
 }

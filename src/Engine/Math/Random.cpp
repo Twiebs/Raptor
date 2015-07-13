@@ -9,7 +9,7 @@ Random::Random(int seed) {
 Random::~Random() {
 }
 void Random::Seed(int seed) {
-	rng.seed(0);
+	rng.seed(seed);
 }
 
 float Random::Range(float min, float max) {
@@ -18,9 +18,11 @@ float Random::Range(float min, float max) {
 }
 
 int Random::Range(int min, int max){
-	std::uniform_int_distribution<int> dist(min, max);
+	std::uniform_int_distribution<S64> dist(min, max);
 	return dist(rng);
 }
+
+
 
 
 

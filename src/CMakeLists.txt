@@ -21,32 +21,6 @@
 #
 #
 
-# =============================================
-#                 Build Options
-# =============================================
-
-# =============================================
-# --------------------------------------------
-# =============================================
-
-# include_directories(Engine)
-
-# if(MSVC)
-#   link_directories(../lib)
-#   include_directories(../include/freetype)
-#   SET(RAPTOR_LIBS
-#     opengl32.lib
-#     assimpd.lib
-#     FreeImage.lib
-#     freetype.lib
-#     SDL2.lib
-#     SDL2main.lib
-#     SDL2test.lib
-#     glew32.lib
-#     glfw3.lib
-#   )
-# endif(MSVC)
-#
 #
 # #Build the RaptorEngine as a static lib
 # #The below directories are used to create a list of files to pass to the add_library function
@@ -116,21 +90,19 @@ if(NOT EMSCRIPTEN AND NOT MSVC)
   endforeach(lib FreeImage)
 endif()
 
-#That was the unix stuff
-#Here is what MSVC will do
+
 if(MSVC)
   include_directories(../include)
   link_directories(../lib)
-  set(LBIS
+  set(LIBS
     glew32.lib
     glew32s.lib
     opengl32.lib
     freetype.lib
     SDL2.lib
-    SDL2main.lib
     SDL2_image.lib
     SDL2_mixer.lib
-    glfw3.lib
+    SDL2_net.lib
   )
 endif(MSVC)
 
@@ -170,6 +142,8 @@ endif()
 # target_link_libraries(core ${LIBS} math graphics)
 
 set(GRAPHICS_SRCS
+      Engine/Graphics/Texture.cpp
+      Engine/Graphics/Texture.hpp
       Engine/Graphics/Pixmap.hpp
       Engine/Graphics/Font.hpp
       Engine/Graphics/Font.cpp
@@ -233,6 +207,9 @@ add_library(ECS STATIC ${ECS_SRCS})
 source_group(ECS FILES ${ECS_SRCS})
 
 SET(PLATFORM_SRCS
+  Engine/Core/Network.hpp
+  Engine/Core/Network.cpp
+  Engine/Platform/ImGui.hpp
   Engine/Application/SDLApplication.cpp
   Engine/Application/EmscriptenApplication.cpp
   Engine/Application/Application.hpp
@@ -244,7 +221,7 @@ source_group(Platform FILES ${PLATFORM_SRCS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
-add_executable(app Tests/GLArrayTexture.cpp)
+add_executable(app Tests/Main.cpp)
 #Ensure EMCSCRIPTEN is given enough memory to work with...
 if(EMSCRIPTEN)
   target_link_libraries(app "-s TOTAL_MEMORY=134217728")

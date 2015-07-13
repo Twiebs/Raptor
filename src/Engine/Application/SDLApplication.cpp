@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
+#include <SDL2/SDL_net.h>
 #undef main
 
 SDL_Window* window;
@@ -66,6 +67,8 @@ void Application::BeginFrame() {
 	float64 currentTime = GetTime();
 	deltaTime = (currentTime - lastTime) / 1000.0f;
 	lastTime = GetTime();
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void Application::EndFrame() {
@@ -77,15 +80,16 @@ float64 Application::GetTime() {
 	return (float64)SDL_GetTicks();
 }
 
-
 void Application::PollEvents() {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
 		case SDL_KEYDOWN:
+			if (keyCallback != nullptr) keyCallback(event.key.keysym.scancode, true);
 			keysDown[event.key.keysym.scancode] = true;
 			break;
 		case SDL_KEYUP:
+			if (keyCallback != nullptr) keyCallback(event.key.keysym.scancode, false);
 			keysDown[event.key.keysym.scancode] = false;
 			break;
 		case SDL_MOUSEMOTION:

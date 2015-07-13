@@ -1,6 +1,14 @@
 #pragma once
 
+//TODO ImGui wraper needs a serious cleanup!
+
 #include <Application/Application.hpp>
+
+#include <imgui/imgui.h>
+#include <GL/glew.h>
+
+#include <Math/Matrix4.hpp>
+#include <Utils/IO.hpp>
 
 struct ImGuiContext {
 	GLuint vertexArrayID;
@@ -13,7 +21,6 @@ struct ImGuiContext {
 	GLuint projectionUniformLoc;
 	GLuint samplerUniformLoc;
 };
-
 
 static void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount) {
 	if (drawListCount == 0)
@@ -76,6 +83,15 @@ static void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount)
     glDisable(GL_SCISSOR_TEST);
 }
 
+void ImGuiBeginFrame(Application& m_app) {
+	ImGuiIO& io = ImGui::GetIO();
+	io.DisplaySize = ImVec2((float)m_app.GetWidth(), (float)m_app.GetHeight());
+	io.DeltaTime = m_app.GetDeltaTime() > 0.0 ? app.GetDeltaTime() : 1.0f / 60.0f;
+	io.MousePos = ImVec2((float)m_app.GetCursorX(), (float)m_app.GetCursorY());
+	io.MouseWheel = m_app.GetMouseWheel();
+	io.MouseDown[0] = m_app.IsButtonDown(MOUSE_BUTTON_LEFT);
+	ImGui::NewFrame();
+}
 
 bool ImGuiContextInit(ImGuiContext* imGuiContext) {
 #ifndef __EMSCRIPTEN__
@@ -149,6 +165,7 @@ bool ImGuiContextInit(ImGuiContext* imGuiContext) {
 	io.KeyMap[ImGuiKey_Escape] = KEY_ESCAPE;
 	io.KeyMap[ImGuiKey_A] = KEY_A;
 	io.KeyMap[ImGuiKey_C] = KEY_C;
+
 	io.KeyMap[ImGuiKey_V] = KEY_V;
 	io.KeyMap[ImGuiKey_X] = KEY_X;
 	io.KeyMap[ImGuiKey_Y] = KEY_Y;

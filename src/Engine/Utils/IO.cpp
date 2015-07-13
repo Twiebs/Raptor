@@ -15,7 +15,9 @@ Pixmap* LoadPixmap(std::string filename) {
 	Pixmap* pixmap = new Pixmap();
 	pixmap->width = image->w;
 	pixmap->height = image->h;
-	pixmap->data = (uint8*)image->pixels;
+	pixmap->data = new U8[image->w * image->h * 4];
+	memcpy(pixmap->data, image->pixels, image->w * image->h * 4);
+	SDL_FreeSurface(image);
 	return pixmap;
 }
 #endif
