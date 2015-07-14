@@ -15,13 +15,13 @@ bool NetworkInit(NetworkServer* server) {
 		LOG_ERROR("SDLNet: Failed to Open Socket -> " << SDLNet_GetError());
 		return false;
 	}
-	server->packet = SDLNet_AllocPacket(512);
+	server->packet = SDLNet_AllocPacket(NETWORK_PACKET_SIZE);
 	if (!server->packet) {
 		LOG_ERROR("SDLNet: Failed to allocate a packet -> " << SDLNet_GetError());
 		return false;
 	}
 
-	auto hostResolved = SDLNet_ResolveHost(&server->address, NULL, 1234);
+	auto hostResolved = SDLNet_ResolveHost(&server->address, NULL, NETWORK_SERVER_PORT);
 	if (hostResolved == -1) {
 		LOG_ERROR("Failed to resolve Host" << SDLNet_GetError());
 		return false;

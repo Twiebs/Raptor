@@ -31,8 +31,6 @@ GLint GLSLProgram::GetUniformLocation(const char* uniformName) {
 	return location;
 }
 
-
-
 void GLSLProgram::Use() {
 	this->target = "UNSPECIFIED";
 	glUseProgram(programID);

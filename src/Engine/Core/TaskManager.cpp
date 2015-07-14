@@ -23,7 +23,7 @@ void TaskManager::Startup() {
 }
 
 void TaskManager::Update(double deltaTime) {
-#ifdef MULTI_THREADED
+#ifdef MULTI_THREADEDcli
 	while (compleatedTasks.size() > 0) {
 		mutex.lock();
 		auto task = std::move(compleatedTasks.front());

@@ -67,6 +67,7 @@ void Application::BeginFrame() {
 	float64 currentTime = GetTime();
 	deltaTime = (currentTime - lastTime) / 1000.0f;
 	lastTime = GetTime();
+
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 }

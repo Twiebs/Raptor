@@ -3,7 +3,8 @@
 #include <iostream>
 #include <stdint.h>
 
-#define ASSET_DIR "../Assets/"
+//#define ASSET_DIR "../Assets/"
+#define ASSET_DIR "/home/torin/workspace/Raptor/Assets/"
 #define ASSET(x) ASSET_DIR x
 
 #define BENCHMARK 1
@@ -15,12 +16,10 @@
 typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
-typedef int64_t int64;
 
 //TODO: Decide if its a good idea to use float32 everywhere...
 typedef float float32;
 typedef double float64;
-typedef unsigned int uint;
 
 //Unsigned int types
 typedef uint8_t uint8;
@@ -28,7 +27,6 @@ typedef uint16_t uint16;
 typedef uint32_t uint32;
 typedef uint64_t uint64;
 
-//TODO Make a decision about using these terse typedefs
 typedef uint8_t  U8;
 typedef uint16_t U16;
 typedef uint32_t U32;
@@ -48,10 +46,9 @@ typedef double	F64;
 //To restructure data as it needs
 //TODO these should no longer be exposed to the user so they should just be uint64s
 typedef uint64 AssetID;
-typedef uint64 TaskID;
 
 //Error logging
-#define LOG_ERROR(x) std::cout << "ERROR: " << x << "\n"
+#define LOG_ERROR(x) std::cerr << "ERROR: " << x << "\n"
 #define LOG_INFO(x) std::cout << "INFO: " << x << "\n"
 
 //Bechmarking Macros to determine the time taken for a certin task to compleatedTasks

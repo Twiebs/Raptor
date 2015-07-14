@@ -83,13 +83,17 @@ static void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount)
     glDisable(GL_SCISSOR_TEST);
 }
 
-void ImGuiBeginFrame(Application& m_app) {
-	ImGuiIO& io = ImGui::GetIO();
-	io.DisplaySize = ImVec2((float)m_app.GetWidth(), (float)m_app.GetHeight());
-	io.DeltaTime = m_app.GetDeltaTime() > 0.0 ? app.GetDeltaTime() : 1.0f / 60.0f;
-	io.MousePos = ImVec2((float)m_app.GetCursorX(), (float)m_app.GetCursorY());
-	io.MouseWheel = m_app.GetMouseWheel();
-	io.MouseDown[0] = m_app.IsButtonDown(MOUSE_BUTTON_LEFT);
+void GUISetDisplaySize(U32 width, U32 height) {
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2((float)width, (float)height);
+}
+
+void ImGuiBeginFrame(F64 deltaTime, bool leftMouseButtonDown, U32 cursorX, U32 cursorY, F32 mouseWheel) {
+    ImGuiIO& io = ImGui::GetIO();
+	io.DeltaTime = deltaTime > 0.0 ? deltaTime : 1.0f / 60.0f;
+	io.MousePos = ImVec2((F32)cursorX, (F32)cursorY);
+	io.MouseWheel = mouseWheel;
+	io.MouseDown[0] = leftMouseButtonDown;
 	ImGui::NewFrame();
 }
 
