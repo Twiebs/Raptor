@@ -1,9 +1,5 @@
 #pragma once
 
-//TODO ImGui wraper needs a serious cleanup!
-
-#include <Application/Application.hpp>
-
 #include <imgui/imgui.h>
 #include <GL/glew.h>
 
@@ -36,10 +32,7 @@ static void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount)
 	glEnable(GL_SCISSOR_TEST);
 	glActiveTexture(GL_TEXTURE0);
 
-	Matrix4 projection = Matrix4::Ortho(0.0f, app.GetWidth(), 0.0f, app.GetHeight(), -1.0f);
-	glUseProgram(imGuiContext->shaderProgramID);
-    glUniform1i(imGuiContext->samplerUniformLoc, 0);
-    glUniformMatrix4fv(imGuiContext->projectionUniformLoc, 1, GL_FALSE, &projection[0][0]);
+
 
     uint32 vertexCount = 0;
     for (int i = 0; i < drawListCount; i++) {
@@ -73,7 +66,7 @@ static void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount)
                 cmd->user_callback(drawCall, cmd);
             } else {
                 glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)cmd->texture_id);
-                glScissor((int)cmd->clip_rect.x, (int)(app.GetHeight() - cmd->clip_rect.w), (int)(cmd->clip_rect.z - cmd->clip_rect.x), (int)(cmd->clip_rect.w - cmd->clip_rect.y));
+               // glScissor((int)cmd->clip_rect.x, (int)(app.GetHeight() - cmd->clip_rect.w), (int)(cmd->clip_rect.z - cmd->clip_rect.x), (int)(cmd->clip_rect.w - cmd->clip_rect.y));
                 glDrawArrays(GL_TRIANGLES, vertexOffset, cmd->vtx_count);
             }
             vertexOffset += cmd->vtx_count;
@@ -88,16 +81,23 @@ void GUISetDisplaySize(U32 width, U32 height) {
     io.DisplaySize = ImVec2((float)width, (float)height);
 }
 
-void ImGuiBeginFrame(F64 deltaTime, bool leftMouseButtonDown, U32 cursorX, U32 cursorY, F32 mouseWheel) {
+void ImGuiBeginFrame(F64 deltaTime, Application* app) {
     ImGuiIO& io = ImGui::GetIO();
 	io.DeltaTime = deltaTime > 0.0 ? deltaTime : 1.0f / 60.0f;
-	io.MousePos = ImVec2((F32)cursorX, (F32)cursorY);
-	io.MouseWheel = mouseWheel;
-	io.MouseDown[0] = leftMouseButtonDown;
+	io.MousePos = ImVec2((F32)app->GetCursorX(), (F32)app->GetCursorY());
+	io.MouseWheel = app->GetMouseWheel();
+	io.MouseDown[0] = app->IsButtonDown(MOUSE_BUTTON_LEFT);
+	io.KeyAlt = app->IsKeyDown(KEY_LALT | KEY_RALT);
+	io.KeyCtrl = app->IsKeyDown(KEY_LCTRL | KEY_RCTRL);
+	io.KeyShift = app->IsKeyDown(KEY_LSHIFT | KEY_RSHIFT);
 	ImGui::NewFrame();
 }
 
-bool ImGuiContextInit(ImGuiContext* imGuiContext) {
+void ImGuiEndFrame() {
+	ImGui::Render();
+}
+
+bool ImGuiContextInit(ImGuiContext* imGuiContext, U32 viewportWidth, U32 viewportHeight) {
 #ifndef __EMSCRIPTEN__
     const GLchar *vertex_shader =
         "#version 330\n"
@@ -208,6 +208,11 @@ bool ImGuiContextInit(ImGuiContext* imGuiContext) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+	Matrix4 projection = Matrix4::Ortho(0.0f, (F32)viewportWidth, 0.0f, (F32)viewportHeight, -1.0f);
+	glUseProgram(imGuiContext->shaderProgramID);
+	glUniform1i(imGuiContext->samplerUniformLoc, 0);
+	glUniformMatrix4fv(imGuiContext->projectionUniformLoc, 1, GL_FALSE, &projection[0][0]);
 
     // Store our identifier
     io.Fonts->TexID = (void *)(intptr_t)imGuiContext->fontTexture;

@@ -11,12 +11,12 @@ void DEBUGFlushGroup(DEBUGRenderGroup* group) {
 	group->drawCalls++;
 }
 
-void DEBUGPushVertices(DEBUGRenderGroup* group, Vert* vertices, uint32 count) {
+void DEBUGPushVertices(DEBUGRenderGroup* group, Vertex2D* vertices, uint32 count) {
 	if (group->currentVertexCount + count > group->maxVertexCount)
 		DEBUGFlushGroup(group);
 
 	glBindBuffer(GL_ARRAY_BUFFER, group->vertexBufferID);
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(Vert) * group->currentVertexCount, sizeof(Vert) * count, (GLvoid*)vertices);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(Vertex2D) * group->currentVertexCount, sizeof(Vertex2D) * count, (GLvoid*)vertices);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	group->currentVertexCount += count;
 }
@@ -27,11 +27,11 @@ void DEBUGDrawTexture(DEBUGRenderGroup* group, GLuint textureID, float x, float 
 		group->currentTextureID = textureID;
 	}
 
-	Vert verts[4];
-	verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), color };
-	verts[1] = Vert{ Vector2(x + width, y), Vector2(1.0f, 0.0f), color };
-	verts[2] = Vert{ Vector2(x + width, y + height), Vector2(1.0f, 1.0f), color };
-	verts[3] = Vert{ Vector2(x, y + height), Vector2(0.0f, 1.0f), color };
+	Vertex2D verts[4];
+	verts[0] = Vertex2D{ Vector2(x, y), Vector2(0.0f, 0.0f), color };
+	verts[1] = Vertex2D{ Vector2(x + width, y), Vector2(1.0f, 0.0f), color };
+	verts[2] = Vertex2D{ Vector2(x + width, y + height), Vector2(1.0f, 1.0f), color };
+	verts[3] = Vertex2D{ Vector2(x, y + height), Vector2(0.0f, 1.0f), color };
 	DEBUGPushVertices(group, verts, 4);
 }
 
@@ -47,9 +47,9 @@ void DEBUGDrawTexture(DEBUGRenderGroup* group, GLuint textureID, Vector2 positio
 	float32 y = 0;
 
 	float32 lastX;
-	std::vector<Vert> verts(numSegments);
+	std::vector<Vertex2D> verts(numSegments);
 	for (uint32 i = 0; i < numSegments; i++) {
-		verts.emplace_back(Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), Color() });
+		verts.emplace_back(Vertex2D{ Vector2(x, y), Vector2(0.0f, 0.0f), Color() });
 
 		lastX = x;
 		x = (c * x) - (s * y);
@@ -63,11 +63,11 @@ void DEBUGFillRect(DEBUGRenderGroup* group, float32 x, float32 y, float32 width,
 		group->currentTextureID = 0;
 	}
 
-	Vert verts[4];
-	verts[0] = Vert{ Vector2(x, y), Vector2(0.0f, 0.0f), color };
-	verts[1] = Vert{ Vector2(x + width, y), Vector2(1.0f, 0.0f), color };
-	verts[2] = Vert{ Vector2(x + width, y + height), Vector2(1.0f, 1.0f), color };
-	verts[3] = Vert{ Vector2(x, y + height), Vector2(0.0f, 1.0f), color };
+	Vertex2D verts[4];
+	verts[0] = Vertex2D{ Vector2(x, y), Vector2(0.0f, 0.0f), color };
+	verts[1] = Vertex2D{ Vector2(x + width, y), Vector2(1.0f, 0.0f), color };
+	verts[2] = Vertex2D{ Vector2(x + width, y + height), Vector2(1.0f, 1.0f), color };
+	verts[3] = Vertex2D{ Vector2(x, y + height), Vector2(0.0f, 1.0f), color };
 	DEBUGPushVertices(group, verts, 4);
 }
 
@@ -77,7 +77,7 @@ void DEBUGCreateRenderGroup(DEBUGRenderGroup* group, uint32 maxVertexCount) {
 
 	glGenBuffers(1, &group->vertexBufferID);
 	glBindBuffer(GL_ARRAY_BUFFER, group->vertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vert) * maxVertexCount, nullptr, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex2D) * maxVertexCount, nullptr, GL_DYNAMIC_DRAW);
 	//glEnableVertexAttribArray(0);
 	//glEnableVertexAttribArray(1);
 	//glEnableVertexAttribArray(2);
@@ -109,9 +109,9 @@ void DEBUGCreateRenderGroup(DEBUGRenderGroup* group, uint32 maxVertexCount) {
 	group->currentVertexCount = 0;
 	group->maxVertexCount = maxVertexCount;
 
-	DEBUGAddAttribute(group, 0, 2, GL_FLOAT, sizeof(Vert), (GLvoid*)offsetof(Vert, position));
-	DEBUGAddAttribute(group, 1, 2, GL_FLOAT, sizeof(Vert), (GLvoid*)offsetof(Vert, uv));
-	DEBUGAddAttribute(group, 2, 4, GL_FLOAT, sizeof(Vert), (GLvoid*)offsetof(Vert, color));
+	DEBUGAddAttribute(group, 0, 2, GL_FLOAT, sizeof(Vertex2D), (GLvoid*)offsetof(Vertex2D, position));
+	DEBUGAddAttribute(group, 1, 2, GL_FLOAT, sizeof(Vertex2D), (GLvoid*)offsetof(Vertex2D, uv));
+	DEBUGAddAttribute(group, 2, 4, GL_FLOAT, sizeof(Vertex2D), (GLvoid*)offsetof(Vertex2D, color));
 }
 
 void DEBUGAddAttribute(DEBUGRenderGroup* group, U32 index, U32 count, GLenum type, size_t size, GLvoid* offset) {

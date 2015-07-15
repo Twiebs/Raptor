@@ -125,22 +125,6 @@ else()
 	include_directories(/usr/include/freetype2)
 endif()
 
-# set(CORE_SRCS
-#   Engine/Core/AssetManager.cpp
-#   Engine/Core/AssetManager.hpp
-#   Engine/Core/TaskManager.cpp
-#   Engine/Core/TaskManager.hpp
-#   Engine/Assets/LoadShaderTask.cpp
-#   Engine/Assets/LoadShaderTask.hpp
-#   Engine/Assets/ModelLoader.cpp
-#   Engine/Assets/ModelLoader.hpp
-#   Engine/Assets/IAssetLoader.cpp
-#   Engine/Assets/IAssetLoader.hpp
-# )
-
-# add_library(core STATIC ${CORE_SRCS})
-# target_link_libraries(core ${LIBS} math graphics)
-
 set(GRAPHICS_SRCS
       Engine/Graphics/Texture.cpp
       Engine/Graphics/Texture.hpp
@@ -206,13 +190,19 @@ set(ECS_SRCS
 add_library(ECS STATIC ${ECS_SRCS})
 source_group(ECS FILES ${ECS_SRCS})
 
-SET(PLATFORM_SRCS
+SET(CORE_SRCS
+  Engine/Core/Common.hpp
   Engine/Core/Network.hpp
   Engine/Core/Network.cpp
+  Engine/Core/Application.hpp
+  Engine/Platform/SDLApplication.cpp
+  Engine/Platform/EmscriptenApplication.cpp
+)
+add_library(Core STATIC ${CORE_SRCS})
+source_group(Core FILES ${PLATFORM_SRCS})
+
+SET(PLATFORM_SRCS
   Engine/Platform/ImGui.hpp
-  Engine/Application/SDLApplication.cpp
-  Engine/Application/EmscriptenApplication.cpp
-  Engine/Application/Application.hpp
   Engine/Utils/IO.cpp
   Engine/Utils/IO.hpp
 )
@@ -221,7 +211,7 @@ source_group(Platform FILES ${PLATFORM_SRCS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
-add_executable(app Tests/Main.cpp)
+add_executable(app Tests/2DStar.cpp)
 #Ensure EMCSCRIPTEN is given enough memory to work with...
 if(EMSCRIPTEN)
   target_link_libraries(app "-s TOTAL_MEMORY=134217728")
@@ -229,6 +219,7 @@ if(EMSCRIPTEN)
 endif()
 
 target_link_libraries(app imgui)
+target_link_libraries(app Core)
 target_link_libraries(app Graphics)
 target_link_libraries(app Box2D)
 target_link_libraries(app Platform)

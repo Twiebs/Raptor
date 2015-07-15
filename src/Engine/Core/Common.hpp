@@ -1,11 +1,13 @@
 #pragma once
-
+#include <assert.h>
 #include <iostream>
 #include <stdint.h>
 
-//#define ASSET_DIR "../Assets/"
-#define ASSET_DIR "/home/torin/workspace/Raptor/Assets/"
+
+#define ASSET_DIR "../Assets/"
+//#define ASSET_DIR "/home/torin/workspace/Raptor/Assets/"
 #define ASSET(x) ASSET_DIR x
+
 
 #define BENCHMARK 1
 #define CLOCK_RESOLUTION std::milli
@@ -48,8 +50,11 @@ typedef double	F64;
 typedef uint64 AssetID;
 
 //Error logging
+#define ASSERT(x) assert(x)
+//TODO provide console implementation to send error mesages to! 
 #define LOG_ERROR(x) std::cerr << "ERROR: " << x << "\n"
 #define LOG_INFO(x) std::cout << "INFO: " << x << "\n"
+#define LOG_DEBUG(x) std::cout << "[DEBUG] " << x << "\n"
 
 //Bechmarking Macros to determine the time taken for a certin task to compleatedTasks
 #ifdef BENCHMARK

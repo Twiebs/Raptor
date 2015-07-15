@@ -176,11 +176,11 @@ public:
 	//Platform specific overrides
 	int Create(const char* tile, U32 width, U32 height, bool fullscreen);
 
-	void Run(void (*mainLoop)(void)) {
+	void Run(void (*mainLoop)(Application*), Application* app) {
 		while(isRunning) {
 			BeginFrame();
 			PollEvents();
-			mainLoop();
+			mainLoop(app);
 			EndFrame();
 		}
 	}
@@ -212,4 +212,3 @@ private:
 	F64 mouseWheel = 0;
 	InputKeyCallback keyCallback = nullptr;
 };
-extern Application app;

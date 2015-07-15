@@ -1,12 +1,14 @@
 #ifdef SDL
 
-#include <Application/Application.hpp>
+#include <Core/Application.hpp>
 
-#include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_net.h>
 #undef main
+
+#include <GL/glew.h>
+#include <imgui/imgui.h>
 
 SDL_Window* window;
 SDL_GLContext context;
@@ -63,8 +65,8 @@ int Application::Destroy() {
 }
 
 void Application::BeginFrame() {
-	static float64 lastTime = GetTime();
-	float64 currentTime = GetTime();
+	static F64 lastTime = GetTime();
+	F64 currentTime = GetTime();
 	deltaTime = (currentTime - lastTime) / 1000.0f;
 	lastTime = GetTime();
 
@@ -85,6 +87,15 @@ void Application::PollEvents() {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
+
+		case SDL_TEXTINPUT:
+		{
+			ImGuiIO& io = ImGui::GetIO();
+			unsigned int c = event.text.text[0];
+			if (c > 0 && c < 0x10000){
+				io.AddInputCharacter((unsigned short)c);
+			}
+		} break;
 		case SDL_KEYDOWN:
 			if (keyCallback != nullptr) keyCallback(event.key.keysym.scancode, true);
 			keysDown[event.key.keysym.scancode] = true;

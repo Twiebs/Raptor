@@ -15,11 +15,18 @@ bool NetworkInit(NetworkServer* server) {
 		LOG_ERROR("SDLNet: Failed to Open Socket -> " << SDLNet_GetError());
 		return false;
 	}
-	server->packet = SDLNet_AllocPacket(NETWORK_PACKET_SIZE);
-	if (!server->packet) {
-		LOG_ERROR("SDLNet: Failed to allocate a packet -> " << SDLNet_GetError());
+	server->sendPacket = SDLNet_AllocPacket(NETWORK_PACKET_SIZE);
+	if (!server->sendPacket) {
+		LOG_ERROR("SDLNet: Failed to allocate send packet -> " << SDLNet_GetError());
+		return false;
+	}	
+	server->receivePacket = SDLNet_AllocPacket(NETWORK_PACKET_SIZE);
+	if (!server->receivePacket) {
+		LOG_ERROR("SDLNet: Failed to allocate recieve packet -> " << SDLNet_GetError());
 		return false;
 	}
+
+
 
 	auto hostResolved = SDLNet_ResolveHost(&server->address, NULL, NETWORK_SERVER_PORT);
 	if (hostResolved == -1) {
@@ -57,47 +64,69 @@ bool NetworkInit(NetworkClient* client) {
 		LOG_ERROR("Failed to resolve Host" << SDLNet_GetError());
 		return false;
 	}
-
 	LOG_INFO("Client is initalized!");
 	LOG_INFO("Server IP: " << client->serverAddress.host);
 	LOG_INFO("Server Port: " << client->serverAddress.port);
+	LOG_INFO("Connecting to server...");
+	NetworkSend(client, PacketType::CONNECT_REQUEST, nullptr, 0);
 }
 
+bool NetworkSend(NetworkServer* server, PacketType type, IPaddress address, void* data, size_t dataSize) {
+	ASSERT((dataSize + sizeof(PacketHeader)) < server->sendPacket->maxlen);
+	auto sendPacket = server->sendPacket;
+	sendPacket->address = address;
+	sendPacket->channel = -1;
+	sendPacket->len = sizeof(PacketHeader) + dataSize;
+	sendPacket->status = 0;
+	PacketHeader header = { type };
+	memcpy(sendPacket->data, &header, sizeof(PacketHeader));
+	memcpy(sizeof(PacketHeader) + sendPacket->data, data, dataSize);
+	if (SDLNet_UDP_Send(server->listenSocket, -1, sendPacket) == 0) {
+		LOG_ERROR("SDLNet: Could not send packet across soccket - " << SDLNet_GetError());
+		return false;
+	}
+	ASSERT(sendPacket->status = (sizeof(PacketHeader) + dataSize));
+	return true;
+}
 
 void NetworkTick(NetworkServer* server) {
-	while (SDLNet_UDP_Recv(server->listenSocket, server->packet)) {
-		LOG_INFO("WE got a packet!");
-		LOG_INFO("Thank you kind sir!");
-		server->packet->channel = -1;
-		server->packet->len = 0;
-		server->packet->status = 1;
-		SDLNet_UDP_Send(server->listenSocket, -1, server->packet);
+	while (SDLNet_UDP_Recv(server->listenSocket, server->receivePacket)) {
+		auto recievedPacket = server->receivePacket;
+		auto header = (PacketHeader*)recievedPacket->data;
+		switch (header->type) {
+		case PacketType::CONNECT_REQUEST:
+			if (server->clientCount == NETWORK_MAX_CLIENTS) {
+				NetworkSend(server, PacketType::CONNECT_FAIL, recievedPacket->address, 0, 0);
+			}
+			server->clientAddresses[server->clientCount++] = recievedPacket->address;
+			break;
+		}
+		//The packet is fowared to the clients
+		for (auto i = 0; i < server->clientCount; i++) {
+			if (server->clientAddresses[i].host == recievedPacket->address.host &&
+				server->clientAddresses[i].port == recievedPacket->address.port) {
+				continue;	//Dont send the recived packet pack to the client that it orginated from
+			}
+			NetworkSend(server, header->type, server->clientAddresses[i], (server->receivePacket->data + sizeof(PacketHeader)), server->receivePacket->len - sizeof(PacketHeader));
+		}
 	}
 }
 
-void NetworkTick(NetworkClient* client) {
-	const char text[30] = "This is a line of text!";
-	NetworkSend(client, (void*)text, 30);
-}
 
-bool NetworkSend(NetworkClient* client, void* data, size_t dataSize) {
-	assert(dataSize < client->packet->maxlen);
+bool NetworkSend(NetworkClient* client, PacketType type, void* data, size_t dataSize) {
+	ASSERT((dataSize + sizeof(PacketHeader)) < client->packet->maxlen);
 	auto sendPacket = client->packet;
 	sendPacket->address = client->serverAddress;
 	sendPacket->channel = -1;
-	sendPacket->len = dataSize;
+	sendPacket->len = sizeof(PacketHeader) + dataSize;
 	sendPacket->status = 0;
-	memcpy(client->packet->data, data, dataSize);
+	PacketHeader header{ type };
+	memcpy(sendPacket->data, &header, sizeof(PacketHeader));
+	memcpy((sendPacket->data + sizeof(PacketHeader)), data, dataSize);
 	if (SDLNet_UDP_Send(client->socket, -1, client->packet) == 0) {
 		LOG_ERROR("SDLNet: Could not send packet across soccket - " << SDLNet_GetError());
 		return false;
 	}
+	ASSERT(sendPacket->status == sizeof(PacketHeader) + dataSize);
 	return true;
 }
-
-//bool NetworkReceive(NetworkContext* context, void* data, size_t dataSize) {
-//	auto sucuess = SDLNet_UDP_Recv(context->socket, context->receivePacket);
-//	if (!sucuess) return false;
-//	memcpy(data, context->receivePacket->data, context->receivePacket->len);
-//	return true;
-//}

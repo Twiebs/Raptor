@@ -9,14 +9,14 @@ public:
 	float32 m[4][4];
 
 	inline const float* operator[](int i) const {
-		assert(i >= 0);
-		assert(i < 4);
+		ASSERT(i >= 0);
+		ASSERT(i < 4);
 		return (const float*)&m[i];
 	}
 
 	inline float* operator[](int i) {
-		assert(i >= 0);
-		assert(i < 4);
+		ASSERT(i >= 0);
+		ASSERT(i < 4);
 		return (float*)&m[i];
 	}
 
