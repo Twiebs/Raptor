@@ -1,5 +1,26 @@
 #include "Texture.hpp"
 
+GLuint DEBUGLoadTexture(std::string filename) {
+	SDL_Surface* image = IMG_Load(filename.c_str());
+	if (image == nullptr) {
+		LOG_ERROR("Could not open file: " << filename << " :: " << IMG_GetError());
+		return 0;
+	}
+
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); //Disable byte-alignment restriction
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image->w, image->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	SDL_FreeSurface(image);
+	return textureID;
+}
+
 GLuint CreateArrayTexture2D(U32 width, U32 height, U32 layerCount, std::vector<std::string>& filenames) {
 	GLuint textureID = 0;
 	GLuint mipLevelCount = 1;
@@ -15,8 +36,9 @@ GLuint CreateArrayTexture2D(U32 width, U32 height, U32 layerCount, std::vector<s
 
 	for (auto i = 0; i < layerCount; i++) {
 		auto pixmap = LoadPixmap(std::string(ASSET_DIR) + filenames[i]);
+		ASSERT(pixmap->width == width);
+		ASSERT(pixmap->height == height);
 		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixmap->data);
-		delete pixmap;
 	}
 
 	//Always set reasonable texture parameters

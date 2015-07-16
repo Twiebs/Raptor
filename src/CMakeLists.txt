@@ -218,7 +218,7 @@ source_group(Platform FILES ${PLATFORM_SRCS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
-add_executable(app Tests/Main.cpp)
+add_executable(app Tools/Main.cpp)
 #Ensure EMCSCRIPTEN is given enough memory to work with...
 if(EMSCRIPTEN)
   target_link_libraries(app "-s TOTAL_MEMORY=134217728")

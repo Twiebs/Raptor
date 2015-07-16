@@ -1,5 +1,8 @@
 #pragma once
+
 #include <cmath>
+#include <cfloat>
+
 #include <Core/Common.hpp>
 
 #define PI32 3.141592653589793238462643383f

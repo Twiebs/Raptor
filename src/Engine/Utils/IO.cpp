@@ -3,23 +3,34 @@
 #ifdef SDL
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+
 Pixmap* LoadPixmap(std::string filename) {
 	SDL_Surface* image = IMG_Load(filename.c_str());
 	if (image == nullptr) {
 		LOG_ERROR("Could not open file: " << filename  << " :: "<< IMG_GetError());
-		return nullptr;
+        return nullptr;
 	}
 
-	//TODO we dont need to heap allocated this pixmap...
-	//We only need to allocate... wait... absoulty nothing...
-	Pixmap* pixmap = new Pixmap();
-	pixmap->width = image->w;
-	pixmap->height = image->h;
-	pixmap->data = new U8[image->w * image->h * 4];
+    Pixmap* pixmap = new Pixmap(image->w, image->h);
 	memcpy(pixmap->data, image->pixels, image->w * image->h * 4);
 	SDL_FreeSurface(image);
-	return pixmap;
+    return pixmap;
 }
+
+
+bool WritePixmap(Pixmap* pixmap, const std::string& filename) {
+    SDL_Surface* image = SDL_CreateRGBSurface(0, pixmap->width, pixmap->height, 32, 0, 0, 0, 0);
+    if(image == nullptr) {
+        LOG_ERROR("Failed to allocate SDLSurface when writing pixmap to file!");
+        return false;
+    }
+
+    memcpy(image->pixels, pixmap->data, pixmap->width * pixmap->height * 4);
+    IMG_SavePNG(image, filename.c_str());
+    SDL_FreeSurface(image);
+    return true;
+}
+
 #endif
 
 
@@ -105,21 +116,3 @@ GLuint DEBUGLoadShaderFromFile(const std::string& vertexFilename, const std::str
       return DEBUGLoadShaderFromSource(vertexShaderSource, fragmentShaderSource);
 }
 
-GLuint DEBUGLoadTexture(std::string filename) {
-	SDL_Surface* image = IMG_Load(filename.c_str());
-	if (image == nullptr) {
-		LOG_ERROR("Could not open file: " << filename << " :: " << IMG_GetError());
-		return 0;
-	}
-
-	GLuint textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); //Disable byte-alignment restriction
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image->w, image->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->pixels);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	return textureID;
-}
