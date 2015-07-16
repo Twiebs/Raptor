@@ -170,7 +170,7 @@ class Application {
 public:
 	bool isRunning = false;
 
-	Application() { }
+	Application() { memset(keysDown, false, 1024); }
 	~Application() { }
 
 	//Platform specific overrides

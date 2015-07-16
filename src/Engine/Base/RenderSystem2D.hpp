@@ -54,7 +54,6 @@ private:
 	GLuint vertexBufferID;
 	GLuint elementBufferID;
 	GLuint currentTextureID;
-	GLSLProgram* shader;	//DEBUG
 
 	uint32 transformComponentID;
 	uint32 spriteComponentID;

@@ -20,11 +20,14 @@ namespace MathUtils {
 		return clamped;
 	}
 
-	inline static bool EpsilonEquals(F32 a, F32 b, F32 epsilon = 0.1) {
-		F32 difference = std::abs(a - b);
-		if (difference < epsilon)
-			return true;
-		return false;
+
+	inline static bool EpsilonEquals(F32 a, F32 b, F32 epsilon = FLT_EPSILON) {
+		auto result = (std::abs(a - b) < epsilon);
+		return result;
+	}
+	inline static bool EpsilonEquals(F64 a, F64 b, F64 epsilon = DBL_EPSILON) {
+		auto result = (std::abs(a - b) < epsilon);
+		return result;
 	}
 
 	inline static uint32 NextPowerOfTwo(uint32 n) {

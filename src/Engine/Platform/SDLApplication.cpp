@@ -117,6 +117,7 @@ void Application::PollEvents() {
 		case SDL_MOUSEBUTTONUP:
 			buttonsDown[event.button.button] = false;
 			break;
+
 		case SDL_QUIT:
 			isRunning = false;
 			break;

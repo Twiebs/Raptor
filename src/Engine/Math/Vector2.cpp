@@ -1,14 +1,12 @@
 #include "Vector2.hpp"
 
-float32 Vector2::Length() {
+F32 Vector2::Magnitude() {
 	return sqrt(x*x + y*y);
 }
 
 void Vector2::Normalize() {
-	float32 length = Length();
-	if(length == 0) {
-		return;
-	}
-	x /= length;
-	y /= length;
+	F32 mag = Magnitude();
+	if (mag == 0) return;
+	x /= mag;
+	y /= mag;
 }

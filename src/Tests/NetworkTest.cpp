@@ -5,10 +5,10 @@
 
 #include <Core/Application.hpp>
 #include <Core/Network.hpp>
-#include <Platform/ImGui.hpp>
 
-ImGuiContext context;
+#include <Graphics/GUI.hpp>
 
+GUIContext context;
 NetworkClient client;
 NetworkServer server;
 
@@ -39,7 +39,8 @@ void KeyCallback(int keycode, bool isDown) {
 void MainLoop(Application* app) {
 	//app->BeginFrame();
 	app->PollEvents();
-	ImGuiBeginFrame(app->GetDeltaTime(), app);
+
+	GUIBeginFrame(&context, app);
 	ImGui::Begin("Network Status");
 
 
@@ -130,7 +131,7 @@ void MainLoop(Application* app) {
 
 	ImGui::End();
 	ImGui::ShowTestWindow();
-	ImGuiEndFrame();
+	GUIEndFrame();
 
 	// app->EndFrame();
 }
@@ -139,7 +140,7 @@ int main() {
 	Application app;
 	app.SetKeyCallback(KeyCallback);
 	app.Create("Network Test", 1280, 720, false);
-	ImGuiContextInit(&context, app.GetWidth(), app.GetHeight());
+	GUIContextInit(&context, app.GetWidth(), app.GetHeight());
 	app.Run(MainLoop, &app);
 	app.Destroy();
 	return 0;

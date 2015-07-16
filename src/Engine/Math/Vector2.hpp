@@ -1,11 +1,11 @@
 #pragma once
 
-#include <Math/MathUtils.hpp>
 #include <Core/Common.hpp>
+#include <Math/MathUtils.hpp>
 
 class Vector2 {
 public:
-	float32 x, y;
+	F32 x, y;
 	Vector2() { x = 0; y = 0; }
 	Vector2(float x, float y) : x(x), y(y) { }
 	~Vector2() { }
@@ -42,6 +42,6 @@ public:
 		return Vector2(left.x * scalar, left.y * scalar);
 	}
 
-	float32 Length();
+	F32 Magnitude();
 	void Normalize();
 };

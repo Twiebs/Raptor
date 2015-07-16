@@ -126,6 +126,8 @@ else()
 endif()
 
 set(GRAPHICS_SRCS
+		Engine/Graphics/GUI.cpp
+		Engine/Graphics/GUI.hpp
       Engine/Graphics/Texture.cpp
       Engine/Graphics/Texture.hpp
       Engine/Graphics/Pixmap.hpp
@@ -190,6 +192,12 @@ set(ECS_SRCS
 add_library(ECS STATIC ${ECS_SRCS})
 source_group(ECS FILES ${ECS_SRCS})
 
+set(TEST_SRCS
+	Tests/Main.cpp
+	Test/NetworkTest.cpp
+)
+source_group(Tests FILES ${TEST_SRCS})
+
 SET(CORE_SRCS
   Engine/Core/Common.hpp
   Engine/Core/Network.hpp
@@ -202,7 +210,6 @@ add_library(Core STATIC ${CORE_SRCS})
 source_group(Core FILES ${PLATFORM_SRCS})
 
 SET(PLATFORM_SRCS
-  Engine/Platform/ImGui.hpp
   Engine/Utils/IO.cpp
   Engine/Utils/IO.hpp
 )
@@ -211,7 +218,7 @@ source_group(Platform FILES ${PLATFORM_SRCS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
-add_executable(app Tests/2DStar.cpp)
+add_executable(app Tests/Main.cpp)
 #Ensure EMCSCRIPTEN is given enough memory to work with...
 if(EMSCRIPTEN)
   target_link_libraries(app "-s TOTAL_MEMORY=134217728")

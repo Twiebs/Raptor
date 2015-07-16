@@ -50,8 +50,8 @@ RenderSystem2D::RenderSystem2D(uint32 batchCapacity) :
 
 	glBindVertexArray(0);
 
-	shader = new GLSLProgram(DEBUGLoadShaderFromFile("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag"));
-	isTextUniformLoc = shader->GetUniformLocation("isText");
+	//shader = new GLSLProgram(DEBUGLoadShaderFromFile("Assets/shaders/RenderSystem2D.vert", "Assets/shaders/RenderSystem2D.frag"));
+	//isTextUniformLoc = shader->GetUniformLocation("isText");
 }
 
 //TODO: How will the shader be handled?
@@ -87,7 +87,7 @@ void RenderSystem2D::Update(double deltaTime) {
 	auto start = std::chrono::steady_clock::now();
 #endif
 
-	shader->Use();
+	//shader->Use();
 	glUniform1i(isTextUniformLoc, 0);
 	ComponentBlock* block = manager->GetComponentBlock(spriteComponentID);
 	if (block != nullptr) {
@@ -193,7 +193,7 @@ void RenderSystem2D::ProcessSprite(SpriteComponent& sprite) {
 
 void RenderSystem2D::SetProjectionMatrix(Matrix4& matrix) {
 	projection = matrix;
-	shader->SetMatrix4("mvp", matrix);
+	//shader->SetMatrix4("mvp", matrix);
 }
 
 void RenderSystem2D::CheckTexture(GLuint textureID) {

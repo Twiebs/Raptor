@@ -60,11 +60,11 @@ GLuint DEBUGCompileShader(std::string& shaderSource, GLenum shaderType) {
   glCompileShader(shaderID);
 
   GLint success;
-  GLchar infoLog[SHADER_INFO_LOG_SIZE];
+  GLchar infoLog[GLSL_LOG_SIZE];
   glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
 
   if (!success) {
-    glGetShaderInfoLog(shaderID, SHADER_INFO_LOG_SIZE, NULL, infoLog);
+	  glGetShaderInfoLog(shaderID, GLSL_LOG_SIZE, NULL, infoLog);
     std::string shadeTypeName = (shaderType == GL_VERTEX_SHADER) ? ("VertexShader") : ("FragmentShader");
     LOG_ERROR(shadeTypeName << " compilation failed! \n" << infoLog);
     return 0;
@@ -82,10 +82,10 @@ GLuint DEBUGLoadShaderFromSource(std::string vertexShaderSource, std::string fra
   glLinkProgram(programID);
 
   GLint success;
-  GLchar infoLog[SHADER_INFO_LOG_SIZE];
+  GLchar infoLog[GLSL_LOG_SIZE];
   glGetProgramiv(programID, GL_LINK_STATUS, &success);
   if (!success) {
-    glGetProgramInfoLog(programID, SHADER_INFO_LOG_SIZE, NULL, infoLog);
+	  glGetProgramInfoLog(programID, GLSL_LOG_SIZE, NULL, infoLog);
     LOG_ERROR("SHADER PROGRAM LINK: " << infoLog);
     return 0;
   }
