@@ -129,6 +129,7 @@ GLuint gTerrainTextureID;
 GLuint spriteProgramID;
 
 TextureAtlas gTextureAtlas;
+GLuint gFoliageAtlasTextureID;
 
 GUIContext gGuiContext;
 DEBUGRenderGroup gRenderGroup;
@@ -142,19 +143,17 @@ GLuint nullTextureID;
 Mix_Chunk* soundEffects[8];
 Mix_Music* music;
 
-struct Kactus {
-	Vector2 position;
-	GLuint textureID;
-};
-
 #define MAX_ENTITES 100000
 U32 gEntityCount;
-Vector2 entityPositions[MAX_ENTITES];
-GLuint entityTexureID[MAX_ENTITES];
-Kactus entities[MAX_ENTITES];
+
+Transform2D gEntities[MAX_ENTITES];
+U32 gEntityTextures[MAX_ENTITES];
 
 #define FOLIAGE_COUNT 47
-GLuint foliageTextures[FOLIAGE_COUNT];
+
+struct TextureCoord2D{
+	Vector2 uv[4];
+};
 
 bool gSoundEnabled = false;
 bool gMusicEnabled = false;
@@ -345,7 +344,7 @@ void GenerateHeightmap(F32* heightmap, U32 width, U32 height, U64 seed) {
 	//}
 }
 
-U32 CreateScatterMap(Vector2* positions, F32 x, F32 y, F32 width, F32 height, U32 rows, U32 cols) {
+U32 CreateScatterMap(F32 x, F32 y, F32 width, F32 height, U32 rows, U32 cols) {
 	Random rng(0);
 	auto cellWidth = width / rows;
 	auto cellHeight = height / cols;
@@ -354,11 +353,9 @@ U32 CreateScatterMap(Vector2* positions, F32 x, F32 y, F32 width, F32 height, U3
 	U32 count = 0;
 	for (auto ix = 0; ix < cols; ix++) {
 		for (auto iy = 0; iy < rows; iy++) {
-
-			//positions[count++] = Vector2(x + (cellWidth * ix) + (rng.Range(-scatter, scatter) * cellWidth),
-			//							 y + (cellHeight * iy) + (rng.Range(-scatter, scatter)*cellHeight));
-			entities[count++].position = Vector2(x + (cellWidth * ix) + (rng.Range(-scatter, scatter) * cellWidth),
+			gEntities[count].position = Vector2(x + (cellWidth * ix) + (rng.Range(-scatter, scatter) * cellWidth),
 										 y + (cellHeight * iy) + (rng.Range(-scatter, scatter)*cellHeight));
+			count++;
 		}
 	}
 	return count;
@@ -366,10 +363,15 @@ U32 CreateScatterMap(Vector2* positions, F32 x, F32 y, F32 width, F32 height, U3
 
 void Populate(Terrain2D* terrain) {
 	Random rng;
-	auto count = CreateScatterMap(entityPositions, 35, 27, 256, 256, 128, 128);
+	auto count = CreateScatterMap(35, 27, 256, 256, 64, 64);
 	assert(count < MAX_ENTITES);
 	for (auto i = 0; i < count; i++) {
-		entities[i].textureID = rng.Range(0, FOLIAGE_COUNT);
+		auto texIndex = rng.Range(0, FOLIAGE_COUNT);
+		gEntityTextures[i] = texIndex;
+		auto width = gTextureAtlas.regions[texIndex].right - gTextureAtlas.regions[texIndex].x;
+		auto height = gTextureAtlas.regions[texIndex].top - gTextureAtlas.regions[texIndex].y;
+		gEntities[i].size = Vector2(width, height)*6;
+
 	}
 	gEntityCount = count;
 }
@@ -397,6 +399,7 @@ enum MovementFlags {
 	MOVE_LEFT =			1 << 2,
 	MOVE_RIGHT =		1 << 3,
 	MOVE_SPRINT =		1 << 4,
+	MOVE_DEBUG_HYPERSPRINT = 1 << 5,
 };
 
 //For now we can use this to do stuff and things!
@@ -432,6 +435,9 @@ void ProcessPlayerMovement(Transform2D* transform, RigidBody2D* body, U32 moveFl
 	if (moveFlags & MOVE_SPRINT) {
 		maxVelocity *= SPRINT_MULTIPLIER;
 	}
+	if (moveFlags & MOVE_DEBUG_HYPERSPRINT) {
+		maxVelocity *= SPRINT_MULTIPLIER * 5;
+	}
 	auto mag = body->velocity.Magnitude();
 	if (mag > maxVelocity) {
 		body->velocity.Normalize();
@@ -458,6 +464,7 @@ void KeyCallback(int keycode, bool isDown) {
 	case KEY_A: isDown ? gMoveFlags |= MOVE_LEFT : gMoveFlags &= ~MOVE_LEFT; break;
 	case KEY_D: isDown ? gMoveFlags |= MOVE_RIGHT : gMoveFlags &= ~MOVE_RIGHT; break;
 	case KEY_LSHIFT: isDown ? gMoveFlags |= MOVE_SPRINT : gMoveFlags &= ~MOVE_SPRINT; break;
+	case KEY_C: isDown ? gMoveFlags |= MOVE_DEBUG_HYPERSPRINT : gMoveFlags &= ~MOVE_DEBUG_HYPERSPRINT; break;
 	}
 }
 
@@ -470,9 +477,16 @@ void MainLoop (Application* app) {
 	dt += 0.1f;
 
 	const float32 ZOOM_SPEED = 0.5f;
-	static float32 cameraZoom = 1.0f;
-	float32 zoomSpeed = (cameraZoom) * ZOOM_SPEED;
-	cameraZoom -= app->GetMouseWheel() * zoomSpeed;
+	const F32 ZOOM_STEP = 0.1f;
+	static float32 currentCameraZoom = 1.0f;
+	static float32 targetCameraZoom = 1.0f;
+	F32 zoomStep = ZOOM_STEP;
+	float32 zoomSpeed = (currentCameraZoom)* ZOOM_SPEED;
+	targetCameraZoom -= app->GetMouseWheel() * ZOOM_STEP;
+	if (!MathUtils::EpsilonEquals(targetCameraZoom, currentCameraZoom)) {
+		currentCameraZoom += ((targetCameraZoom - currentCameraZoom) > 0 ? zoomSpeed : -zoomSpeed) * deltaTime;
+	}
+
 
 	const float32 PAN_SPEED = 0.05f;
 	static float64 cursorX = app->GetCursorX();
@@ -490,8 +504,8 @@ void MainLoop (Application* app) {
 	ProcessPlayerMovement(&gPlayerTransform, &body, gMoveFlags, deltaTime);
 	gCameraTransform.position = gPlayerTransform.position + (gPlayerTransform.size * 0.5f);
 
-	auto halfViewportWidth = (gCameraTransform.size.x * 0.5f) * cameraZoom;
-	auto halfViewportHeight = (gCameraTransform.size.y * 0.5f) * cameraZoom;
+	auto halfViewportWidth = (gCameraTransform.size.x * 0.5f) * currentCameraZoom;
+	auto halfViewportHeight = (gCameraTransform.size.y * 0.5f) * currentCameraZoom;
 	auto left = floor((gCameraTransform.position.x - halfViewportWidth) / (F32)TILE_SIZE_METERS);
 	auto right = ceil((gCameraTransform.position.x + halfViewportWidth) / TILE_SIZE_METERS);
 	auto bottom = floor((gCameraTransform.position.y - halfViewportHeight) / TILE_SIZE_METERS);
@@ -506,14 +520,14 @@ void MainLoop (Application* app) {
 	waveAngle += deltaTime * 1.0f;
 	if(waveAngle > RADIANS(360)) waveAngle = 0;
 
-	Matrix4 projection = TransformToOrtho(gCameraTransform, cameraZoom);
+	Matrix4 projection = TransformToOrtho(gCameraTransform, currentCameraZoom);
 
-	if (cameraZoom > 2.5f) {
+	if (currentCameraZoom > 2.5f) {
 		
 	}
 
 	
-	if (cameraZoom > 4.0f) {
+	if (currentCameraZoom > 4.0f) {
 		static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
 		glUseProgram(spriteProgramID);
 		glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
@@ -605,27 +619,44 @@ void MainLoop (Application* app) {
 		glUniform1i(gTerrainShader.isWaterUniformLocation, 1);
 		DEBUGDrawGroup(&gRenderBuffer);
 		glUniform1i(gTerrainShader.isWaterUniformLocation, 0);
-		BENCHMARK_START(entityDrawTime);
-		//for (auto i = 0; i < gEntityCount; i++)
-		//	//DEBUGDrawTexture(&gRenderGroup, entityTexureID[i], entityPositions[i], Vector2(1.0f, 1.0f), Color());
-		//	DEBUGDrawTexture(&gRenderGroup, entities[i].textureID, entities[i].position, Vector2(4.0f, 4.0f), Color());
-		BENCHMARK_END(entityDrawTime);
-		BENCHMARK_END(draw);
 
-
-		if (cameraZoom > 1.0f) {
+		if (currentCameraZoom > 1.0f) {
 			static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
 			glUseProgram(spriteProgramID);
 			glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
 			DEBUGBindGroup(&gRenderGroup);
-			auto fade = (cameraZoom - 1.0f) / 3.0f;
+			auto fade = (currentCameraZoom - 1.0f) / 3.0f;
 			DEBUGDrawTexture(&gRenderGroup, gTerrainTextureID, Vector2(0, 0), Vector2(gTerrain.widthInTiles, gTerrain.heightInTiles), Color(1.0, 1.0, 1.0, fade));
 			DEBUGFlushGroup(&gRenderGroup);
 		}
+		BENCHMARK_END(draw);
 	}
+
+	//@ENTITY DRAW
+
+	BENCHMARK_START(entityDrawTime);
+	glUseProgram(spriteProgramID);
+	static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
+	glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
+	DEBUGBindGroup(&gRenderGroup);
+	gRenderGroup.currentTextureID = gFoliageAtlasTextureID;
+	Vertex2D verts[4];
+	for (auto i = 0; i < gEntityCount; i++) {
+		auto& transform = gEntities[i];
+		auto& region = gTextureAtlas.regions[gEntityTextures[i]];
+		verts[0] = { Vector2(transform.position.x, transform.position.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).x, (gTextureAtlas.regions[gEntityTextures[i]]).y), Color() };
+		verts[1] = { Vector2(transform.position.x + transform.size.x, transform.position.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).right, (gTextureAtlas.regions[gEntityTextures[i]]).y), Color() };
+		verts[2] = { Vector2(transform.position.x + transform.size.x, transform.position.y + transform.size.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).right, (gTextureAtlas.regions[gEntityTextures[i]]).top), Color() };
+		verts[3] = { Vector2(transform.position.x, transform.position.y + transform.size.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).x, (gTextureAtlas.regions[gEntityTextures[i]]).top), Color() };
+		DEBUGPushVertices(&gRenderGroup, verts, 4);
+	}
+
+
+
 
 	DEBUGFillRect(&gRenderGroup, gPlayerTransform.position.x, gPlayerTransform.position.y, gPlayerTransform.size.x, gPlayerTransform.size.y, Color(0.0f, 1.0f, 0.0f, 1.0f));
 	DEBUGFlushGroup(&gRenderGroup);
+	BENCHMARK_END(entityDrawTime);
 
 	static bool drawGrid = false;
 	if(drawGrid) {
@@ -654,12 +685,16 @@ void MainLoop (Application* app) {
 	BENCHMARK_END(mainLoop);
 
 	GUIBeginFrame(&gGuiContext, app);
+
+	ImGui::Begin("TestTexture");
+	ImGui::Image((ImTextureID)gFoliageAtlasTextureID, ImVec2(512, 512));
+	ImGui::End();
 	
 	std::stringstream stream;
 	stream << "Player Position: " << gPlayerTransform.position;
 	ImGui::Text(stream.str().c_str());
 	stream.str("");
-	stream << "Camera Zoom: " << cameraZoom;
+	stream << "Camera Zoom: " << currentCameraZoom;
 	ImGui::Text(stream.str().c_str());
 	stream.str("");
 	stream << "Tiles Drawn: " << (endX - startX) * (endY - startY);
@@ -766,6 +801,7 @@ int main () {
     gTerrainShader.waveAngleUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "waveAngle");
 
 	ReadTextureAtlasFromFile(&gTextureAtlas, ASSET("textures/foliage/trees.atlas"));
+	gFoliageAtlasTextureID = CreateTextureFromPixels(gTextureAtlas.width, gTextureAtlas.height, gTextureAtlas.pixels);
 
 	spriteProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Sprite.vert"), ASSET("shaders/Sprite.frag"));
 	nullTextureID = CreateTextureFromFile(ASSET("textures/null.png"));
@@ -796,6 +832,11 @@ int main () {
 
 	app.Run(MainLoop);
 	app.Destroy();
+
+
+	glDeleteTextures(1, &gFoliageAtlasTextureID);
+	FreeTextureAtlas(&gTextureAtlas);
+
 
     glDeleteProgram(gTerrainShader.shaderProgramID);
 	DestroyTerrain(&gTerrain);

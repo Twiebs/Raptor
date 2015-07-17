@@ -208,25 +208,19 @@ source_group(Core FILES ${PLATFORM_SRCS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
-add_executable(app Tests/Main.cpp)
+add_executable(Game Tests/Main.cpp)
+add_executable(Tools Tools/Main.cpp)
+
 #Ensure EMCSCRIPTEN is given enough memory to work with...
 if(EMSCRIPTEN)
   target_link_libraries(app "-s TOTAL_MEMORY=134217728")
   target_link_libraries(app ${EMSCRIPTEN_ASSET_PACK_FLAG})
 endif()
 
+set(ENGINE_LIBS Core Graphics Math imgui ${LIBS})
+target_link_libraries(Game ${ENGINE_LIBS})
+target_link_libraries(Tools ${ENGINE_LIBS})
 
-target_link_libraries(app imgui)
-target_link_libraries(app Core Graphics Math)
-target_link_libraries(app ECS)
-target_link_libraries(app Math)
-target_link_libraries(app ${LIBS})
-
-# file(GLOB HTML_TESTS_SRCS_CPP HTMLTests/*.cpp)
-# file(GLOB HTML_TESTS_SRCS_HPP HTMLTests/*.hpp)
-# set(HTML_TESTS_SRCS_ALL ${HTML_TESTS_SRCS_CPP} ${HTML_TESTS_SRCS_HPP})
-# add_executable(HTMLTests.html ${HTML_TESTS_SRCS_ALL})
-# target_link_libraries(HTMLTests.html RaptorRuntime)
 
 # file(GLOB TOOLS_SRCS Tools/*.cpp)
 # add_executable(RaptorTools ${TOOLS_SRCS})

@@ -49,7 +49,7 @@ void MainLoop(Application* app) {
 				LOG_ERROR("COULD NOT PACK RECT");
 				continue;
 			}
-			atlas.regions[i] = { rect.x, rect.y, rect.x + pixmaps[i].width, rect.y + pixmaps[i].height };
+			atlas.regions[i] = { (F32)rect.x / (F32)atlas.width, (F32)rect.y / (F32)atlas.height, (F32)(rect.x + pixmaps[i].width) / (F32)atlas.width, (F32)(rect.y + pixmaps[i].height) / (F32)atlas.height };
 			WritePixelsHack(atlas.pixels, rect.x, rect.y, atlas.width, atlas.height, pixmaps[i].pixels, pixmaps[i].width, pixmaps[i].height);
 		}
 

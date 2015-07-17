@@ -65,6 +65,11 @@ void WriteTextureAtlasToFile(TextureAtlas* atlas, std::string filename) {
 	auto base = filename.substr(0, filename.length() - (filename.length() - lastDot));
 	stbi_write_png((base + ".png").c_str(), atlas->width, atlas->height, 4, atlas->pixels, atlas->width * 4);
 }
+
+void FreeTextureAtlas(TextureAtlas* atlas) {
+	stbi_image_free(atlas->pixels);
+}
+
 #endif
 
 #if 0	//Binary encoding of raw pixel data

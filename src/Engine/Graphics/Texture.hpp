@@ -18,8 +18,14 @@ struct TextureRegion {
 };
 
 struct AtlasRegion {
+#if 0
 	U16 x, y;
 	U16 w, h;
+#endif
+#if 1
+	F32 x, y;
+	F32 right, top;
+#endif
 };
 
 struct TextureAtlas {
@@ -34,6 +40,7 @@ void LoadPixmapFromFile(Pixmap* pixmap, std::string filename);
 
 void WriteTextureAtlasToFile(TextureAtlas* atlas, std::string filename);
 void ReadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename);
+void FreeTextureAtlas(TextureAtlas* atlas);
 
 GLuint CreateArrayTexture2D(U32 width, U32 height, U32 layerCount, std::vector<std::string>& filenames);
 GLuint CreateTextureFromPixels(U32 width, U32 height, U8* pixels);
