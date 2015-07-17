@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <Core/Common.hpp>
-#include <Core/InputListener.hpp>
 
 #define AUDIO_STEREO 2
 #define AUDIO_MONO 1

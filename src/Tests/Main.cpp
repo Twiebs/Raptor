@@ -1,9 +1,9 @@
 #include <string>
 #include <sstream>
 #include <malloc.h>
+#include <fstream>
 
 #include <GL/glew.h>
-#include <Utils/IO.hpp>
 
 #include <Core/Application.hpp>
 #include <Core/Network.hpp>
@@ -107,18 +107,27 @@ struct Tile {
 
 };
 
-//woof woof!
 struct Terrain2D {
 	U32 widthInTiles, heightInTiles;
 	U8* memblock;
 	F32* heightmap;
 	Tile* tilemap;
 	Biome biome;
-};
+} gTerrain;
+
+struct Terrain2DShaderProgram {
+	GLuint shaderProgramID;
+	GLint projectionUniformLocation;
+	GLint isWaterUniformLocation;
+	GLint waveAngleUniformLocation;
+} gTerrainShader;
+
+GLuint gTerrainTextureID;
+
+
 
 GLuint spriteProgramID;
 
-Terrain2D gTerrain;
 TextureAtlas gTextureAtlas;
 
 GUIContext gGuiContext;
@@ -128,7 +137,6 @@ DEBUGBufferGroup gRenderBuffer;
 Transform2D gCameraTransform;
 Transform2D gPlayerTransform;
 
-GLuint mapTextureID;
 GLuint nullTextureID;
 
 Mix_Chunk* soundEffects[8];
@@ -151,15 +159,6 @@ GLuint foliageTextures[FOLIAGE_COUNT];
 bool gSoundEnabled = false;
 bool gMusicEnabled = false;
 
-
-struct Terrain2DShaderProgram {
-	GLuint shaderProgramID;
-	GLint projectionUniformLocation;
-	GLint isWaterUniformLocation;
-	GLint waveAngleUniformLocation;
-} gTerrainShader;
-
-
 static Mix_Chunk* LoadSound(const char* filename) {
 	auto chunk = Mix_LoadWAV(filename);
 	if (chunk == nullptr) {
@@ -168,7 +167,6 @@ static Mix_Chunk* LoadSound(const char* filename) {
 	}
 	return chunk;
 }
-
 
 static void PlaySound(Mix_Chunk* sound, uint32 loopCount = 0) {
 	if (!gSoundEnabled) return;
@@ -317,8 +315,8 @@ void LoadBiome(Terrain2D* terrain) {
 		}
 	}
 
-	glDeleteTextures(1, &mapTextureID);
-	mapTextureID = TerrainToTexture(terrain);
+	glDeleteTextures(1, &gTerrainTextureID);
+	gTerrainTextureID = TerrainToTexture(terrain);
 }
 
 void GenerateHeightmap(F32* heightmap, U32 width, U32 height, U64 seed) {
@@ -393,19 +391,79 @@ void CreateTerrain(Terrain2D* terrain, U32 widthInMeters, U32 heightInMeters) {
 void DestroyTerrain(Terrain2D* terrain) {
 	free(terrain->memblock);
 }
+enum MovementFlags {
+	MOVE_FOWARD =		1 << 0,
+	MOVE_BACKWARD =		1 << 1,
+	MOVE_LEFT =			1 << 2,
+	MOVE_RIGHT =		1 << 3,
+	MOVE_SPRINT =		1 << 4,
+};
 
+//For now we can use this to do stuff and things!
+struct RigidBody2D {
+	Vector2 velocity;
+};
+
+void ProcessPlayerMovement(Transform2D* transform, RigidBody2D* body, U32 moveFlags, F64 deltaTime) {
+	static const F64 ACCELLERATION = 35.0;
+	static const F64 MAX_VELOCITY = 3.0f;
+	static const F64 SPRINT_MULTIPLIER = 2.0f;
+	static const F64 DRAG_ACCELLERATION = 45.0f;
+	auto maxVelocity = MAX_VELOCITY;
+
+	bool isMovingVertical = false;
+	bool isMovingHorizontal = false;
+	if (moveFlags & MOVE_FOWARD) {
+		body->velocity.y += (ACCELLERATION * deltaTime);
+		isMovingVertical = true;
+	}
+	if (moveFlags & MOVE_BACKWARD) {
+		body->velocity.y -= (ACCELLERATION * deltaTime);
+		isMovingVertical = true;
+	}
+	if (moveFlags & MOVE_RIGHT) {
+		body->velocity.x += (ACCELLERATION * deltaTime);
+		isMovingHorizontal = true;
+	}
+	if (moveFlags & MOVE_LEFT) {
+		body->velocity.x -= (ACCELLERATION * deltaTime);
+		isMovingHorizontal = true;
+	}
+	if (moveFlags & MOVE_SPRINT) {
+		maxVelocity *= SPRINT_MULTIPLIER;
+	}
+	auto mag = body->velocity.Magnitude();
+	if (mag > maxVelocity) {
+		body->velocity.Normalize();
+		body->velocity *= maxVelocity;
+	}
+	if (!isMovingHorizontal && !MathUtils::EpsilonEquals(body->velocity.x, 0.0f)) {
+		if (abs(body->velocity.x) - (DRAG_ACCELLERATION * deltaTime) < 0) body->velocity.x = 0;
+		else body->velocity.x += ((body->velocity.x > 0) ? -DRAG_ACCELLERATION : DRAG_ACCELLERATION) * deltaTime;
+	}
+	if (!isMovingVertical && !MathUtils::EpsilonEquals(body->velocity.y, 0.0f)) {
+		if (abs(body->velocity.y) - (DRAG_ACCELLERATION * deltaTime) < 0) body->velocity.y = 0;
+		else body->velocity.y += ((body->velocity.y > 0) ? -DRAG_ACCELLERATION : DRAG_ACCELLERATION) * deltaTime;
+	}
+	transform->position += body->velocity * deltaTime;
+}
+
+static U32 gMoveFlags;
 void KeyCallback(int keycode, bool isDown) {
 	ImGuiIO& io = ImGui::GetIO();
 	io.KeysDown[keycode] = isDown;
+	switch (keycode) {
+	case KEY_W: isDown ? gMoveFlags |= MOVE_FOWARD : gMoveFlags &= ~MOVE_FOWARD; break;
+	case KEY_S: isDown ? gMoveFlags |= MOVE_BACKWARD : gMoveFlags &= ~MOVE_BACKWARD; break;
+	case KEY_A: isDown ? gMoveFlags |= MOVE_LEFT : gMoveFlags &= ~MOVE_LEFT; break;
+	case KEY_D: isDown ? gMoveFlags |= MOVE_RIGHT : gMoveFlags &= ~MOVE_RIGHT; break;
+	case KEY_LSHIFT: isDown ? gMoveFlags |= MOVE_SPRINT : gMoveFlags &= ~MOVE_SPRINT; break;
+	}
 }
-
 
 void MainLoop (Application* app) {
 	BENCHMARK_START(mainLoop);
 	float64 deltaTime = app->GetDeltaTime();
-	//if (app->IsKeyDown(KEY_ESCAPE)) {
-	//	app->isRunning = false;
-	//}
 	static float x = -0.5f;
 	static float dt = 0.0f;
 	float xpos =  x * sin(dt);
@@ -428,54 +486,8 @@ void MainLoop (Application* app) {
 		gCameraTransform.position.y += dy * PAN_SPEED;
 	}
 
-	static const F64 ACCELLERATION = 35.0;
-	static const F64 MAX_VELOCITY = 3.0f;
-	static const F64 SPRINT_MULTIPLIER = 2.0f;
-	static const F64 DRAG_ACCELLERATION = 45.0f;
-	auto maxVelocity = MAX_VELOCITY;
-	static Vector2 velocity;
-	bool isMovingVertical = false;
-	bool isMovingHorizontal = false;
-	if (app->IsKeyDown(KEY_W)) {
-		velocity.y += (ACCELLERATION * deltaTime);
-		isMovingVertical = true;
-	}
-	if (app->IsKeyDown(KEY_S)) {
-		velocity.y -= (ACCELLERATION * deltaTime);
-		isMovingVertical = true;
-	}
-	if (app->IsKeyDown(KEY_D)) {
-		velocity.x += (ACCELLERATION * deltaTime);
-		isMovingHorizontal = true;
-	}
-	if (app->IsKeyDown(KEY_A)) {
-		velocity.x -= (ACCELLERATION * deltaTime);
-		isMovingHorizontal = true;
-	}
-	if (app->IsKeyDown(KEY_LSHIFT)) {
-		maxVelocity *= SPRINT_MULTIPLIER;
-	}
-
-	auto mag = velocity.Magnitude();
-	if (mag > maxVelocity) {
-		velocity.Normalize();
-		velocity *= maxVelocity;
-	}
-
-	if (!isMovingHorizontal && !MathUtils::EpsilonEquals(velocity.x, 0.0f)) {
-		if (abs(velocity.x) - (DRAG_ACCELLERATION * deltaTime) < 0) velocity.x = 0;
-		else velocity.x += ((velocity.x > 0) ? -DRAG_ACCELLERATION : DRAG_ACCELLERATION) * deltaTime;
-	}
-	if (!isMovingVertical && !MathUtils::EpsilonEquals(velocity.y, 0.0f)) {
-		if (abs(velocity.y) - (DRAG_ACCELLERATION * deltaTime) < 0) velocity.y = 0;
-		else velocity.y += ((velocity.y > 0) ? -DRAG_ACCELLERATION : DRAG_ACCELLERATION) * deltaTime;
-	}
-		//if(app->IsKeyDown(KEY_LSHIFT)) deltaPos *= SPRINT_MULTIPLIER;
-
-
-	gPlayerTransform.position += velocity * deltaTime;
-
-
+	static RigidBody2D body;
+	ProcessPlayerMovement(&gPlayerTransform, &body, gMoveFlags, deltaTime);
 	gCameraTransform.position = gPlayerTransform.position + (gPlayerTransform.size * 0.5f);
 
 	auto halfViewportWidth = (gCameraTransform.size.x * 0.5f) * cameraZoom;
@@ -493,28 +505,36 @@ void MainLoop (Application* app) {
 	static F32 waveAmp = 0.1f;
 	waveAngle += deltaTime * 1.0f;
 	if(waveAngle > RADIANS(360)) waveAngle = 0;
-	glUseProgram(gTerrainShader.shaderProgramID);
-	glUniform1f(gTerrainShader.waveAngleUniformLocation, waveAngle);
 
+	Matrix4 projection = TransformToOrtho(gCameraTransform, cameraZoom);
 
-	BENCHMARK_START(draw);
-	static bool drawMapTexture = false;
-	static bool drawWater = true;
-	static bool drawSand = true;
-	if (drawMapTexture) {
-		DEBUGDrawTexture(&gRenderGroup, mapTextureID, 0, 0, 512, 512, Color());
+	if (cameraZoom > 2.5f) {
+		
+	}
+
+	
+	if (cameraZoom > 4.0f) {
+		static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
+		glUseProgram(spriteProgramID);
+		glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
+		DEBUGBindGroup(&gRenderGroup);
+		DEBUGDrawTexture(&gRenderGroup, gTerrainTextureID, Vector2(0, 0), Vector2(gTerrain.widthInTiles, gTerrain.heightInTiles), Color());
 		DEBUGFlushGroup(&gRenderGroup);
-	} else {
-		glUseProgram(gTerrainShader.shaderProgramID);
-		Matrix4 projection = TransformToOrtho(gCameraTransform, cameraZoom);
-		glUniformMatrix4fv(gTerrainShader.projectionUniformLocation, 1, GL_FALSE, &projection[0][0]);
-		gRenderGroup.currentTextureID = gTerrain.biome.textureID;
+	}
 
+	else {
+		glUseProgram(gTerrainShader.shaderProgramID);
+		glUniform1f(gTerrainShader.waveAngleUniformLocation, waveAngle);
+		glUniformMatrix4fv(gTerrainShader.projectionUniformLocation, 1, GL_FALSE, &projection[0][0]);
+		BENCHMARK_START(draw);
+		static bool drawMapTexture = false;
+		static bool drawWater = true;
+		static bool drawSand = true;
+		gRenderGroup.currentTextureID = gTerrain.biome.textureID;
 
 		std::vector<U32> waterTiles;
 		std::vector<U32> overlapWaterTiles;
 		TileVertex vertices[4];
-
 		auto terrain = &gTerrain;
 		for (U32 x = startX; x <= endX; x++) {
 			for (U32 y = startY; y <= endY; y++) {
@@ -581,26 +601,31 @@ void MainLoop (Application* app) {
 			vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(0.0f, 1.0f, entryIndex), entry.color };
 			DEBUGPushVertices(&gRenderBuffer, vertices, 4);
 		}
+
+		glUniform1i(gTerrainShader.isWaterUniformLocation, 1);
+		DEBUGDrawGroup(&gRenderBuffer);
+		glUniform1i(gTerrainShader.isWaterUniformLocation, 0);
+		BENCHMARK_START(entityDrawTime);
+		//for (auto i = 0; i < gEntityCount; i++)
+		//	//DEBUGDrawTexture(&gRenderGroup, entityTexureID[i], entityPositions[i], Vector2(1.0f, 1.0f), Color());
+		//	DEBUGDrawTexture(&gRenderGroup, entities[i].textureID, entities[i].position, Vector2(4.0f, 4.0f), Color());
+		BENCHMARK_END(entityDrawTime);
+		BENCHMARK_END(draw);
+
+
+		if (cameraZoom > 1.0f) {
+			static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
+			glUseProgram(spriteProgramID);
+			glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
+			DEBUGBindGroup(&gRenderGroup);
+			auto fade = (cameraZoom - 1.0f) / 3.0f;
+			DEBUGDrawTexture(&gRenderGroup, gTerrainTextureID, Vector2(0, 0), Vector2(gTerrain.widthInTiles, gTerrain.heightInTiles), Color(1.0, 1.0, 1.0, fade));
+			DEBUGFlushGroup(&gRenderGroup);
+		}
 	}
 
-	glUniform1i(gTerrainShader.isWaterUniformLocation, 1);
-	DEBUGDrawGroup(&gRenderBuffer);
-	glUniform1i(gTerrainShader.isWaterUniformLocation, 0);
-
-	glUseProgram(spriteProgramID);
-	Matrix4 projection = TransformToOrtho(gCameraTransform, cameraZoom);
-    static GLint spriteProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
-	glUniformMatrix4fv(spriteProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
-	DEBUGBindGroup(&gRenderGroup);
-	BENCHMARK_START(entityDrawTime);
-	//for (auto i = 0; i < gEntityCount; i++)
-	//	//DEBUGDrawTexture(&gRenderGroup, entityTexureID[i], entityPositions[i], Vector2(1.0f, 1.0f), Color());
-	//	DEBUGDrawTexture(&gRenderGroup, entities[i].textureID, entities[i].position, Vector2(4.0f, 4.0f), Color());
-	BENCHMARK_END(entityDrawTime);
 	DEBUGFillRect(&gRenderGroup, gPlayerTransform.position.x, gPlayerTransform.position.y, gPlayerTransform.size.x, gPlayerTransform.size.y, Color(0.0f, 1.0f, 0.0f, 1.0f));
 	DEBUGFlushGroup(&gRenderGroup);
-	BENCHMARK_END(draw);
-
 
 	static bool drawGrid = false;
 	if(drawGrid) {
@@ -648,9 +673,9 @@ void MainLoop (Application* app) {
 	gRenderGroup.drawCalls = 0;
 
 	ImGui::Checkbox("Draw grid", &drawGrid);
-	ImGui::Checkbox("Draw base color", &drawMapTexture);
-	ImGui::Checkbox("Draw water", &drawWater);
-	ImGui::Checkbox("Draw sand", &drawSand);
+	//ImGui::Checkbox("Draw base color", &drawMapTexture);
+	//ImGui::Checkbox("Draw water", &drawWater);
+	//ImGui::Checkbox("Draw sand", &drawSand);
 
 	//@BUTTONS
 	if (ImGui::Button("Reload Shader")) {
@@ -673,8 +698,8 @@ void MainLoop (Application* app) {
 	static F32 frameTimes[resolution];
 	frameTimes[cntr] = (F32)(deltaTime * 1000.0f);
 	if (++cntr == resolution) cntr = 0;
-	ImGui::Text((std::string("Tile draw Time: ") + std::to_string(benchmark_draw_time)).c_str());
-	ImGui::Text((std::string("Entity DrawTime: " + std::to_string(benchmark_entityDrawTime_time))).c_str());
+	//ImGui::Text((std::string("Tile draw Time: ") + std::to_string(benchmark_draw_time)).c_str());
+	//ImGui::Text((std::string("Entity DrawTime: " + std::to_string(benchmark_entityDrawTime_time))).c_str());
 	ImGui::PlotLines("##MainLoop", frameTimes, resolution, cntr, "MainLoop", 0.0f, 100.0f, ImVec2(400, 75));
 	ImGui::End();
 
@@ -723,10 +748,7 @@ void MainLoop (Application* app) {
 #if 1
 #undef main
 int main () {
-	Application app;
-	app.Create("Raptor ImGUI", 1280, 720, true);
-	//glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	Application app("Raptor ImGUI", 1280, 720, true);
 	app.SetKeyCallback(KeyCallback);
 
 	GUIContextInit(&gGuiContext, app.GetWidth(), app.GetHeight());
@@ -743,7 +765,7 @@ int main () {
     gTerrainShader.isWaterUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "isWater");
     gTerrainShader.waveAngleUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "waveAngle");
 
-	LoadTextureAtlasFromFile(&gTextureAtlas, ASSET("textures/foliage/trees.atlas"));
+	ReadTextureAtlasFromFile(&gTextureAtlas, ASSET("textures/foliage/trees.atlas"));
 
 	spriteProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Sprite.vert"), ASSET("shaders/Sprite.frag"));
 	nullTextureID = CreateTextureFromFile(ASSET("textures/null.png"));
@@ -769,7 +791,7 @@ int main () {
 
 	CreateTerrain(&gTerrain, 512, 512);
 	
-	mapTextureID = TerrainToTexture(&gTerrain);
+	gTerrainTextureID = TerrainToTexture(&gTerrain);
 
 
 	app.Run(MainLoop);

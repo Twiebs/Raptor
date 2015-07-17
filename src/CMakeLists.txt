@@ -48,7 +48,6 @@ if(NOT MSVC)
 endif(NOT MSVC)
 
 add_subdirectory(imgui)
-add_subdirectory(Box2D)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../CMake/Modules/")
 
@@ -167,18 +166,17 @@ set(BASE_SRCS
   Engine/Base/Transform2D.hpp
   # Engine/Base/Transform3D.hpp
 
-  Engine/Base/RenderSystem2D.cpp
-  Engine/Base/RenderSystem2D.hpp
+  # Engine/Base/RenderSystem2D.cpp
+  # Engine/Base/RenderSystem2D.hpp
   # Engine/Base/RenderSystem3D.cpp
   # Engine/Base/RenderSystem3D.hpp
 
-  Engine/Base/PhysicsSystem2D.cpp
-  Engine/Base/PhysicsSystem2D.hpp
+  # Engine/Base/PhysicsSystem2D.cpp
+  # Engine/Base/PhysicsSystem2D.hpp
   # Engine/Base/PhysicsSystem3D.hpp
 )
-add_library(Base STATIC ${BASE_SRCS})
+#add_library(Base STATIC ${BASE_SRCS})
 source_group(Base FILES ${BASE_SRCS})
-target_link_libraries(Base Box2D ECS Graphics)
 
 set(ECS_SRCS
   Engine/ECS/Component.hpp
@@ -210,18 +208,17 @@ source_group(Core FILES ${PLATFORM_SRCS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
-add_executable(app Tools/Main.cpp)
+add_executable(app Tests/Main.cpp)
 #Ensure EMCSCRIPTEN is given enough memory to work with...
 if(EMSCRIPTEN)
   target_link_libraries(app "-s TOTAL_MEMORY=134217728")
   target_link_libraries(app ${EMSCRIPTEN_ASSET_PACK_FLAG})
 endif()
 
+
 target_link_libraries(app imgui)
-target_link_libraries(app Core)
-target_link_libraries(app Graphics)
-target_link_libraries(app Box2D)
-target_link_libraries(app ECS Base)
+target_link_libraries(app Core Graphics Math)
+target_link_libraries(app ECS)
 target_link_libraries(app Math)
 target_link_libraries(app ${LIBS})
 

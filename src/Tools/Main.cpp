@@ -12,7 +12,6 @@ GUIContext gGUIContext;
 #define FOLIAGE_COUNT 47
 void MainLoop(Application* app) {
 	GUIBeginFrame(&gGUIContext, app);
-
 	static bool atlasPacked = false;
 	static bool atlasLoaded = false;
 	ImGui::SetNextWindowPos(ImVec2(app->GetWidth() - 270, (app->GetHeight() * 0.5f) - ((app->GetHeight() - 20)* 0.5f)));

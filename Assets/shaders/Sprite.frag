@@ -1,11 +1,11 @@
 #version 330
 in vec2 vertUV;
-in vec2 vertColor;
+in vec4 vertColor;
 
-out vec4 fragColor;
 uniform sampler2D sampler;
 
+out vec4 fragColor;
+
 void main() {
-	vec4 texColor = texture(sampler, vertUV);
-	fragColor = texColor;
+	fragColor = vec4(texture(sampler, vertUV).rgb, vertColor.a);
 }
