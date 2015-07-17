@@ -4,8 +4,8 @@
 #include <stdint.h>
 
 
-//#define ASSET_DIR "../Assets/"
-#define ASSET_DIR "/home/torin/workspace/Raptor/Assets/"
+#define ASSET_DIR "../Assets/"
+//#define ASSET_DIR "/home/torin/workspace/Raptor/Assets/"
 #define ASSET(x) ASSET_DIR x
 
 

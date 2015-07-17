@@ -126,11 +126,10 @@ else()
 endif()
 
 set(GRAPHICS_SRCS
-		Engine/Graphics/GUI.cpp
-		Engine/Graphics/GUI.hpp
+	  Engine/Graphics/GUI.cpp
+	  Engine/Graphics/GUI.hpp
       Engine/Graphics/Texture.cpp
       Engine/Graphics/Texture.hpp
-      Engine/Graphics/Pixmap.hpp
       Engine/Graphics/Font.hpp
       Engine/Graphics/Font.cpp
       Engine/Graphics/Model.cpp
@@ -209,13 +208,6 @@ SET(CORE_SRCS
 add_library(Core STATIC ${CORE_SRCS})
 source_group(Core FILES ${PLATFORM_SRCS})
 
-SET(PLATFORM_SRCS
-  Engine/Utils/IO.cpp
-  Engine/Utils/IO.hpp
-)
-add_library(Platform STATIC ${PLATFORM_SRCS})
-source_group(Platform FILES ${PLATFORM_SRCS})
-
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
 add_executable(app Tools/Main.cpp)
@@ -229,7 +221,6 @@ target_link_libraries(app imgui)
 target_link_libraries(app Core)
 target_link_libraries(app Graphics)
 target_link_libraries(app Box2D)
-target_link_libraries(app Platform)
 target_link_libraries(app ECS Base)
 target_link_libraries(app Math)
 target_link_libraries(app ${LIBS})

@@ -117,7 +117,9 @@ struct Terrain2D {
 };
 
 GLuint spriteProgramID;
+
 Terrain2D gTerrain;
+TextureAtlas gTextureAtlas;
 
 GUIContext gGuiContext;
 DEBUGRenderGroup gRenderGroup;
@@ -188,7 +190,7 @@ static void PlayMusic(Mix_Music* music, uint32 loops = -1) {
 	if (!gMusicEnabled) return;
 	if (Mix_PlayMusic(music, loops) == -1) {
 		LOG_ERROR("Couldnt not play music!" << Mix_GetError());
-	}
+	} 
 }
 
 Matrix4 TransformToOrtho(Transform2D& transform, float32 zoom) {
@@ -369,7 +371,6 @@ void Populate(Terrain2D* terrain) {
 	auto count = CreateScatterMap(entityPositions, 35, 27, 256, 256, 128, 128);
 	assert(count < MAX_ENTITES);
 	for (auto i = 0; i < count; i++) {
-		//entityTexureID[i] = nullTextureID;
 		entities[i].textureID = rng.Range(0, FOLIAGE_COUNT);
 	}
 	gEntityCount = count;
@@ -742,8 +743,10 @@ int main () {
     gTerrainShader.isWaterUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "isWater");
     gTerrainShader.waveAngleUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "waveAngle");
 
+	LoadTextureAtlasFromFile(&gTextureAtlas, ASSET("textures/foliage/trees.atlas"));
+
 	spriteProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Sprite.vert"), ASSET("shaders/Sprite.frag"));
-	nullTextureID = DEBUGLoadTexture(ASSET("textures/null.png"));
+	nullTextureID = CreateTextureFromFile(ASSET("textures/null.png"));
 
 	soundEffects[0] = LoadSound(ASSET("sounds/wave00.ogg"));
 	soundEffects[1] = LoadSound(ASSET("sounds/wave01.ogg"));
@@ -759,14 +762,17 @@ int main () {
 
 	F32 viewportHeightInMeters = VIEWPORT_WIDTH_IN_METERS * (app.GetHeight() / app.GetWidth());
 	gCameraTransform.size = Vector2(VIEWPORT_WIDTH_IN_METERS, viewportHeightInMeters);
+	gPlayerTransform.position.x = 256;
+	gPlayerTransform.position.y = 256;
 	gPlayerTransform.size.x = 0.5f;
 	gPlayerTransform.size.y = 0.5f;
 
 	CreateTerrain(&gTerrain, 512, 512);
+	
 	mapTextureID = TerrainToTexture(&gTerrain);
 
 
-	app.Run(MainLoop, &app);
+	app.Run(MainLoop);
 	app.Destroy();
 
     glDeleteProgram(gTerrainShader.shaderProgramID);

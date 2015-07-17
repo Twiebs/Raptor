@@ -15,8 +15,6 @@ void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount) {
 	glEnable(GL_SCISSOR_TEST);
 	glActiveTexture(GL_TEXTURE0);
 
-
-
 	uint32 vertexCount = 0;
 	for (int i = 0; i < drawListCount; i++) {
 		vertexCount += drawList[i]->vtx_buffer.size();

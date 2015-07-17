@@ -16,9 +16,6 @@
 #include <Math/Matrix4.hpp>
 #include <Math/Rectangle.hpp>
 #include <Math/Vector2.hpp>
-
-#include <Utils/IO.hpp>
-
 //TODO:
 // - Batch sort mode
 // - Multiple batch entries of render batches

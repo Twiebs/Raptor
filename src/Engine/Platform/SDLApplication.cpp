@@ -5,6 +5,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_net.h>
+#include <SDL2/SDL_image.h>
 #undef main
 
 #include <GL/glew.h>
@@ -27,8 +28,8 @@ int Application::Create(const char* title, uint32 width, uint32 height, bool ful
 	}
 
 	int mixFlags = MIX_INIT_OGG | MIX_INIT_FLAC | MIX_INIT_MP3;
-	int initalized = Mix_Init(mixFlags);
-	if (initalized & mixFlags != mixFlags) {
+	int miaxInitalized = Mix_Init(mixFlags);
+	if (miaxInitalized & mixFlags != mixFlags) {
 		LOG_ERROR("AUDIO: Failed to init required audio library support");
 		LOG_ERROR("AUDIO: " << Mix_GetError());
 	}
@@ -37,6 +38,11 @@ int Application::Create(const char* title, uint32 width, uint32 height, bool ful
 		LOG_ERROR("AUDIO: Failed to initalize audio context" << Mix_GetError());
 	}
 
+	int imgFlags = IMG_INIT_PNG;
+	int imgInitalized = IMG_Init(imgFlags);
+	if (imgInitalized & imgFlags != imgFlags) {
+		LOG_ERROR("IMG: Failed to init required img library support" << IMG_GetError);
+	}
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_Surface* screen;
@@ -58,6 +64,7 @@ int Application::Create(const char* title, uint32 width, uint32 height, bool ful
 }
 
 int Application::Destroy() {
+	IMG_Quit();
 	Mix_CloseAudio();
 	Mix_Quit();
 	SDL_Quit();
