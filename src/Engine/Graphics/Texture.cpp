@@ -8,7 +8,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 
-
 void LoadPixmapFromFile(Pixmap* pixmap, std::string filename) {
 	pixmap->pixels = stbi_load(filename.c_str(), (int*)&pixmap->width, (int*)&pixmap->height, nullptr, 4);
 }
@@ -36,7 +35,7 @@ void WritePixels(U16 srcWidth, U16 srcHeight, U8* src, U16 destX, U16 destY, U16
 }
 
 #if 1
-void ReadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename) {
+void LoadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename) {
 	std::ifstream stream;
 	stream.open(filename);
 	if (!stream.is_open()) { LOG_ERROR("HUSTON WE HAVE A PROBLEM"); return; }
@@ -73,7 +72,7 @@ void FreeTextureAtlas(TextureAtlas* atlas) {
 #endif
 
 #if 0	//Binary encoding of raw pixel data
-void ReadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename) {
+void LoadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename) {
 	std::ifstream stream;
 	stream.open(filename);
 	if (!stream.is_open()) { LOG_ERROR("HUSTON WE HAVE A PROBLEM"); return; }

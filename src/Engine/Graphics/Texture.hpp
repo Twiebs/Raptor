@@ -39,7 +39,7 @@ struct TextureAtlas {
 void LoadPixmapFromFile(Pixmap* pixmap, std::string filename);
 
 void WriteTextureAtlasToFile(TextureAtlas* atlas, std::string filename);
-void ReadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename);
+void LoadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename);
 void FreeTextureAtlas(TextureAtlas* atlas);
 
 GLuint CreateArrayTexture2D(U32 width, U32 height, U32 layerCount, std::vector<std::string>& filenames);

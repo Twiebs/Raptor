@@ -513,6 +513,7 @@ void MainLoop (Application* app) {
 	BENCHMARK_START(mainLoop);
 	float64 deltaTime = app->GetDeltaTime();
 
+
 	//NOTE @CameraControls
 	static const F32 ZOOM_SPEED = 0.1f;
 	static const F32 ZOOM_STEP = 0.1f;
@@ -529,13 +530,9 @@ void MainLoop (Application* app) {
 
 	if (!MathUtils::EpsilonEquals(targetCameraZoom, currentCameraZoom)) {
 		auto currentZoomSpeed = (currentCameraZoom * ZOOM_STEP) * 5;	//A single zoom step takes 1/5th of a second from the zoom step above the targetCameraZoom Regardless of how many steps are in between
-		auto zoomDiff = targetCameraZoom - currentCameraZoom;
-		if (std::abs(zoomDiff) < currentZoomSpeed * deltaTime) {
-			currentCameraZoom = targetCameraZoom;
-		} else {
-			currentCameraZoom = Lerp(currentCameraZoom, targetCameraZoom, currentZoomSpeed * deltaTime);
-			currentCameraZoom += (zoomDiff > 0 ? currentZoomSpeed : -currentZoomSpeed) * deltaTime;
-		}
+		auto nextCameraZoom = Lerp(currentCameraZoom, targetCameraZoom, 0.1f);
+		nextCameraZoom = MathUtils::Clamp(nextCameraZoom, ZOOM_MIN, ZOOM_MAX);
+		currentCameraZoom = nextCameraZoom;
 	}
 
 
@@ -573,14 +570,34 @@ void MainLoop (Application* app) {
 
 	Matrix4 projection = TransformToOrtho(gCameraTransform, currentCameraZoom);
 
-	if (currentCameraZoom > 2.5f) {
-		
+	// NOTE @SpaceBackground
+	Matrix4 screenProjection = Matrix4::Ortho(0.0f, app->GetWidth(), 0.0f, app->GetHeight(), 1.0);
+	static GLuint spaceTextureID = CreateTextureFromFile(ASSET("skybox/space/left.png"));
+	static GLint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
+	if (currentCameraZoom > 15.0) {
+		glUseProgram(spriteProgramID);
+		glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &screenProjection[0][0]);
+		DEBUGBindGroup(&gRenderGroup);
+		DEBUGDrawTexture(&gRenderGroup, spaceTextureID, Vector2(0, 0), Vector2(app->GetWidth(), app->GetHeight()), Color());
+		DEBUGFlushGroup(&gRenderGroup);
 	}
+
+	// NOTE @Atmosphere
+	static GLuint atmoProgram = DEBUGLoadShaderFromFile(ASSET("shaders/Atmosphere2D.vert"), ASSET("shaders/Atmosphere2D.frag"));
+	static GLuint atmoProjectionLoc = GetUniformLocation(atmoProgram, "projection");
+	static const F32 atmosphereThickness = 45.0f;
+	if (currentCameraZoom > 15.0) {
+		glUseProgram(atmoProgram);
+		glUniformMatrix4fv(atmoProjectionLoc, 1, GL_FALSE, &projection[0][0]);
+		DEBUGFillRect(&gRenderGroup, -atmosphereThickness, -atmosphereThickness, gTerrain.widthInTiles + (atmosphereThickness * 2), gTerrain.heightInTiles + (atmosphereThickness * 2), Color());
+		DEBUGFlushGroup(&gRenderGroup);
+	}
+
 	static auto counterFrequency = SDL_GetPerformanceFrequency() / 1000.0;
 	auto drawStartTime = SDL_GetPerformanceCounter();
 	auto drawStartcycles = __rdtsc();
 	if (currentCameraZoom > 4.0f) {
-		static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
+
 		glUseProgram(spriteProgramID);
 		glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
 		DEBUGBindGroup(&gRenderGroup);
@@ -687,7 +704,6 @@ void MainLoop (Application* app) {
 
 	BENCHMARK_START(entityDrawTime);
 	glUseProgram(spriteProgramID);
-	static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
 	glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
 	DEBUGBindGroup(&gRenderGroup);
 	gRenderGroup.currentTextureID = gFoliageAtlasTextureID;
@@ -720,6 +736,21 @@ void MainLoop (Application* app) {
 	auto drawTime = SDL_GetPerformanceCounter() - drawStartTime;
 	auto drawCycles = __rdtsc() - drawStartcycles;
 
+	//NOTE @CloudRendering
+	static GLuint cloudShaderID = DEBUGLoadShaderFromFile(ASSET("shaders/clouds.vert"), ASSET("shaders/clouds.frag"));
+	static GLint cloudShaderProjectionloc = GetUniformLocation(cloudShaderID, "projection");
+	static GLint cloudShaderTimeLoc = GetUniformLocation(cloudShaderID, "cloudTime");
+	static F32 cloudTime = 1;
+	cloudTime += (F32)(5.0f * deltaTime);
+	if (currentCameraZoom > 2.5f) {
+		glUseProgram(cloudShaderID);
+		glUniformMatrix4fv(cloudShaderProjectionloc, 1, GL_FALSE, &projection[0][0]);
+		glUniform1f(cloudShaderTimeLoc, cloudTime);
+		DEBUGBindGroup(&gRenderGroup);
+		DEBUGFillRect(&gRenderGroup, 0, 0, gTerrain.widthInTiles, gTerrain.heightInTiles, Color());
+		DEBUGFlushGroup(&gRenderGroup);
+	}
+
 	//@SOUNDS
 	static Random rng(0);
 	static float32 waveTime = 0;
@@ -733,7 +764,6 @@ void MainLoop (Application* app) {
 	}
 
 	BENCHMARK_END(mainLoop);
-
 	GUIBeginFrame(&gGuiContext, app);
 	std::stringstream stream;
 	stream << "Player Position: " << gPlayerTransform.position;
@@ -768,6 +798,18 @@ void MainLoop (Application* app) {
 		glDeleteProgram(spriteProgramID);
 		spriteProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Sprite.vert"), ASSET("shaders/Sprite.frag"));
 	}
+
+	if (ImGui::Button("ReloadCloudShader")) {
+		glDeleteProgram(cloudShaderID);
+		cloudShaderID = DEBUGLoadShaderFromFile(ASSET("shaders/clouds.vert"), ASSET("shaders/clouds.frag"));
+	}
+
+
+	if (ImGui::Button("ReloadAtmosphereShader")) {
+		glDeleteProgram(atmoProgram);
+		atmoProgram = DEBUGLoadShaderFromFile(ASSET("shaders/Atmosphere2D.vert"), ASSET("shaders/Atmosphere2D.frag"));
+	}
+
 
 	if (ImGui::Button("Reload Biome")) LoadBiome(&gTerrain);
 	if (ImGui::Button("Reload Heightmap")) {
@@ -834,7 +876,7 @@ void MainLoop (Application* app) {
 #if 1
 #undef main
 int main () {
-	Application app("Raptor ImGUI", 1280, 720, true);
+	Application app("Inhabited", 1280, 720, true);
 	app.SetKeyCallback(KeyCallback);
 
 	GUIContextInit(&gGuiContext, app.GetWidth(), app.GetHeight());
@@ -851,7 +893,7 @@ int main () {
     gTerrainShader.isWaterUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "isWater");
     gTerrainShader.waveAngleUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "waveAngle");
 
-	ReadTextureAtlasFromFile(&gTextureAtlas, ASSET("textures/foliage/trees.atlas"));
+	LoadTextureAtlasFromFile(&gTextureAtlas, ASSET("textures/foliage/trees.atlas"));
 	gFoliageAtlasTextureID = CreateTextureFromPixels(gTextureAtlas.width, gTextureAtlas.height, gTextureAtlas.pixels);
 
 	spriteProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Sprite.vert"), ASSET("shaders/Sprite.frag"));

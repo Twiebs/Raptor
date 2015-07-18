@@ -28,7 +28,10 @@ bool ParseGLSLShader(const std::string& filename, std::string& outFile) {
 				size_t end = line.find(">") - begin;
 				std::string includeFilename = line.substr(begin, end);
 				std::string includeFile;
-				ParseGLSLShader(includeFilename, includeFile);
+				auto baseFilepath = filename.substr(0, filename.find_last_of('/'));
+				baseFilepath.append("/");
+				baseFilepath.append(includeFilename);
+				ParseGLSLShader(baseFilepath, includeFile);
 				outFile.append(includeFile);
 				continue;	//Dont add the include line...
 			}
