@@ -121,12 +121,11 @@ struct Terrain2DShaderProgram {
 	GLint isWaterUniformLocation;
 	GLint waveAngleUniformLocation;
 } gTerrainShader;
+GLuint spriteProgramID;
 
 GLuint gTerrainTextureID;
 
 
-
-GLuint spriteProgramID;
 
 TextureAtlas gTextureAtlas;
 GLuint gFoliageAtlasTextureID;
@@ -202,15 +201,53 @@ Matrix4 TransformToOrtho(Transform2D& transform, float32 zoom) {
 		);
 }
 
+struct Circle {
+	F32 centerX, centerY;
+	F32 radius;
+};
+
+inline bool IsPointInCircle(F32 x, F32 y, F32 r) {
+	auto result = x*x + y*y < r*r;
+	return result;
+}
+
+inline bool IsPointInCircle(F32 x, F32 y, Circle* circle) {
+	auto result = ((x-circle->centerX)*(x-circle->centerX))
+				  +((y-circle->centerY)*(y-circle->centerY))
+				  < (circle->radius*circle->radius);
+	return result;
+}
+
+inline bool IsPointInCircle(F32 x, F32 y, F32 centerX, F32 centerY, F32 radius) {
+	auto result = ((x-centerX)*(x-centerX))
+				  +((y-centerY)*(y-centerY))
+				  < (radius*radius);
+	return result;
+}
+
+inline U32 XYToIndex(Terrain2D* terrain, uint32 x, uint32 y) {
+	auto result = (y * terrain->widthInTiles) + x;
+	return result;
+}
+
 GLuint TerrainToTexture(Terrain2D* terrain) {
 	U8* pixels = new U8[terrain->widthInTiles * terrain->heightInTiles * 4];
 	for (U32 i = 0; i < terrain->widthInTiles * terrain->heightInTiles * 4; i+=4) {
 		U32 index = i / 4;
-		auto& entry = terrain->biome.entries[terrain->tilemap[index].biomeEntryID - 1];
-		pixels[i + 0] = entry.color.r * 255;
-		pixels[i + 1] = entry.color.g * 255;
-		pixels[i + 2] = entry.color.b * 255;
-		pixels[i + 3] = entry.color.a * 255;
+		U32 y = index / terrain->widthInTiles;
+		U32 x =  index - (y * terrain->widthInTiles);
+		ASSERT(index == XYToIndex(terrain, x, y));
+		Color color;
+		if(IsPointInCircle(x, y, terrain->widthInTiles * 0.5f, terrain->heightInTiles * 0.5f, terrain->widthInTiles * 0.5f)) {
+			color = terrain->biome.entries[terrain->tilemap[index].biomeEntryID - 1].color;
+		} else {
+			color = { 0.0f, 0.0f, 0.0f, 0.0f };
+		}
+
+		pixels[i + 0] = color.r * 255;
+		pixels[i + 1] = color.g * 255;
+		pixels[i + 2] = color.b * 255;
+		pixels[i + 3] = color.a * 255;
 
 	}
 	auto result = CreateTextureFromPixels(terrain->widthInTiles, terrain->heightInTiles, pixels);
@@ -237,9 +274,7 @@ void CreateBiome(Biome* biome) {
 
 
 
-uint32 XYToIndex(Terrain2D* terrain, uint32 x, uint32 y) {
-	return (y * terrain->widthInTiles) + x;
-}
+
 
 F32 SampleAlpha(Biome* biome, U32 biomeEntryID, F32 height) {
 	BiomeEntry& entry = biome->entries[biomeEntryID - 1];
@@ -468,32 +503,41 @@ void KeyCallback(int keycode, bool isDown) {
 	}
 }
 
+inline F32 Lerp(F32 from, F32 to, F32 t) {
+	auto result = ((1.0f - t) * from) + (t*to);
+	return result;
+}
 
 
 void MainLoop (Application* app) {
 	BENCHMARK_START(mainLoop);
 	float64 deltaTime = app->GetDeltaTime();
-	static float x = -0.5f;
-	static float dt = 0.0f;
-	float xpos =  x * sin(dt);
-	dt += 0.1f;
 
-	const float32 ZOOM_SPEED = 0.5f;
-	const F32 ZOOM_STEP = 0.1f;
-	static float32 currentCameraZoom = 1.0f;
-	static float32 targetCameraZoom = 1.0f;
-	F32 zoomStep = ZOOM_STEP;
-	float32 zoomSpeed = (currentCameraZoom)* ZOOM_SPEED;
-	targetCameraZoom -= app->GetMouseWheel() * ZOOM_STEP;
+	//NOTE @CameraControls
+	static const F32 ZOOM_SPEED = 0.1f;
+	static const F32 ZOOM_STEP = 0.1f;
+	static const F32 ZOOM_MIN = 0.4f;
+	static const F32 ZOOM_MAX = FLT_MAX;
+	static F32 currentCameraZoom = 1.0f;
+	static F32 targetCameraZoom = 1.0f;
+	auto mouseWheel = app->GetMouseWheel();
+	auto zoomStep = (currentCameraZoom * ZOOM_STEP);
+	if(mouseWheel) {
+		targetCameraZoom -= mouseWheel * zoomStep;
+		targetCameraZoom = MathUtils::Clamp(targetCameraZoom, ZOOM_MIN, ZOOM_MAX);
+	}
+
 	if (!MathUtils::EpsilonEquals(targetCameraZoom, currentCameraZoom)) {
+		auto currentZoomSpeed = (currentCameraZoom * ZOOM_STEP) * 5;	//A single zoom step takes 1/5th of a second from the zoom step above the targetCameraZoom Regardless of how many steps are in between
 		auto zoomDiff = targetCameraZoom - currentCameraZoom;
-		if(abs(zoomDiff) > zoomSpeed * deltaTime) {
+		if (std::abs(zoomDiff) < currentZoomSpeed * deltaTime) {
 			currentCameraZoom = targetCameraZoom;
 		} else {
-			currentCameraZoom += zoomDiff > 0 ? zoomSpeed : -zoomSpeed;
-			currentCameraZoom += (zoomDiff > 0 ? zoomSpeed : -zoomSpeed) * deltaTime;
+			currentCameraZoom = Lerp(currentCameraZoom, targetCameraZoom, currentZoomSpeed * deltaTime);
+			currentCameraZoom += (zoomDiff > 0 ? currentZoomSpeed : -currentZoomSpeed) * deltaTime;
 		}
 	}
+
 
 	const float32 PAN_SPEED = 0.05f;
 	static float64 cursorX = app->GetCursorX();
@@ -532,7 +576,9 @@ void MainLoop (Application* app) {
 	if (currentCameraZoom > 2.5f) {
 		
 	}
-	
+	static auto counterFrequency = SDL_GetPerformanceFrequency() / 1000.0;
+	auto drawStartTime = SDL_GetPerformanceCounter();
+	auto drawStartcycles = __rdtsc();
 	if (currentCameraZoom > 4.0f) {
 		static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
 		glUseProgram(spriteProgramID);
@@ -541,8 +587,6 @@ void MainLoop (Application* app) {
 		DEBUGDrawTexture(&gRenderGroup, gTerrainTextureID, Vector2(0, 0), Vector2(gTerrain.widthInTiles, gTerrain.heightInTiles), Color());
 		DEBUGFlushGroup(&gRenderGroup);
 	}
-
-
 	else {
 		glUseProgram(gTerrainShader.shaderProgramID);
 		glUniform1f(gTerrainShader.waveAngleUniformLocation, waveAngle);
@@ -673,6 +717,8 @@ void MainLoop (Application* app) {
 		DEBUGFlushGroup(&gRenderGroup);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
+	auto drawTime = SDL_GetPerformanceCounter() - drawStartTime;
+	auto drawCycles = __rdtsc() - drawStartcycles;
 
 	//@SOUNDS
 	static Random rng(0);
@@ -718,6 +764,9 @@ void MainLoop (Application* app) {
         gTerrainShader.projectionUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "projection");
         gTerrainShader.isWaterUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "isWater");
         gTerrainShader.waveAngleUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "waveAngle");
+
+		glDeleteProgram(spriteProgramID);
+		spriteProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Sprite.vert"), ASSET("shaders/Sprite.frag"));
 	}
 
 	if (ImGui::Button("Reload Biome")) LoadBiome(&gTerrain);
@@ -732,13 +781,16 @@ void MainLoop (Application* app) {
 	static F32 frameTimes[resolution];
 	frameTimes[cntr] = (F32)(deltaTime * 1000.0f);
 	if (++cntr == resolution) cntr = 0;
+	ImGui::Text("All Draw Time %f", ((F64)drawTime / (F64)counterFrequency));
+	ImGui::Text("All Draw CPU Cycles %d", drawCycles);
+
 	//ImGui::Text((std::string("Tile draw Time: ") + std::to_string(benchmark_draw_time)).c_str());
 	ImGui::Text((std::string("Entity DrawTime: " + std::to_string(benchmark_entityDrawTime_time))).c_str());
 	ImGui::PlotLines("##MainLoop", frameTimes, resolution, cntr, "MainLoop", 0.0f, 100.0f, ImVec2(400, 75));
 	ImGui::End();
 
 	auto terrain = &gTerrain;
-	ImGui::Begin("Tile Info");
+	ImGui::Begin("Tile Info", nullptr, ImGuiWindowFlags_NoResize);
 	U32 tileX = (U32)floor((gPlayerTransform.position.x / (F32)TILE_SIZE_METERS));
 	U32 tileY = (U32)floor((gPlayerTransform.position.y / (F32)TILE_SIZE_METERS));
 	auto& tile = terrain->tilemap[XYToIndex(&gTerrain, tileX, tileY)];
@@ -819,13 +871,15 @@ int main () {
 
 	F32 viewportHeightInMeters = VIEWPORT_WIDTH_IN_METERS * (app.GetHeight() / app.GetWidth());
 	gCameraTransform.size = Vector2(VIEWPORT_WIDTH_IN_METERS, viewportHeightInMeters);
-	gPlayerTransform.position.x = 256;
-	gPlayerTransform.position.y = 256;
+
+	CreateTerrain(&gTerrain, 1024, 1024);
+	gPlayerTransform.position.x = gTerrain.widthInTiles * 0.5f;
+	gPlayerTransform.position.y = gTerrain.heightInTiles * 0.5f;
 	gPlayerTransform.size.x = 0.5f;
 	gPlayerTransform.size.y = 0.5f;
 
-	CreateTerrain(&gTerrain, 512, 512);
-	
+
+
 	gTerrainTextureID = TerrainToTexture(&gTerrain);
 
 
