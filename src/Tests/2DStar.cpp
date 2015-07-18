@@ -7,7 +7,6 @@ bool gRunning = true;
 
 DEBUGBufferGroup gBufferGroup;
 
-
 //TODO KeyCallback access to app?
 void KeyCallback(int button, bool isDown) {
 	switch (button) {

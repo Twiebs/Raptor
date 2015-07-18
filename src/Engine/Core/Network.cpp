@@ -26,8 +26,6 @@ bool NetworkInit(NetworkServer* server) {
 		return false;
 	}
 
-
-
 	auto hostResolved = SDLNet_ResolveHost(&server->address, NULL, NETWORK_SERVER_PORT);
 	if (hostResolved == -1) {
 		LOG_ERROR("Failed to resolve Host" << SDLNet_GetError());

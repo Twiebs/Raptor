@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <Core/Common.hpp>
+#include <malloc.h>
+#include <cstring>
 
 #define AUDIO_STEREO 2
 #define AUDIO_MONO 1

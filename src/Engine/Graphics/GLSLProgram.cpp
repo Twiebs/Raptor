@@ -41,29 +41,25 @@ bool ParseGLSLShader(const std::string& filename, std::string& outFile) {
 	return true;
 }
 
-//DEBUGstuff
-GLuint DEBUGCompileShader(std::string& shaderSource, GLenum shaderType) {
-	const GLchar* source = shaderSource.c_str();
+GLuint CompileShader(const char* source, GLenum shaderType) {
 	GLuint shaderID = glCreateShader(shaderType);
 	glShaderSource(shaderID, 1, &source, NULL);
 	glCompileShader(shaderID);
-
 	GLint success;
 	GLchar infoLog[GLSL_LOG_SIZE];
 	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
-
 	if (!success) {
 		glGetShaderInfoLog(shaderID, GLSL_LOG_SIZE, NULL, infoLog);
-		std::string shadeTypeName = (shaderType == GL_VERTEX_SHADER) ? ("VertexShader") : ("FragmentShader");
-		LOG_ERROR(shadeTypeName << " compilation failed! \n" << infoLog);
+		auto shaderName = (shaderType == GL_VERTEX_SHADER) ? "VertexShader" : "FragmentShader";
+		LOG_ERROR(shaderName << " compilation failed! \n" << infoLog);
 		return 0;
 	}
 	return shaderID;
 }
 
-GLuint DEBUGLoadShaderFromSource(std::string vertexShaderSource, std::string fragmentShaderSource) {
-	GLuint vertexShaderID = DEBUGCompileShader(vertexShaderSource, GL_VERTEX_SHADER);
-	GLuint fragmentShaderID = DEBUGCompileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
+GLuint LoadShaderFromSource(const char* vertexShaderSource, const char* fragmentShaderSource) {
+	GLuint vertexShaderID   = CompileShader(vertexShaderSource, GL_VERTEX_SHADER);
+	GLuint fragmentShaderID = CompileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
 
 	GLuint programID = glCreateProgram();
 	glAttachShader(programID, vertexShaderID);
@@ -78,7 +74,6 @@ GLuint DEBUGLoadShaderFromSource(std::string vertexShaderSource, std::string fra
 		LOG_ERROR("SHADER PROGRAM LINK: " << infoLog);
 		return 0;
 	}
-
 	glDetachShader(programID, vertexShaderID);
 	glDetachShader(programID, fragmentShaderID);
 	glDeleteShader(vertexShaderID);
@@ -91,6 +86,6 @@ GLuint DEBUGLoadShaderFromFile(const std::string& vertexFilename, const std::str
 	std::string vertexShaderSource, fragmentShaderSource;
 	ParseGLSLShader(vertexFilename, vertexShaderSource);
 	ParseGLSLShader(fragmentFilename, fragmentShaderSource);
-	return DEBUGLoadShaderFromSource(vertexShaderSource, fragmentShaderSource);
+	return LoadShaderFromSource(vertexShaderSource.c_str(), fragmentShaderSource.c_str());
 }
 

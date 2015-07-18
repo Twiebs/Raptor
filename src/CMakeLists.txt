@@ -47,13 +47,14 @@ if(NOT MSVC)
   add_definitions(-std=c++14)
 endif(NOT MSVC)
 
-add_subdirectory(imgui)
-
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/../build")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../CMake/Modules/")
 
 #User end configuration
 set(BUILD_TARGET "BuildTarget" CACHE STRING "Build target chosen by user at configure time")
 set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML5 Windows Linux Mac Android IOS XONE X360 PS3 PS4)
+
+add_subdirectory(imgui)
 
 if(EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
@@ -129,8 +130,6 @@ set(GRAPHICS_SRCS
 	  Engine/Graphics/GUI.hpp
       Engine/Graphics/Texture.cpp
       Engine/Graphics/Texture.hpp
-      Engine/Graphics/Font.hpp
-      Engine/Graphics/Font.cpp
       Engine/Graphics/Model.cpp
       Engine/Graphics/Model.hpp
       Engine/Graphics/Color.hpp
@@ -162,7 +161,6 @@ set(BASE_SRCS
   # Engine/Base/ModelComponent.hpp
   Engine/Base/SpriteComponent.hpp
   Engine/Base/TextComponent.hpp
-  #
   Engine/Base/Transform2D.hpp
   # Engine/Base/Transform3D.hpp
 
@@ -209,7 +207,7 @@ source_group(Core FILES ${PLATFORM_SRCS})
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 
 add_executable(Game Tests/Main.cpp)
-add_executable(Tools Tools/Main.cpp)
+add_executable(Tools Tools/TexturePacker.cpp)
 
 #Ensure EMCSCRIPTEN is given enough memory to work with...
 if(EMSCRIPTEN)

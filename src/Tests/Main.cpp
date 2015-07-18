@@ -468,6 +468,8 @@ void KeyCallback(int keycode, bool isDown) {
 	}
 }
 
+
+
 void MainLoop (Application* app) {
 	BENCHMARK_START(mainLoop);
 	float64 deltaTime = app->GetDeltaTime();
@@ -484,9 +486,14 @@ void MainLoop (Application* app) {
 	float32 zoomSpeed = (currentCameraZoom)* ZOOM_SPEED;
 	targetCameraZoom -= app->GetMouseWheel() * ZOOM_STEP;
 	if (!MathUtils::EpsilonEquals(targetCameraZoom, currentCameraZoom)) {
-		currentCameraZoom += ((targetCameraZoom - currentCameraZoom) > 0 ? zoomSpeed : -zoomSpeed) * deltaTime;
+		auto zoomDiff = targetCameraZoom - currentCameraZoom;
+		if(abs(zoomDiff) > zoomSpeed * deltaTime) {
+			currentCameraZoom = targetCameraZoom;
+		} else {
+			currentCameraZoom += zoomDiff > 0 ? zoomSpeed : -zoomSpeed;
+			currentCameraZoom += (zoomDiff > 0 ? zoomSpeed : -zoomSpeed) * deltaTime;
+		}
 	}
-
 
 	const float32 PAN_SPEED = 0.05f;
 	static float64 cursorX = app->GetCursorX();
@@ -525,7 +532,6 @@ void MainLoop (Application* app) {
 	if (currentCameraZoom > 2.5f) {
 		
 	}
-
 	
 	if (currentCameraZoom > 4.0f) {
 		static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
@@ -535,6 +541,7 @@ void MainLoop (Application* app) {
 		DEBUGDrawTexture(&gRenderGroup, gTerrainTextureID, Vector2(0, 0), Vector2(gTerrain.widthInTiles, gTerrain.heightInTiles), Color());
 		DEBUGFlushGroup(&gRenderGroup);
 	}
+
 
 	else {
 		glUseProgram(gTerrainShader.shaderProgramID);
@@ -651,9 +658,6 @@ void MainLoop (Application* app) {
 		DEBUGPushVertices(&gRenderGroup, verts, 4);
 	}
 
-
-
-
 	DEBUGFillRect(&gRenderGroup, gPlayerTransform.position.x, gPlayerTransform.position.y, gPlayerTransform.size.x, gPlayerTransform.size.y, Color(0.0f, 1.0f, 0.0f, 1.0f));
 	DEBUGFlushGroup(&gRenderGroup);
 	BENCHMARK_END(entityDrawTime);
@@ -685,11 +689,6 @@ void MainLoop (Application* app) {
 	BENCHMARK_END(mainLoop);
 
 	GUIBeginFrame(&gGuiContext, app);
-
-	ImGui::Begin("TestTexture");
-	ImGui::Image((ImTextureID)gFoliageAtlasTextureID, ImVec2(512, 512));
-	ImGui::End();
-	
 	std::stringstream stream;
 	stream << "Player Position: " << gPlayerTransform.position;
 	ImGui::Text(stream.str().c_str());
@@ -734,7 +733,7 @@ void MainLoop (Application* app) {
 	frameTimes[cntr] = (F32)(deltaTime * 1000.0f);
 	if (++cntr == resolution) cntr = 0;
 	//ImGui::Text((std::string("Tile draw Time: ") + std::to_string(benchmark_draw_time)).c_str());
-	//ImGui::Text((std::string("Entity DrawTime: " + std::to_string(benchmark_entityDrawTime_time))).c_str());
+	ImGui::Text((std::string("Entity DrawTime: " + std::to_string(benchmark_entityDrawTime_time))).c_str());
 	ImGui::PlotLines("##MainLoop", frameTimes, resolution, cntr, "MainLoop", 0.0f, 100.0f, ImVec2(400, 75));
 	ImGui::End();
 

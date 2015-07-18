@@ -86,6 +86,7 @@ void GUIEndFrame() {
 
 bool GUIContextInit(GUIContext* imGuiContext, U32 viewportWidth, U32 viewportHeight) {
 #ifndef __EMSCRIPTEN__
+
 	const GLchar *vertex_shader =
 		"#version 330\n"
 		"layout (location = 0) in vec2 position;"
@@ -166,7 +167,7 @@ bool GUIContextInit(GUIContext* imGuiContext, U32 viewportWidth, U32 viewportHei
 	// io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
 
 
-	imGuiContext->shaderProgramID = DEBUGLoadShaderFromSource(vertex_shader, fragment_shader);
+	imGuiContext->shaderProgramID = LoadShaderFromSource(vertex_shader, fragment_shader);
 	imGuiContext->samplerUniformLoc = GetUniformLocation(imGuiContext->shaderProgramID, "sampler");
 	imGuiContext->projectionUniformLoc = GetUniformLocation(imGuiContext->shaderProgramID, "projection");
 

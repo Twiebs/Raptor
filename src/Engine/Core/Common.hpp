@@ -52,8 +52,8 @@ typedef uint64 AssetID;
 //Error logging
 #define ASSERT(x) assert(x)
 //TODO provide console implementation to send error mesages to! 
-#define LOG_ERROR(x) std::cerr << "ERROR: " << x << "\n"
-#define LOG_INFO(x) std::cout << "INFO: " << x << "\n"
+#define LOG_ERROR(x) std::cerr << "[ERROR] " << x << "\n"
+#define LOG_INFO(x) std::cout << "[INFO] " << x << "\n"
 #define LOG_DEBUG(x) std::cout << "[DEBUG] " << x << "\n"
 
 //Bechmarking Macros to determine the time taken for a certin task to compleatedTasks
