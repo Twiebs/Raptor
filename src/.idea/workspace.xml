@@ -76,8 +76,8 @@
       <file leaf-file-name="MeshViewer.cpp" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Tools/MeshViewer.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.3529412">
-              <caret line="64" column="48" selection-start-line="64" selection-start-column="48" selection-end-line="64" selection-end-column="48" />
+            <state vertical-scroll-proportion="0.6862745">
+              <caret line="81" column="92" selection-start-line="81" selection-start-column="92" selection-end-line="81" selection-end-column="92" />
               <folding>
                 <element signature="e#0#31#0" expanded="true" />
                 <marker date="1437410892463" expanded="true" signature="3546:3675" placeholder="..." />
@@ -347,7 +347,7 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="1920" y="27" width="1920" height="1053" extended-state="6" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="FLOATING" visible="true" weight="0.15833333" sideWeight="0.5" order="1" side_tool="false" content_ui="combo" x="1255" y="68" width="572" height="1011" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
@@ -804,8 +804,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Tools/MeshViewer.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.3529412">
-          <caret line="64" column="48" selection-start-line="64" selection-start-column="48" selection-end-line="64" selection-end-column="48" />
+        <state vertical-scroll-proportion="0.6862745">
+          <caret line="81" column="92" selection-start-line="81" selection-start-column="92" selection-end-line="81" selection-end-column="92" />
           <folding>
             <element signature="e#0#31#0" expanded="true" />
             <marker date="1437410892463" expanded="true" signature="3546:3675" placeholder="..." />
