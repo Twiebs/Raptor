@@ -69,7 +69,7 @@ void MainLoop(Application* app) {
 		static GLuint atlasTextureID;
 		if (!atlasLoaded) {
 			std::string directory = std::string(ASSET_DIR) + std::string("textures/foliage/");
-			ReadTextureAtlasFromFile(&atlas, directory + "trees.atlas");
+			LoadTextureAtlasFromFile(&atlas, directory + "trees.atlas");
 			//memset(atlas.pixels, 255, atlas.width * atlas.height * 4);
 			atlasTextureID = CreateTextureFromPixels(atlas.width, atlas.height, atlas.pixels);
 			//atlasTextureID = CreateTextureFromFile(ASSET("textures/foliage/trees.png.backup"));
@@ -93,7 +93,7 @@ void MainLoop(Application* app) {
 
 #if 1
 int main() {
-	Application app("Raptor Tools");
+	Application app("Raptor TexturePacker");
 	GUIContextInit(&gGUIContext, app.GetWidth(), app.GetHeight());
 	app.Run(MainLoop);
 }

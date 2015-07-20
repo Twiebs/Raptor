@@ -37,12 +37,12 @@ int Application::Create(const char* title, uint32 width, uint32 height, bool ful
 	if (Mix_OpenAudio(AUDIO_FREQUENCY, AUDIO_FORMAT, AUDIO_CHANNELS, AUDIO_CHUNK_SIZE)) {
 		LOG_ERROR("AUDIO: Failed to initalize audio context" << Mix_GetError());
 	}
-
-	int imgFlags = IMG_INIT_PNG;
-	int imgInitalized = IMG_Init(imgFlags);
-	if (imgInitalized & imgFlags != imgFlags) {
-		LOG_ERROR("IMG: Failed to init required img library support" << IMG_GetError);
-	}
+//
+//	int imgFlags = IMG_INIT_PNG;
+//	int imgInitalized = IMG_Init(imgFlags);
+//	if (imgInitalized & imgFlags != imgFlags) {
+//		LOG_ERROR("IMG: Failed to init required img library support" << IMG_GetError);
+//	}
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_Surface* screen;
@@ -64,7 +64,7 @@ int Application::Create(const char* title, uint32 width, uint32 height, bool ful
 }
 
 int Application::Destroy() {
-	IMG_Quit();
+//	IMG_Quit();
 	Mix_CloseAudio();
 	Mix_Quit();
 	SDL_Quit();

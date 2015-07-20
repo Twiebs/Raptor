@@ -64,7 +64,7 @@ endif(EMSCRIPTEN)
 
 #EMSCRIPTEN allready handles these and MSVC does its own thing...
 if(NOT EMSCRIPTEN AND NOT MSVC)
-  foreach(lib OpenGL GLEW SDL2 SDL2_image SDL2_mixer SDL2_net)
+  foreach(lib OpenGL GLEW SDL2 SDL2_mixer SDL2_net)
     find_package(${lib} REQUIRED)
     string(TOUPPER ${lib} lib)
     if(NOT ${lib}_FOUND)
@@ -130,8 +130,6 @@ set(GRAPHICS_SRCS
 	  Engine/Graphics/GUI.hpp
       Engine/Graphics/Texture.cpp
       Engine/Graphics/Texture.hpp
-      Engine/Graphics/Model.cpp
-      Engine/Graphics/Model.hpp
       Engine/Graphics/Color.hpp
       Engine/Graphics/DEBUGRenderer.cpp
       Engine/Graphics/DEBUGRenderer.hpp
@@ -205,9 +203,16 @@ add_library(Core STATIC ${CORE_SRCS})
 source_group(Core FILES ${PLATFORM_SRCS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
+set(ENGINE_LIBS Core Graphics Math imgui ${LIBS})
 
-add_executable(Game Tests/Main.cpp)
-add_executable(Tools Tools/TexturePacker.cpp)
+add_executable(Inhabited Tests/Main.cpp)
+target_link_libraries(Inhabited ${ENGINE_LIBS})
+
+add_executable(MeshViewer Tools/MeshViewer.cpp)
+target_link_libraries(MeshViewer ${ENGINE_LIBS})
+
+add_executable(TexturePacker Tools/TexturePacker.cpp)
+target_link_libraries(TexturePacker ${ENGINE_LIBS})
 
 #Ensure EMCSCRIPTEN is given enough memory to work with...
 if(EMSCRIPTEN)
@@ -215,9 +220,8 @@ if(EMSCRIPTEN)
   target_link_libraries(app ${EMSCRIPTEN_ASSET_PACK_FLAG})
 endif()
 
-set(ENGINE_LIBS Core Graphics Math imgui ${LIBS})
-target_link_libraries(Game ${ENGINE_LIBS})
-target_link_libraries(Tools ${ENGINE_LIBS})
+
+
 
 
 # file(GLOB TOOLS_SRCS Tools/*.cpp)

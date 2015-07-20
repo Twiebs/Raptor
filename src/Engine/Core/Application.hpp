@@ -171,7 +171,6 @@ class Application {
 public:
 	bool isRunning = false;
 
-
 	Application(const char* tile, U32 width = 1280, U32 height = 720, bool fullscreen = false) {
 		Create(tile, width, height, fullscreen);
 		memset(keysDown, false, 1024);

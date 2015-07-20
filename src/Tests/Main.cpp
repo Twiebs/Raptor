@@ -16,6 +16,7 @@
 #include <Graphics/Texture.hpp>
 #include <Graphics/DEBUGRenderer.hpp>
 
+#include <Math/Geomerty2D.h>
 #include <Math/Noise.hpp>
 #include <Math/Random.hpp>
 
@@ -201,29 +202,6 @@ Matrix4 TransformToOrtho(Transform2D& transform, float32 zoom) {
 		);
 }
 
-struct Circle {
-	F32 centerX, centerY;
-	F32 radius;
-};
-
-inline bool IsPointInCircle(F32 x, F32 y, F32 r) {
-	auto result = x*x + y*y < r*r;
-	return result;
-}
-
-inline bool IsPointInCircle(F32 x, F32 y, Circle* circle) {
-	auto result = ((x-circle->centerX)*(x-circle->centerX))
-				  +((y-circle->centerY)*(y-circle->centerY))
-				  < (circle->radius*circle->radius);
-	return result;
-}
-
-inline bool IsPointInCircle(F32 x, F32 y, F32 centerX, F32 centerY, F32 radius) {
-	auto result = ((x-centerX)*(x-centerX))
-				  +((y-centerY)*(y-centerY))
-				  < (radius*radius);
-	return result;
-}
 
 inline U32 XYToIndex(Terrain2D* terrain, uint32 x, uint32 y) {
 	auto result = (y * terrain->widthInTiles) + x;
@@ -499,7 +477,7 @@ void KeyCallback(int keycode, bool isDown) {
 	case KEY_A: isDown ? gMoveFlags |= MOVE_LEFT : gMoveFlags &= ~MOVE_LEFT; break;
 	case KEY_D: isDown ? gMoveFlags |= MOVE_RIGHT : gMoveFlags &= ~MOVE_RIGHT; break;
 	case KEY_LSHIFT: isDown ? gMoveFlags |= MOVE_SPRINT : gMoveFlags &= ~MOVE_SPRINT; break;
-	case KEY_C: isDown ? gMoveFlags |= MOVE_DEBUG_HYPERSPRINT : gMoveFlags &= ~MOVE_DEBUG_HYPERSPRINT; break;
+	case KEY_LCTRL: isDown ? gMoveFlags |= MOVE_DEBUG_HYPERSPRINT : gMoveFlags &= ~MOVE_DEBUG_HYPERSPRINT; break;
 	}
 }
 

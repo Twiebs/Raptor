@@ -11,7 +11,6 @@ public:
 	Rectangle(float x, float y, float width, float height);
 	~Rectangle();
 
-
 	inline float Left() { return x; }
 	inline float Right() { return x + width; }
 	inline float Bottom() { return y; }
@@ -21,8 +20,8 @@ public:
 	inline Vector2 TopLeft()	 { return Vector2(x, y + height); }
 	inline Vector2 TopRight()	 { return Vector2(x + width, y + height); }
 
-	bool Contains(float x, float y);
-	bool Contains(Vector2 point);
-	Vector2 Center();
+	inline bool Contains(float x, float y);
+	inline bool Contains(Vector2 point);
+	inline Vector2 Center();
 
 };
