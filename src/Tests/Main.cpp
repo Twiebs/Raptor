@@ -6,6 +6,7 @@
 #include <GL/glew.h>
 
 #include <Core/Application.hpp>
+#include <Core/Audio.hpp>
 #include <Core/Network.hpp>
 
 #include <Base/Transform2D.hpp>
@@ -20,8 +21,6 @@
 #include <Math/Noise.hpp>
 #include <Math/Random.hpp>
 
-#include <SDL2/SDL_mixer.h>
-
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
@@ -29,6 +28,12 @@
 
 #define TILE_SIZE_METERS 1
 #define VIEWPORT_WIDTH_IN_METERS 30
+
+// TODO
+// Fix problems with the biome creation
+// Create a biome editor
+// Fix problems with the water
+// Make Terrain texture match up with the actual terrain
 
 struct TileVertex {
 	Vector2 position;
@@ -126,10 +131,9 @@ GLuint spriteProgramID;
 
 GLuint gTerrainTextureID;
 
-
-
 TextureAtlas gTextureAtlas;
 GLuint gFoliageAtlasTextureID;
+
 
 GUIContext gGuiContext;
 DEBUGRenderGroup gRenderGroup;
@@ -157,38 +161,6 @@ struct TextureCoord2D{
 
 bool gSoundEnabled = false;
 bool gMusicEnabled = false;
-
-static Mix_Chunk* LoadSound(const char* filename) {
-	auto chunk = Mix_LoadWAV(filename);
-	if (chunk == nullptr) {
-		LOG_ERROR("Failed to load sound: " << filename << ": " << Mix_GetError());
-		return nullptr;
-	}
-	return chunk;
-}
-
-static void PlaySound(Mix_Chunk* sound, uint32 loopCount = 0) {
-	if (!gSoundEnabled) return;
-	auto channel = Mix_PlayChannel(-1, sound, loopCount);
-	if (channel == -1) {
-		LOG_ERROR("AUDIO: Could not play sound! " << Mix_GetError());
-	}
-}
-
-static Mix_Music* LoadMusic(const char* filename) {
-	auto music = Mix_LoadMUS(filename);
-	if (!music) {
-		LOG_ERROR("Failed to load music: " << filename << " -- " << Mix_GetError());
-	}
-	return music;
-}
-
-static void PlayMusic(Mix_Music* music, uint32 loops = -1) {
-	if (!gMusicEnabled) return;
-	if (Mix_PlayMusic(music, loops) == -1) {
-		LOG_ERROR("Couldnt not play music!" << Mix_GetError());
-	} 
-}
 
 Matrix4 TransformToOrtho(Transform2D& transform, float32 zoom) {
 	F32 halfWidth = transform.size.x * 0.5f * zoom;
@@ -250,10 +222,6 @@ void CreateBiome(Biome* biome) {
 	}
 }
 
-
-
-
-
 F32 SampleAlpha(Biome* biome, U32 biomeEntryID, F32 height) {
 	BiomeEntry& entry = biome->entries[biomeEntryID - 1];
 	if (height < entry.startHeight) {
@@ -280,19 +248,20 @@ U32 GetBiomeEntryID(Biome* biome, F32 height) {
 	return 0;
 }
 
-
-
-void LoadBiome(Terrain2D* terrain) {
+void LoadBiomeFromFile(Biome* biome) {
 	{
 		std::ifstream is(ASSET("biome.json"));
 		cereal::JSONInputArchive archive(is);
-		archive(cereal::make_nvp("Entries", terrain->biome));
+		archive(cereal::make_nvp("Entries", *biome));
 	}
+}
 
+void InitBiome(Terrain2D* terrain) {
 	std::vector<std::string> entryTextureFiles;
 	for (auto i = 0; i < terrain->biome.entryCount; i++)
 		entryTextureFiles.push_back(terrain->biome.entries[i].texture);
 	terrain->biome.textureID = CreateArrayTexture2D(64, 64, terrain->biome.entryCount, entryTextureFiles);
+
 
 	for (U32 x = 0; x < terrain->widthInTiles; x++) {
 		for (U32 y = 0; y < terrain->heightInTiles; y++) {
@@ -330,6 +299,7 @@ void LoadBiome(Terrain2D* terrain) {
 	glDeleteTextures(1, &gTerrainTextureID);
 	gTerrainTextureID = TerrainToTexture(terrain);
 }
+
 
 void GenerateHeightmap(F32* heightmap, U32 width, U32 height, U64 seed) {
 	Random rng(seed);
@@ -399,7 +369,8 @@ void CreateTerrain(Terrain2D* terrain, U32 widthInMeters, U32 heightInMeters) {
 	terrain->heightmap = (F32*)terrain->memblock;
 	terrain->tilemap = (Tile*)(terrain->memblock + heightmapMemorySize);
 	GenerateHeightmap(terrain->heightmap, terrain->widthInTiles, terrain->heightInTiles, time(NULL));
-	LoadBiome(terrain);
+	LoadBiomeFromFile(&terrain->biome);
+	InitBiome(terrain);
 	Populate(terrain);
 }
 
@@ -486,11 +457,14 @@ inline F32 Lerp(F32 from, F32 to, F32 t) {
 	return result;
 }
 
+inline Vector2 Lerp(Vector2& from, Vector2& to, F32 t) {
+	auto result = ((1.0f - t) * from) + (t * to);
+	return result;
+}
 
 void MainLoop (Application* app) {
 	BENCHMARK_START(mainLoop);
 	float64 deltaTime = app->GetDeltaTime();
-
 
 	//NOTE @CameraControls
 	static const F32 ZOOM_SPEED = 0.1f;
@@ -513,7 +487,6 @@ void MainLoop (Application* app) {
 		currentCameraZoom = nextCameraZoom;
 	}
 
-
 	const float32 PAN_SPEED = 0.05f;
 	static float64 cursorX = app->GetCursorX();
 	static float64 cursorY = app->GetCursorY();
@@ -528,7 +501,9 @@ void MainLoop (Application* app) {
 
 	static RigidBody2D body;
 	ProcessPlayerMovement(&gPlayerTransform, &body, gMoveFlags, deltaTime);
-	gCameraTransform.position = gPlayerTransform.position + (gPlayerTransform.size * 0.5f);
+
+	auto cameraTarget = (gPlayerTransform.position + (gPlayerTransform.size * 0.5f));
+	gCameraTransform.position = Lerp(gCameraTransform.position, cameraTarget, 0.75f);
 
 	auto halfViewportWidth = (gCameraTransform.size.x * 0.5f) * currentCameraZoom;
 	auto halfViewportHeight = (gCameraTransform.size.y * 0.5f) * currentCameraZoom;
@@ -689,12 +664,19 @@ void MainLoop (Application* app) {
 	for (auto i = 0; i < gEntityCount; i++) {
 		auto& transform = gEntities[i];
 		auto& region = gTextureAtlas.regions[gEntityTextures[i]];
-		verts[0] = { Vector2(transform.position.x, transform.position.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).x, (gTextureAtlas.regions[gEntityTextures[i]]).y), Color() };
-		verts[1] = { Vector2(transform.position.x + transform.size.x, transform.position.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).right, (gTextureAtlas.regions[gEntityTextures[i]]).y), Color() };
-		verts[2] = { Vector2(transform.position.x + transform.size.x, transform.position.y + transform.size.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).right, (gTextureAtlas.regions[gEntityTextures[i]]).top), Color() };
-		verts[3] = { Vector2(transform.position.x, transform.position.y + transform.size.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).x, (gTextureAtlas.regions[gEntityTextures[i]]).top), Color() };
+		verts[0] = { Vector2(transform.position.x, transform.position.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).x, (gTextureAtlas.regions[gEntityTextures[i]]).y), Color(1.0f, 0.25f, 0.25f, 1.0f) };
+		verts[1] = { Vector2(transform.position.x + transform.size.x, transform.position.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).right, (gTextureAtlas.regions[gEntityTextures[i]]).y), Color(1.0f, 0.25f, 0.25f, 1.0f) };
+		verts[2] = { Vector2(transform.position.x + transform.size.x, transform.position.y + transform.size.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).right, (gTextureAtlas.regions[gEntityTextures[i]]).top), Color(1.0f, 0.25f, 0.25f, 1.0f) };
+		verts[3] = { Vector2(transform.position.x, transform.position.y + transform.size.y), Vector2((gTextureAtlas.regions[gEntityTextures[i]]).x, (gTextureAtlas.regions[gEntityTextures[i]]).top), Color(1.0f, 0.25f, 0.25f, 1.0f) };
 		DEBUGPushVertices(&gRenderGroup, verts, 4);
 	}
+
+	static Vector2 vehiclePosition = Vector2(512, 512);
+	static Vector2 vehicleSize = Vector2(2.0f, 2.0f);
+	static GLuint vehicleTextureID = CreateTextureFromFile(ASSET("textures/vehicle.png"));
+	DEBUGBindGroup(&gRenderGroup);
+	DEBUGDrawTexture(&gRenderGroup, vehicleTextureID, vehiclePosition, vehicleSize, Color(1.0, 1.0, 1.0, 1.0));
+	DEBUGFlushGroup(&gRenderGroup);
 
 	DEBUGFillRect(&gRenderGroup, gPlayerTransform.position.x, gPlayerTransform.position.y, gPlayerTransform.size.x, gPlayerTransform.size.y, Color(0.0f, 1.0f, 0.0f, 1.0f));
 	DEBUGFlushGroup(&gRenderGroup);
@@ -726,6 +708,14 @@ void MainLoop (Application* app) {
 		glUniform1f(cloudShaderTimeLoc, cloudTime);
 		DEBUGBindGroup(&gRenderGroup);
 		DEBUGFillRect(&gRenderGroup, 0, 0, gTerrain.widthInTiles, gTerrain.heightInTiles, Color());
+		DEBUGFlushGroup(&gRenderGroup);
+	}
+
+	static GLuint shipTextureID = CreateTextureFromFile( ASSET("textures/ship.png") );
+	if (currentCameraZoom > 6.0f) {
+		glUseProgram(spriteProgramID);
+		DEBUGBindGroup(&gRenderGroup);
+		DEBUGDrawTexture(&gRenderGroup, shipTextureID, 460.0f, 460.0f, 500.0f, 500.0f, Color());
 		DEBUGFlushGroup(&gRenderGroup);
 	}
 
@@ -789,11 +779,32 @@ void MainLoop (Application* app) {
 	}
 
 
-	if (ImGui::Button("Reload Biome")) LoadBiome(&gTerrain);
+	if (ImGui::Button("Reload Biome From File"))  {
+		LoadBiomeFromFile(&gTerrain.biome);
+		InitBiome(&gTerrain);
+	}
 	if (ImGui::Button("Reload Heightmap")) {
 		GenerateHeightmap(gTerrain.heightmap, gTerrain.widthInTiles, gTerrain.heightInTiles, time(NULL));
-		LoadBiome(&gTerrain);
+		LoadBiomeFromFile(&gTerrain.biome);
 	}
+
+	ImGui::Begin("Biome Builder");
+	auto terrain = &gTerrain;
+	if (ImGui::Button("Refresh Biome")) {
+		InitBiome(terrain);
+	}
+	ImGui::PushID("biomeconfig");
+	for (auto i = 0; i < terrain->biome.entryCount; i++) {
+		ImGui::PushID(i);
+		ImGui::SliderFloat("Start Height", &terrain->biome.entries[i].startHeight, -1.0f, 1.0f);
+		ImGui::SliderFloat("Begin Transition", &terrain->biome.entries[i].fadeBeginHeight, -1.0f, 1.0f);
+		ImGui::SliderFloat("End Transition", &terrain->biome.entries[i].fadeEndHeight, -1.0f, 1.0f);
+		ImGui::ColorEdit4("Color", &terrain->biome.entries[i].color.r, true);
+		ImGui::Separator();
+		ImGui::PopID();
+	}
+	ImGui::PopID();
+	ImGui::End();
 
 	ImGui::Begin("Profiler");
 	static const uint32 resolution = 32;
@@ -809,7 +820,6 @@ void MainLoop (Application* app) {
 	ImGui::PlotLines("##MainLoop", frameTimes, resolution, cntr, "MainLoop", 0.0f, 100.0f, ImVec2(400, 75));
 	ImGui::End();
 
-	auto terrain = &gTerrain;
 	ImGui::Begin("Tile Info", nullptr, ImGuiWindowFlags_NoResize);
 	U32 tileX = (U32)floor((gPlayerTransform.position.x / (F32)TILE_SIZE_METERS));
 	U32 tileY = (U32)floor((gPlayerTransform.position.y / (F32)TILE_SIZE_METERS));
@@ -897,9 +907,7 @@ int main () {
 	gPlayerTransform.position.y = gTerrain.heightInTiles * 0.5f;
 	gPlayerTransform.size.x = 0.5f;
 	gPlayerTransform.size.y = 0.5f;
-
-
-
+	gCameraTransform.position = gPlayerTransform.position + (gPlayerTransform.size * 0.5f);
 	gTerrainTextureID = TerrainToTexture(&gTerrain);
 
 

@@ -7,6 +7,7 @@
 #include <Core/Common.hpp>
 #include <Math/Vector2.hpp>
 
+// TODO Make this a RAII object?
 struct Pixmap {
 	U16 width, height;
 	U8* pixels;

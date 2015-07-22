@@ -10,14 +10,10 @@
 
 #include <GL/glew.h>
 #include <imgui/imgui.h>
+#include <Core/Audio.hpp>
 
 SDL_Window* window;
 SDL_GLContext context;
-
-#define AUDIO_FREQUENCY MIX_DEFAULT_FREQUENCY * 2
-#define AUDIO_FORMAT MIX_DEFAULT_FORMAT
-#define AUDIO_CHANNELS MIX_DEFAULT_CHANNELS
-#define AUDIO_CHUNK_SIZE 1024
 
 int Application::Create(const char* title, uint32 width, uint32 height, bool fullscreen) {
 	this->width = width;
@@ -28,12 +24,11 @@ int Application::Create(const char* title, uint32 width, uint32 height, bool ful
 	}
 
 	int mixFlags = MIX_INIT_OGG | MIX_INIT_FLAC | MIX_INIT_MP3;
-	int miaxInitalized = Mix_Init(mixFlags);
-	if (miaxInitalized & mixFlags != mixFlags) {
+	int mixInitialized = Mix_Init(mixFlags);
+	if (mixInitialized & mixFlags != mixFlags) {
 		LOG_ERROR("AUDIO: Failed to init required audio library support");
 		LOG_ERROR("AUDIO: " << Mix_GetError());
 	}
-
 	if (Mix_OpenAudio(AUDIO_FREQUENCY, AUDIO_FORMAT, AUDIO_CHANNELS, AUDIO_CHUNK_SIZE)) {
 		LOG_ERROR("AUDIO: Failed to initalize audio context" << Mix_GetError());
 	}

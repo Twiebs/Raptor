@@ -196,6 +196,8 @@ SET(CORE_SRCS
   Engine/Core/Network.hpp
   Engine/Core/Network.cpp
   Engine/Core/Application.hpp
+  Engine/Core/Audio.cpp
+  Engine/Core/Audio.hpp
   Engine/Platform/SDLApplication.cpp
   Engine/Platform/EmscriptenApplication.cpp
 )

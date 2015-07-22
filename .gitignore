@@ -19,7 +19,7 @@ bld/
 [Oo]bj/
 
 .idea/
-src/.idea
+src/.idea/
 
 # Roslyn cache directories
 *.ide/
