@@ -35,12 +35,15 @@
 // Fix problems with the water
 // Make Terrain texture match up with the actual terrain
 
+//
+
 struct TileVertex {
 	Vector2 position;
 	Vector3 texCoord;
 	Color color;
 };
 
+#if 0
 struct BiomeEntry {
 	std::string texture;
 	F32 startHeight;
@@ -48,13 +51,17 @@ struct BiomeEntry {
 	F32 fadeEndHeight;
 	Color color;
 };
+#endif
+
+
+
 
 template<class Archive>
 void serialize(Archive& archive, Vector2& vector) {
 	archive(cereal::make_nvp("X", vector.x),
 			cereal::make_nvp("Y", vector.y));
 }
-
+#if 0
 template<class Archive>
 void serialize(Archive & archive, BiomeEntry& entry) {
 	archive(cereal::make_nvp("Texture", entry.texture),
@@ -64,12 +71,115 @@ void serialize(Archive & archive, BiomeEntry& entry) {
 			cereal::make_nvp("Color" , entry.color)
 			);
 }
+#endif
+
+
+struct BiomeEntry {
+	std::string texture;
+	F32 transitionBegin;
+	F32 transitionEnd;
+	Color color;
+};
+
 
 struct Biome {
 	GLuint textureID;
 	U32 entryCount;
 	BiomeEntry* entries;
 };
+
+template<class Archive>
+void serialize(Archive & archive, BiomeEntry& entry) {
+	archive(cereal::make_nvp("Texture", entry.texture),
+			cereal::make_nvp("TransitionBegin", entry.transitionBegin),
+			cereal::make_nvp("TransitionEnd", entry.transitionEnd),
+			cereal::make_nvp("Color" , entry.color)
+	);
+}
+
+struct Tile {
+	U32 biomeEntryID;
+	F32 alpha0;
+	F32 alpha1;
+	F32 alpha2;
+	F32 alpha3;
+	bool overlaps;	//apparently this is completly evil... should totaly move it out once i do some things followed by some stuff....
+	//Probably should use some type of drawlist thingy magihhuarrr nuggg
+};
+
+struct Terrain2D {
+	U32 widthInTiles, heightInTiles;
+	U8* memblock;
+	F32* heightmap;
+	Tile* tilemap;
+	Biome biome;
+};
+
+
+
+Terrain2D gTerrain;
+
+inline U32 XYToIndex(Terrain2D* terrain, uint32 x, uint32 y) {
+	auto result = (y * terrain->widthInTiles) + x;
+	return result;
+}
+
+inline U32 XYToArrayIndex(U32 x, U32 y, U32 stride) {
+	auto result = (y * stride) + x;
+	return result;
+}
+
+BiomeEntry* FindBiomeEntryForHeight(Biome* biome, F32 height) {
+	for(auto i = 0; i < biome->entryCount; i++) {
+		auto& entry = biome->entries[i];
+		if(height < entry.transitionEnd) {
+			return &entry;
+		}
+	}
+	return nullptr;
+}
+
+void ApplyBiome(Terrain2D* terrain, Biome* biome) {
+	for (U32 y = 0; y < terrain->heightInTiles; y++) {
+		for (U32 x = 0; x < terrain->widthInTiles; x++) {
+			auto index0 = XYToArrayIndex(x, y, terrain->widthInTiles);
+			auto index1 = XYToArrayIndex(x + 1, y, terrain->widthInTiles);
+			auto index2 = XYToArrayIndex(x + 1, y + 1, terrain->widthInTiles);
+			auto index3 = XYToArrayIndex(x, y + 1, terrain->widthInTiles);
+
+			//The min height is probably all we need
+			auto minHeight = terrain->heightmap[index0];
+			minHeight = MathUtils::Min(terrain->heightmap[index1], minHeight);
+			minHeight = MathUtils::Min(terrain->heightmap[index2], minHeight);
+			minHeight = MathUtils::Min(terrain->heightmap[index3], minHeight);
+			auto entry = FindBiomeEntryForHeight(biome, minHeight);
+
+			//If the any of the tiles corner heightmap values are greater than the transitionBegin
+			//Of the biome entry than the tile must overlap another
+			if (terrain->heightmap[index0] > entry->transitionBegin ||
+				terrain->heightmap[index1] > entry->transitionBegin ||
+				terrain->heightmap[index2] > entry->transitionBegin ||
+				terrain->heightmap[index3] > entry->transitionBegin ){
+				terrain->tilemap[index0].overlaps = true;
+			} else terrain->tilemap[index0].overlaps = false;
+
+			auto sampleAlpha = [entry](F32 height) -> F32 {
+				if (height < entry->transitionBegin) return 1.0f;
+				if(height > entry->transitionEnd) return 0.0f;
+				auto transDiff = entry->transitionEnd - entry->transitionBegin;
+				auto transHeight = height - entry->transitionBegin;
+				auto result = (transHeight / transDiff);
+				return result;
+			};
+
+			terrain->tilemap[index0].alpha0 = sampleAlpha(terrain->heightmap[index0]);
+			terrain->tilemap[index0].alpha1 = sampleAlpha(terrain->heightmap[index1]);
+			terrain->tilemap[index0].alpha2 = sampleAlpha(terrain->heightmap[index2]);
+			terrain->tilemap[index0].alpha3 = sampleAlpha(terrain->heightmap[index3]);
+		}
+	}
+
+}
 
 template<class Archive>
 void serialize(Archive& archive, Color& color) {
@@ -101,25 +211,7 @@ void load(Archive& archive, Biome& biome) {
 	}
 }
 
-struct Tile {
-	U32 biomeEntryID;
-	F32 alpha0;
-	F32 alpha1;
-	F32 alpha2;
-	F32 alpha3;
-	bool overlaps;	//apparently this is completly evil... should totaly move it out once i do some things followed by some stuff....
-	//Probably should use some type of drawlist thingy magihhuarrr nuggg
 
-
-};
-
-struct Terrain2D {
-	U32 widthInTiles, heightInTiles;
-	U8* memblock;
-	F32* heightmap;
-	Tile* tilemap;
-	Biome biome;
-} gTerrain;
 
 struct Terrain2DShaderProgram {
 	GLuint shaderProgramID;
@@ -175,10 +267,6 @@ Matrix4 TransformToOrtho(Transform2D& transform, float32 zoom) {
 }
 
 
-inline U32 XYToIndex(Terrain2D* terrain, uint32 x, uint32 y) {
-	auto result = (y * terrain->widthInTiles) + x;
-	return result;
-}
 
 GLuint TerrainToTexture(Terrain2D* terrain) {
 	U8* pixels = new U8[terrain->widthInTiles * terrain->heightInTiles * 4];
@@ -205,6 +293,7 @@ GLuint TerrainToTexture(Terrain2D* terrain) {
 	return result;
 }
 
+#if 0
 void CreateBiome(Biome* biome) {
 	biome->entries = new BiomeEntry[1];
 	biome->entryCount = 1;
@@ -221,6 +310,8 @@ void CreateBiome(Biome* biome) {
 		archive(cereal::make_nvp("Entries", *biome));
 	}
 }
+
+
 
 F32 SampleAlpha(Biome* biome, U32 biomeEntryID, F32 height) {
 	BiomeEntry& entry = biome->entries[biomeEntryID - 1];
@@ -248,13 +339,6 @@ U32 GetBiomeEntryID(Biome* biome, F32 height) {
 	return 0;
 }
 
-void LoadBiomeFromFile(Biome* biome) {
-	{
-		std::ifstream is(ASSET("biome.json"));
-		cereal::JSONInputArchive archive(is);
-		archive(cereal::make_nvp("Entries", *biome));
-	}
-}
 
 void InitBiome(Terrain2D* terrain) {
 	std::vector<std::string> entryTextureFiles;
@@ -300,6 +384,15 @@ void InitBiome(Terrain2D* terrain) {
 	gTerrainTextureID = TerrainToTexture(terrain);
 }
 
+#endif
+
+void LoadBiomeFromFile(Biome* biome) {
+	{
+		std::ifstream is(ASSET("biome.json"));
+		cereal::JSONInputArchive archive(is);
+		archive(cereal::make_nvp("Entries", *biome));
+	}
+}
 
 void GenerateHeightmap(F32* heightmap, U32 width, U32 height, U64 seed) {
 	Random rng(seed);
@@ -359,6 +452,18 @@ void Populate(Terrain2D* terrain) {
 	gEntityCount = count;
 }
 
+void CreateDebugBiome(Biome* biome) {
+	std::vector<BiomeEntry> entries;
+	entries.push_back({ "textures/water.png", 0.5f, 0.0f, Color(0.0f, 0.0f, 1.0f, 0.0f)});
+	entries.push_back({ "textures/sand.png", 0.25f, 0.45f, Color(0.0f, 1.0f, 0.0f, 0.0f)});
+
+	biome->entryCount = entries.size();
+	biome->entries = new BiomeEntry[entries.size()];
+	for(auto i = 0; i < biome->entryCount; i++) {
+		biome->entries[i] = entries[i];
+	}
+}
+
 // Terrain is created in meters. Tile size might vary!
 void CreateTerrain(Terrain2D* terrain, U32 widthInMeters, U32 heightInMeters) {
 	terrain->widthInTiles = ceil(((F32)widthInMeters / (F32)TILE_SIZE_METERS));
@@ -369,8 +474,9 @@ void CreateTerrain(Terrain2D* terrain, U32 widthInMeters, U32 heightInMeters) {
 	terrain->heightmap = (F32*)terrain->memblock;
 	terrain->tilemap = (Tile*)(terrain->memblock + heightmapMemorySize);
 	GenerateHeightmap(terrain->heightmap, terrain->widthInTiles, terrain->heightInTiles, time(NULL));
-	LoadBiomeFromFile(&terrain->biome);
-	InitBiome(terrain);
+	//LoadBiomeFromFile(&terrain->biome);
+	CreateDebugBiome(&terrain->biome);
+	ApplyBiome(terrain, &terrain->biome);
 	Populate(terrain);
 }
 
@@ -781,7 +887,7 @@ void MainLoop (Application* app) {
 
 	if (ImGui::Button("Reload Biome From File"))  {
 		LoadBiomeFromFile(&gTerrain.biome);
-		InitBiome(&gTerrain);
+		ApplyBiome(&gTerrain, &gTerrain.biome);
 	}
 	if (ImGui::Button("Reload Heightmap")) {
 		GenerateHeightmap(gTerrain.heightmap, gTerrain.widthInTiles, gTerrain.heightInTiles, time(NULL));
@@ -791,14 +897,13 @@ void MainLoop (Application* app) {
 	ImGui::Begin("Biome Builder");
 	auto terrain = &gTerrain;
 	if (ImGui::Button("Refresh Biome")) {
-		InitBiome(terrain);
+		ApplyBiome(&gTerrain, &gTerrain.biome);
 	}
 	ImGui::PushID("biomeconfig");
 	for (auto i = 0; i < terrain->biome.entryCount; i++) {
 		ImGui::PushID(i);
-		ImGui::SliderFloat("Start Height", &terrain->biome.entries[i].startHeight, -1.0f, 1.0f);
-		ImGui::SliderFloat("Begin Transition", &terrain->biome.entries[i].fadeBeginHeight, -1.0f, 1.0f);
-		ImGui::SliderFloat("End Transition", &terrain->biome.entries[i].fadeEndHeight, -1.0f, 1.0f);
+		ImGui::SliderFloat("Transition Begin", &terrain->biome.entries[i].transitionBegin, -1.0f, 1.0f);
+		ImGui::SliderFloat("Transition End", &terrain->biome.entries[i].transitionEnd, -1.0f, 1.0f);
 		ImGui::ColorEdit4("Color", &terrain->biome.entries[i].color.r, true);
 		ImGui::Separator();
 		ImGui::PopID();

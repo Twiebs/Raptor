@@ -2,8 +2,9 @@
   "Entries": [
     {
         "Texture": "textures/grass.png",
-        "TransitionBegin": 0.45,
-        "TransitionEnd": 0.90,
+        "StartHeight": 0.45,
+        "FadeBegin": 0.90,
+        "FadeEnd": 1,
         "Color": {
             "r": 0.26,
             "g": 0.25,
@@ -13,8 +14,9 @@
     },
     {
         "Texture": "textures/stone.png",
-        "TransitionBegin": 0.35,
-        "TransitionEnd": 0.40,
+        "StartHeight": 0.35,
+        "FadeBegin": 0.40,
+        "FadeEnd": 0.45,
         "Color": {
             "r": 0.29,
             "g": 0.21,
@@ -24,8 +26,9 @@
     },
     {
         "Texture": "textures/stone.png",
-        "TransitionBegin": 0.25,
-        "TransitionEnd": 0.30,
+        "StartHeight": 0.25,
+        "FadeBegin": 0.30,
+        "FadeEnd": 0.35,
         "Color": {
             "r": 0.4,
             "g": 0.3,
@@ -35,8 +38,9 @@
     },
     {
         "Texture": "textures/sand.png",
-        "TransitionBegin": 0.1,
-        "TransitionEnd": 0.2,
+        "StartHeight": 0.1,
+        "FadeBegin": 0.2,
+        "FadeEnd": 0.25,
         "Color": {
           "r": 0.65,
           "g": 0.48,
@@ -46,8 +50,9 @@
     },
     {
         "Texture": "textures/sand.png",
-        "TransitionBegin": 0,
-        "TransitionEnd": 0.05,
+        "StartHeight": 0,
+        "FadeBegin": 0.05,
+        "FadeEnd": 0.1,
         "Color": {
             "r": 0.69,
             "g": 0.54,
@@ -57,8 +62,9 @@
     },
     {
         "Texture": "textures/water.png",
-        "TransitionBegin": -0.10,
-        "TransitionEnd": -0.05,
+        "StartHeight": -0.10,
+        "FadeBegin": -0.05,
+        "FadeEnd": 0,
         "Color": {
             "r": 0.38,
             "g": 0.54,
@@ -68,8 +74,9 @@
     },
     {
         "Texture": "textures/water.png",
-        "TransitionBegin": -1.0,
-        "TransitionEnd": -0.5,
+        "StartHeight": -1.0,
+        "FadeBegin": -0.5,
+        "FadeEnd": -0.10,
         "Color": {
             "r": 0.24,
             "g": 0.30,
