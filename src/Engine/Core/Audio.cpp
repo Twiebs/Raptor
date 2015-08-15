@@ -1,4 +1,3 @@
-
 #include "Audio.hpp"
 
 Mix_Chunk* LoadSound(const char* filename) {

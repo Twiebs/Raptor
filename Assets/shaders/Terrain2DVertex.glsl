@@ -1,13 +1,13 @@
 #version 330 core
 layout (location = 0) in vec2 position;
-layout (location = 1) in vec3 texCoord;
+layout (location = 1) in vec2 texCoord;
 layout (location = 2) in vec4 color;
 
 uniform mat4 projection;
 uniform float waveAngle;
 uniform bool isWater;
 
-out vec3 fragTexCoord;
+out vec2 fragTexCoord;
 out vec4 fragColor;
 
 #define AMP 0.3

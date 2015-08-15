@@ -44,6 +44,9 @@ public:
 	friend Vector2 operator*(const F32 scalar, const Vector2& left) {
 		return Vector2(left.x * scalar, left.y * scalar);
 	}
+	friend Vector2 operator-(const Vector2& left, const Vector2& right) {
+		return Vector2(left.x - right.x, left.y - right.y);
+	}
 
 	F32 Magnitude();
 	void Normalize();

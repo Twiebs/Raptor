@@ -17,7 +17,6 @@ namespace GeomertyUtils{
 		CUBE_RIGHT
 	};
 
-	Vector3 PointToQuadrilateralizedSphere(Vector3 point);
 
 	std::unique_ptr<Mesh> BuildCubeMesh(int segments);
 	void BuildCubeFace(CubeFace direction, int segments, std::vector<Vertex3D>& verticies, std::vector<unsigned int>& indicies);

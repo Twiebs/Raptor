@@ -43,7 +43,7 @@ void WriteTextureAtlasToFile(TextureAtlas* atlas, std::string filename);
 void LoadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename);
 void FreeTextureAtlas(TextureAtlas* atlas);
 
-GLuint CreateArrayTexture2D(U32 width, U32 height, U32 layerCount, std::vector<std::string>& filenames);
+GLuint CreateArrayTexture2D(U32 width, U32 height, std::vector<std::string>& filenames);
 GLuint CreateTextureFromPixels(U32 width, U32 height, U8* pixels);
 GLuint CreateTextureFromFile(std::string filename);
 

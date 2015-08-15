@@ -1,18 +1,5 @@
 #include "GeometryUtils.hpp"
 
-
-Vector3 GeomertyUtils::PointToQuadrilateralizedSphere(Vector3 point) {
-	float x2 = point.x * point.x;
-	float y2 = point.y * point.y;
-	float z2 = point.z * point.z;
-
-	float dx = point.x * sqrtf((1.0f) - (y2 / 2.0f) - (z2 / 2.0f) + ((y2 * z2) / 3.0f));
-	float dy = point.y * sqrtf((1.0f) - (z2 / 2.0f) - (x2 / 2.0f) + ((z2 * x2) / 3.0f));
-	float dz = point.z * sqrtf((1.0f) - (x2 / 2.0f) - (y2 / 2.0f) + ((x2 * y2) / 3.0f));
-
-	return Vector3(dx, dy, dz);
-}
-
 std::unique_ptr<Mesh> GeomertyUtils::BuildCubeMesh(int segments) {
 	std::vector<Vertex3D> verticies;
 	std::vector<unsigned int> indicies;

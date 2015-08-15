@@ -1,6 +1,5 @@
 #include "Skybox.hpp"
 
-
 Skybox::Skybox(std::vector<const char*> faces) {
 
 	static GLfloat skyboxVertices[] {

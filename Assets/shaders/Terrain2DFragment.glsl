@@ -1,9 +1,9 @@
 #version 330
 
-in vec3 fragTexCoord;
+in vec2 fragTexCoord;
 in vec4 fragColor;
 
-uniform sampler2DArray sampler;
+uniform sampler2D sampler;
 uniform bool isTexture;
 
 out vec4 outColor;

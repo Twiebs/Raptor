@@ -2,12 +2,12 @@
 #include <assert.h>
 #include <iostream>
 #include <stdint.h>
-
+#include <Core/Console.hpp>
 
 #define ASSET_DIR "../Assets/"
+//#define ASSET_DIR "../src/Tests/ShadowTest/"
 //#define ASSET_DIR "/home/torin/workspace/Raptor/Assets/"
 #define ASSET(x) ASSET_DIR x
-
 
 #define BENCHMARK 1
 #define CLOCK_RESOLUTION std::milli
@@ -42,17 +42,13 @@ typedef int64_t S64;
 typedef float	F32;
 typedef double	F64;
 
-//EngineID system
-//Represents handles that index into arrays containing the requested data
-//Adds a level of indirection to remove dangling ptrs and allow the engine
-//To restructure data as it needs
-//TODO these should no longer be exposed to the user so they should just be uint64s
-typedef uint64 AssetID;
+#define global_variable static
 
 //Error logging
 #define ASSERT(x) assert(x)
 //TODO provide console implementation to send error mesages to! 
-#define LOG_ERROR(x) std::cerr << "[ERROR] " << x << "\n"
+#define LOG_ERROR(msg) std::cerr << "[ERROR] " << msg << "\n"; Console::Instance().Stream() << msg; Console::Instance().AddEntry(LogLevel::ERROR)
+#define LOG_WARNING(msg) std::cout << "[WARNING]" << msg << "\n"
 #define LOG_INFO(x) std::cout << "[INFO] " << x << "\n"
 #define LOG_DEBUG(x) std::cout << "[DEBUG] " << x << "\n"
 

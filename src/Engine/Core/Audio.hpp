@@ -3,13 +3,16 @@
 #include <Core/Common.hpp>
 #include <SDL2/SDL_mixer.h>
 
+#define AUDIO_STEREO 2
+#define AUDIO_MONO 1
+
 #define AUDIO_DISABLED 1
 #define AUDIO_FREQUENCY MIX_DEFAULT_FREQUENCY * 2
 #define AUDIO_FORMAT MIX_DEFAULT_FORMAT
 #define AUDIO_CHANNELS MIX_DEFAULT_CHANNELS
 #define AUDIO_CHUNK_SIZE 1024
 
-struct AudioContext {
+struct AudioSettings {
     bool soundEnabled = false;
     bool musicEnabled = false;
     F32 soundVolume  = 1.0f;

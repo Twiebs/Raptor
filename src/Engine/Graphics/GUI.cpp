@@ -2,14 +2,14 @@
 
 
 void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount) {
-	if (drawListCount == 0)
-		return;
-
+	if (drawListCount == 0) return;
 	GUIContext* imGuiContext = (GUIContext*)ImGui::GetIO().UserData;
+
 
 	glEnable(GL_BLEND);
 	glBlendEquation(GL_FUNC_ADD);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_SCISSOR_TEST);
@@ -54,8 +54,15 @@ void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount) {
 			vertexOffset += cmd->vtx_count;
 		}
 	}
+
 	glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glDisable(GL_BLEND);
+	glBlendFunc(GL_ONE, GL_ZERO);
 	glDisable(GL_SCISSOR_TEST);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
 }
 
 

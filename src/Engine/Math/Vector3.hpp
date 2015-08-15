@@ -9,6 +9,12 @@ public:
 	float y;
 	float z;
 
+
+	static const Vector3 ZERO;
+	static const Vector3 UP;
+	static const Vector3 FOWARD;
+	static const Vector3 RIGHT;
+
 	Vector3();
 	Vector3(float x, float y, float z);
 	//Initalizes a new vector with each component being the given value.
@@ -24,6 +30,7 @@ public:
 
 	Vector3& Normalize();
 	Vector3 Cross(const Vector3& vector) const;
+	inline float Dot(const Vector3& vector) const;
 
 	friend std::ostream& operator<<(std::ostream& os, const Vector3& vector) {
 		os << "[" << vector.x << ", " << vector.y << ", " << vector.z << "]";
@@ -92,3 +99,7 @@ public:
 private:
 
 };
+
+float Vector3::Dot(const Vector3& v) const {
+	return (x*v.x) + (y*v.y) + (z*v.z);
+}

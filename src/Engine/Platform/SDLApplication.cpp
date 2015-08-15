@@ -1,4 +1,4 @@
-#ifdef SDL
+#ifdef SDL_PLATFORM
 
 #include <Core/Application.hpp>
 
@@ -8,6 +8,7 @@
 #include <SDL2/SDL_image.h>
 #undef main
 
+#define GLEW_STATIC
 #include <GL/glew.h>
 #include <imgui/imgui.h>
 #include <Core/Audio.hpp>
@@ -40,6 +41,10 @@ int Application::Create(const char* title, uint32 width, uint32 height, bool ful
 //	}
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+
+
 	SDL_Surface* screen;
 	//TODO fullscren does nothing...
 	window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
@@ -54,9 +59,11 @@ int Application::Create(const char* title, uint32 width, uint32 height, bool ful
 	}
 
 	//Platform was initialized sucuessfuly
+	memset(buttonsDown, 0, 6);
 	isRunning = true;
 	return 0;
 }
+
 
 int Application::Destroy() {
 //	IMG_Quit();
@@ -71,18 +78,25 @@ void Application::BeginFrame() {
 	F64 currentTime = GetTime();
 	deltaTime = (currentTime - lastTime) / 1000.0f;
 	lastTime = GetTime();
-
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void Application::EndFrame() {
 	mouseWheel = 0;
+	cursorDeltaX = 0;
+	cursorDeltaY = 0;
 	SDL_GL_SwapWindow(window);
 }
 
 float64 Application::GetTime() {
 	return (float64)SDL_GetTicks();
+}
+
+void Application::SetCursorHidden(bool isHidden) {
+	SDL_SetRelativeMouseMode((SDL_bool)isHidden);
+}
+
+void GetWindowSize(int* width, int* height) {
+	SDL_GetWindowSize(window, width, height);
 }
 
 void Application::PollEvents() {
@@ -98,17 +112,27 @@ void Application::PollEvents() {
 				io.AddInputCharacter((unsigned short)c);
 			}
 		} break;
-		case SDL_KEYDOWN:
-			if (keyCallback != nullptr) keyCallback(event.key.keysym.scancode, true);
-			keysDown[event.key.keysym.scancode] = true;
-			break;
+
 		case SDL_KEYUP:
-			if (keyCallback != nullptr) keyCallback(event.key.keysym.scancode, false);
-			keysDown[event.key.keysym.scancode] = false;
-			break;
+		case SDL_KEYDOWN:
+		{
+			if (keyCallback != nullptr) keyCallback(event.key.keysym.scancode, (event.type == SDL_KEYDOWN));
+			keysDown[event.key.keysym.scancode] = (event.type == SDL_KEYDOWN);
+
+			ImGuiIO io = ImGui::GetIO();
+			int key = event.key.keysym.sym & ~SDLK_SCANCODE_MASK;
+			io.KeysDown[key] = (event.type == SDL_KEYDOWN);
+			io.KeyShift = ((SDL_GetModState() & KMOD_SHIFT) != 0);
+			io.KeyCtrl = ((SDL_GetModState() & KMOD_CTRL) != 0);
+			io.KeyAlt = ((SDL_GetModState() & KMOD_ALT) != 0);
+		}	break;
+
 		case SDL_MOUSEMOTION:
-			cursorX = (float64)event.motion.x;
-			cursorY = (float64)event.motion.y;
+			cursorDeltaX = (F64)event.motion.xrel;
+			cursorDeltaY = (F64)event.motion.yrel;
+			cursorX = (F64)event.motion.x;
+			cursorY = (F64)event.motion.y;
+			if (cursorPosCallback) cursorPosCallback(cursorDeltaX, cursorDeltaY);
 			break;
 		case SDL_MOUSEWHEEL:
 			mouseWheel = event.wheel.y;

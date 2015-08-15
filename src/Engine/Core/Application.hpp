@@ -5,10 +5,7 @@
 #include <malloc.h>
 #include <cstring>
 
-#define AUDIO_STEREO 2
-#define AUDIO_MONO 1
-
-#ifdef SDL
+#ifdef SDL_PLATFORM
 #define KEY_UNKOWN 0
 #define KEY_A 4
 #define KEY_B 5
@@ -166,6 +163,9 @@
 #endif
 
 typedef void (*InputKeyCallback)(int, bool);
+typedef void(*InputCursorPosCallback)(F64, F64);
+
+void GetWindowSize(int* width, int* height);
 
 class Application {
 public:
@@ -201,12 +201,18 @@ public:
 	void PollEvents();
 	F64 GetTime();
 
-	inline bool IsKeyDown(U32 keycode) { return keysDown[keycode]; }
+	void SetCursorHidden(bool isHidden);
+
 	inline void SetKeyCallback(InputKeyCallback kb) { this->keyCallback = kb; }
+	inline void SetCursorPosCallback(InputCursorPosCallback callback) { this->cursorPosCallback = callback; };
+
+	inline bool IsKeyDown(U32 keycode) { return keysDown[keycode]; }
 	inline bool IsButtonDown(U32 buttoncode) { return buttonsDown[buttoncode]; }
 
 	inline F64 GetCursorX() { return cursorX; }
 	inline F64 GetCursorY() { return cursorY; }
+	inline F64 GetCursorDeltaX() { return cursorDeltaX; }
+	inline F64 GetCursorDeltaY() { return cursorDeltaY; }
 	inline F64 GetMouseWheel() { return mouseWheel; }
 
 	inline F32 GetWidth() { return width; }
@@ -219,6 +225,9 @@ private:
 	bool keysDown[1024];
 	bool buttonsDown[6];
 	F64 cursorX = 0, cursorY = 0;
+	F64 cursorDeltaX, cursorDeltaY;
 	F64 mouseWheel = 0;
+
 	InputKeyCallback keyCallback = nullptr;
+	InputCursorPosCallback cursorPosCallback = nullptr;
 };

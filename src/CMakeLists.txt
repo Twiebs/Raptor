@@ -21,7 +21,6 @@
 #
 #
 
-#
 # #Build the RaptorEngine as a static lib
 # #The below directories are used to create a list of files to pass to the add_library function
 # set(ENGINE_SRC_DIRS Application Assets Components Core Graphics Graphics/GL Math Memory Platform Systems UI Utils)
@@ -59,7 +58,7 @@ add_subdirectory(imgui)
 if(EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
 else(EMSCRPITEN)
-  add_definitions(-DSDL)
+  add_definitions(-DSDL_PLATFORM)
 endif(EMSCRIPTEN)
 
 #EMSCRIPTEN allready handles these and MSVC does its own thing...
@@ -95,16 +94,28 @@ if(MSVC)
   include_directories(../include)
   link_directories(../lib)
   set(LIBS
-    glew32.lib
-    glew32s.lib
     opengl32.lib
-    freetype.lib
+    glew32s.lib
+	SOIL.lib
+
     SDL2.lib
     SDL2_image.lib
     SDL2_mixer.lib
+
     SDL2_net.lib
+	assimpd.lib
+
+	BulletCollision.lib
+	BulletDynamics.lib
+	LinearMath.lib
   )
 endif(MSVC)
+
+if(MSVC)
+  file(GLOB RELEASE_LIBS ../lib/Release)
+  file(GLOB DEBUG_LIBS ../lib/Debug)
+endif(MSVC)
+
 
 
 include_directories(${INCS})
@@ -135,11 +146,19 @@ set(GRAPHICS_SRCS
       Engine/Graphics/DEBUGRenderer.hpp
       Engine/Graphics/GLSLProgram.cpp
       Engine/Graphics/GLSLProgram.hpp
+	  Engine/Graphics/Render3D.hpp
+	  Engine/Graphics/Render3D.cpp
 )
 add_library(Graphics STATIC ${GRAPHICS_SRCS})
 source_group(Graphics FILES ${GRAPHICS_SRCS})
 
 set(MATH_SRCS
+  Engine/Math/RPhysics.cpp
+  Engine/Math/RPhysics.hpp
+  Engine/Math/Geometry2D.cpp
+  Engine/Math/Geometry2D.hpp
+  Engine/Math/Geometry3D.cpp
+  Engine/Math/Geometry3D.hpp
   Engine/Math/Noise.cpp
   Engine/Math/Noise.hpp
   Engine/Math/Random.cpp
@@ -193,13 +212,20 @@ source_group(Tests FILES ${TEST_SRCS})
 
 SET(CORE_SRCS
   Engine/Core/Common.hpp
+  Engine/Core/Console.hpp
+  Engine/Core/Console.cpp
   Engine/Core/Network.hpp
   Engine/Core/Network.cpp
   Engine/Core/Application.hpp
   Engine/Core/Audio.cpp
   Engine/Core/Audio.hpp
+  Engine/World/World.cpp
+  Engine/World/World.hpp
+  Engine/World/Editor.cpp
+  Engine/World/Editor.hpp
   Engine/Platform/SDLApplication.cpp
   Engine/Platform/EmscriptenApplication.cpp
+  Engine/Core/Platform.h
 )
 add_library(Core STATIC ${CORE_SRCS})
 source_group(Core FILES ${PLATFORM_SRCS})
@@ -210,8 +236,33 @@ set(ENGINE_LIBS Core Graphics Math imgui ${LIBS})
 add_executable(Inhabited Tests/Main.cpp)
 target_link_libraries(Inhabited ${ENGINE_LIBS})
 
+add_executable(WorldTest Tests/WorldTest.cpp)
+target_link_libraries(WorldTest ${ENGINE_LIBS})
+target_link_libraries(WorldTest debug ${DEBUG_LIBS})
+target_link_libraries(WorldTest optimized ${RELEASE_LIBS})
+
+add_executable(ShadowTest Tests/ShadowTest/point_shadows.cpp)
+target_link_libraries(ShadowTest
+	${ENGINE_LIBS}
+  	glfw3.lib
+    glew32s.lib
+    opengl32.lib
+	)
+
+add_executable(DeferredTest Tests/DeferredTest/deferred_shading.cpp)
+target_link_libraries(DeferredTest
+	${ENGINE_LIBS}
+  	glfw3.lib
+    glew32s.lib
+    opengl32.lib
+	)
+
+
+
 add_executable(MeshViewer Tools/MeshViewer.cpp)
 target_link_libraries(MeshViewer ${ENGINE_LIBS})
+target_link_libraries(MeshViewer debug ${DEBUG_LIBS})
+target_link_libraries(MeshViewer optimized ${RELEASE_LIBS})
 
 add_executable(TexturePacker Tools/TexturePacker.cpp)
 target_link_libraries(TexturePacker ${ENGINE_LIBS})

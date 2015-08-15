@@ -11,6 +11,11 @@
 
 #define RADIANS(x) (PI32 / 180.f) * x
 
+inline F32 Lerp (F32 from, F32 to, F32 t) {
+	auto result = ((1.0f - t) * from) + (t*to);
+	return result;
+}
+
 namespace MathUtils {
 
 	inline static F32 Clamp(F32 value, F32 min, F32 max) {

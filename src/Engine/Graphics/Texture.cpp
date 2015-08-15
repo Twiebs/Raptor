@@ -3,13 +3,17 @@
 #include <fstream>
 
 #define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_PNG
 #include <stb/stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 
 void LoadPixmapFromFile(Pixmap* pixmap, std::string filename) {
+	filename = ASSET_DIR + filename;
 	pixmap->pixels = stbi_load(filename.c_str(), (int*)&pixmap->width, (int*)&pixmap->height, nullptr, 4);
+	if (pixmap->pixels == nullptr) {
+		LOG_ERROR("Could not load pixels for file " << filename);
+		assert(false);
+	}
 }
 
 U8* GetPixelAddress(U8* pixels, U16 x, U16 y, U16 width, U16 height) {
@@ -36,6 +40,7 @@ void WritePixels(U16 srcWidth, U16 srcHeight, U8* src, U16 destX, U16 destY, U16
 
 #if 1
 void LoadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename) {
+	filename = ASSET_DIR + filename;
 	std::ifstream stream;
 	stream.open(filename);
 	if (!stream.is_open()) { LOG_ERROR("HUSTON WE HAVE A PROBLEM"); return; }
@@ -100,30 +105,35 @@ void WriteTextureAtlasToFile(TextureAtlas* atlas, std::string filename) {
 #endif
 
 GLuint CreateTextureFromFile(std::string filename) {
+	filename = ASSET_DIR + filename;
 	int width, height;
 	U8* pixels = stbi_load(filename.c_str(), &width, &height, nullptr, 4);
+	if (pixels == nullptr) {
+		LOG_ERROR("Could not load image: " << filename);
+		return 0;
+	}
 
 	auto textureID = CreateTextureFromPixels(width, height, pixels);
 	stbi_image_free(pixels);
 	return textureID;
 }
 
-GLuint CreateArrayTexture2D(U32 width, U32 height, U32 layerCount, std::vector<std::string>& filenames) {
+GLuint CreateArrayTexture2D(U32 width, U32 height, std::vector<std::string>& filenames) {
 	GLuint textureID = 0;
 	GLuint mipLevelCount = 1;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, textureID);
 	//Allocate the storage.
-	glTexStorage3D(GL_TEXTURE_2D_ARRAY, mipLevelCount, GL_RGBA8, width, height, layerCount);
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, mipLevelCount, GL_RGBA8, width, height, filenames.size());
 	//Upload pixel data.
 	//The first 0 refers to the mipmap level (level 0, since there's only 1)
 	//The following 2 zeroes refers to the x and y offsets in case you only want to specify a subrectangle.
 	//The final 0 refers to the layer index offset (we start from index 0 and have 2 levels).
 	//Altogether you can specify a 3D box subset of the overall texture, but only one mip level at a time.
 
-	for (auto i = 0; i < layerCount; i++) {
+	for (auto i = 0; i < filenames.size(); i++) {
 		Pixmap pixmap;
-		LoadPixmapFromFile(&pixmap, std::string(ASSET_DIR) + filenames[i]);
+		LoadPixmapFromFile(&pixmap, filenames[i]);
 		ASSERT(pixmap.width == width);
 		ASSERT(pixmap.height == height);
 		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixmap.pixels);
@@ -138,18 +148,18 @@ GLuint CreateArrayTexture2D(U32 width, U32 height, U32 layerCount, std::vector<s
 	return textureID;
 }
 
-//GLuint CreateTextureFromPixmap(Pixmap* pixmap) {
-//	return CreateTextureFromPixels(pixmap->width, pixmap->height, pixmap->data);
-//}
-
 GLuint CreateTextureFromPixels(U32 width, U32 height, U8* pixels) {
+	assert(pixels != nullptr);
+	assert(width > 0 && height > 0);
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glGenerateMipmap(GL_TEXTURE_2D);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	return textureID;
 }

@@ -17,7 +17,7 @@
 #include <Graphics/Texture.hpp>
 #include <Graphics/DEBUGRenderer.hpp>
 
-#include <Math/Geomerty2D.h>
+#include <Math/Geometry2D.hpp>
 #include <Math/Noise.hpp>
 #include <Math/Random.hpp>
 
@@ -35,11 +35,17 @@
 // Fix problems with the water
 // Make Terrain texture match up with the actual terrain
 
-//
-
+#if 0
 struct TileVertex {
 	Vector2 position;
 	Vector3 texCoord;
+	Color color;
+};
+#endif
+
+struct TileVertex {
+	Vector2 position;
+	Vector2 texCoord;
 	Color color;
 };
 
@@ -52,9 +58,6 @@ struct BiomeEntry {
 	Color color;
 };
 #endif
-
-
-
 
 template<class Archive>
 void serialize(Archive& archive, Vector2& vector) {
@@ -73,16 +76,24 @@ void serialize(Archive & archive, BiomeEntry& entry) {
 }
 #endif
 
-
+#if 0
 struct BiomeEntry {
 	std::string texture;
 	F32 transitionBegin;
 	F32 transitionEnd;
 	Color color;
 };
+#endif 
 
+struct BiomeEntry {
+	U32 atlasID;
+	F32 transitionBegin;
+	F32 transitionEnd;
+	Color color;
+};
 
 struct Biome {
+	TextureAtlas atlas;
 	GLuint textureID;
 	U32 entryCount;
 	BiomeEntry* entries;
@@ -90,7 +101,7 @@ struct Biome {
 
 template<class Archive>
 void serialize(Archive & archive, BiomeEntry& entry) {
-	archive(cereal::make_nvp("Texture", entry.texture),
+	archive(cereal::make_nvp("AtlasID", entry.atlasID),
 			cereal::make_nvp("TransitionBegin", entry.transitionBegin),
 			cereal::make_nvp("TransitionEnd", entry.transitionEnd),
 			cereal::make_nvp("Color" , entry.color)
@@ -98,13 +109,12 @@ void serialize(Archive & archive, BiomeEntry& entry) {
 }
 
 struct Tile {
-	U32 biomeEntryID;
+	bool overlaps;	//We check this first... The following data is allways needed no mater what
+	U32 entryID;
 	F32 alpha0;
 	F32 alpha1;
 	F32 alpha2;
 	F32 alpha3;
-	bool overlaps;	//apparently this is completly evil... should totaly move it out once i do some things followed by some stuff....
-	//Probably should use some type of drawlist thingy magihhuarrr nuggg
 };
 
 struct Terrain2D {
@@ -114,8 +124,6 @@ struct Terrain2D {
 	Tile* tilemap;
 	Biome biome;
 };
-
-
 
 Terrain2D gTerrain;
 
@@ -132,54 +140,73 @@ inline U32 XYToArrayIndex(U32 x, U32 y, U32 stride) {
 BiomeEntry* FindBiomeEntryForHeight(Biome* biome, F32 height) {
 	for(auto i = 0; i < biome->entryCount; i++) {
 		auto& entry = biome->entries[i];
-		if(height < entry.transitionEnd) {
+		if(height <= entry.transitionEnd) {
 			return &entry;
 		}
 	}
 	return nullptr;
 }
 
+U32 GetBiomeEntryID(BiomeEntry* entry, Biome* biome) {
+	for (auto i = 0; i < biome->entryCount; i++) {
+		if (entry == &biome->entries[i]) {
+			return i + 1;
+		}
+	}
+	return 0;
+}
+
+// Applys a biome to a Terrain2D heightmap and tilemap
+// Doesnt allocate memory
 void ApplyBiome(Terrain2D* terrain, Biome* biome) {
 	for (U32 y = 0; y < terrain->heightInTiles; y++) {
 		for (U32 x = 0; x < terrain->widthInTiles; x++) {
+			// Get the four courner indices of the current tile
 			auto index0 = XYToArrayIndex(x, y, terrain->widthInTiles);
 			auto index1 = XYToArrayIndex(x + 1, y, terrain->widthInTiles);
 			auto index2 = XYToArrayIndex(x + 1, y + 1, terrain->widthInTiles);
 			auto index3 = XYToArrayIndex(x, y + 1, terrain->widthInTiles);
 
-			//The min height is probably all we need
+			// Get the minimum height value of the four corners of the tile we are looking at
 			auto minHeight = terrain->heightmap[index0];
 			minHeight = MathUtils::Min(terrain->heightmap[index1], minHeight);
 			minHeight = MathUtils::Min(terrain->heightmap[index2], minHeight);
 			minHeight = MathUtils::Min(terrain->heightmap[index3], minHeight);
-			auto entry = FindBiomeEntryForHeight(biome, minHeight);
+			auto entry = FindBiomeEntryForHeight(biome, minHeight);	// Get the coresponding biome entry based on the min height
 
-			//If the any of the tiles corner heightmap values are greater than the transitionBegin
-			//Of the biome entry than the tile must overlap another
+			// If the any of the tiles corner heightmap values are greater than the transitionBegin
+			// Of the biome entry than the tile must overlap another
+			auto& tile = terrain->tilemap[index0];
 			if (terrain->heightmap[index0] > entry->transitionBegin ||
 				terrain->heightmap[index1] > entry->transitionBegin ||
 				terrain->heightmap[index2] > entry->transitionBegin ||
 				terrain->heightmap[index3] > entry->transitionBegin ){
-				terrain->tilemap[index0].overlaps = true;
-			} else terrain->tilemap[index0].overlaps = false;
+				tile.overlaps = true;
+			} else tile.overlaps = false;
 
+			// Get an alpha value based on the heightValue between the tiles transition points
 			auto sampleAlpha = [entry](F32 height) -> F32 {
 				if (height < entry->transitionBegin) return 1.0f;
-				if(height > entry->transitionEnd) return 0.0f;
+				if (height > entry->transitionEnd) return 0.0f;
 				auto transDiff = entry->transitionEnd - entry->transitionBegin;
-				auto transHeight = height - entry->transitionBegin;
+				if (transDiff == 0) return 1.0f;
+				auto transHeight = entry->transitionEnd - height;
 				auto result = (transHeight / transDiff);
 				return result;
 			};
 
-			terrain->tilemap[index0].alpha0 = sampleAlpha(terrain->heightmap[index0]);
-			terrain->tilemap[index0].alpha1 = sampleAlpha(terrain->heightmap[index1]);
-			terrain->tilemap[index0].alpha2 = sampleAlpha(terrain->heightmap[index2]);
-			terrain->tilemap[index0].alpha3 = sampleAlpha(terrain->heightmap[index3]);
+			// Set the alpha values of the tile in the tilemap and the entryID it will use
+			tile.entryID = GetBiomeEntryID(entry, biome);
+			tile.alpha0 = sampleAlpha(terrain->heightmap[index0]);
+			tile.alpha1 = sampleAlpha(terrain->heightmap[index1]);
+			tile.alpha2 = sampleAlpha(terrain->heightmap[index2]);
+			tile.alpha3 = sampleAlpha(terrain->heightmap[index3]);
 		}
 	}
-
 }
+
+DEBUGBufferGroup gRenderBuffer;
+DEBUGRenderGroup gRenderGroup;
 
 template<class Archive>
 void serialize(Archive& archive, Color& color) {
@@ -211,8 +238,6 @@ void load(Archive& archive, Biome& biome) {
 	}
 }
 
-
-
 struct Terrain2DShaderProgram {
 	GLuint shaderProgramID;
 	GLint projectionUniformLocation;
@@ -228,8 +253,6 @@ GLuint gFoliageAtlasTextureID;
 
 
 GUIContext gGuiContext;
-DEBUGRenderGroup gRenderGroup;
-DEBUGBufferGroup gRenderBuffer;
 
 Transform2D gCameraTransform;
 Transform2D gPlayerTransform;
@@ -266,18 +289,18 @@ Matrix4 TransformToOrtho(Transform2D& transform, float32 zoom) {
 		);
 }
 
-
-
 GLuint TerrainToTexture(Terrain2D* terrain) {
 	U8* pixels = new U8[terrain->widthInTiles * terrain->heightInTiles * 4];
 	for (U32 i = 0; i < terrain->widthInTiles * terrain->heightInTiles * 4; i+=4) {
 		U32 index = i / 4;
 		U32 y = index / terrain->widthInTiles;
 		U32 x =  index - (y * terrain->widthInTiles);
-		ASSERT(index == XYToIndex(terrain, x, y));
 		Color color;
 		if(IsPointInCircle(x, y, terrain->widthInTiles * 0.5f, terrain->heightInTiles * 0.5f, terrain->widthInTiles * 0.5f)) {
-			color = terrain->biome.entries[terrain->tilemap[index].biomeEntryID - 1].color;
+			color = terrain->biome.entries[terrain->tilemap[index].entryID - 1].color;
+			color = Color(color.r, color.g, color.b, terrain->tilemap[index].alpha0);
+			auto result = BlendOverlay(color, terrain->biome.entries[terrain->tilemap[index].entryID].color);
+			color = Color(result.r, result.g, result.b, color.a);
 		} else {
 			color = { 0.0f, 0.0f, 0.0f, 0.0f };
 		}
@@ -403,13 +426,13 @@ void GenerateHeightmap(F32* heightmap, U32 width, U32 height, U64 seed) {
 		heightmap[i] = noise0.FBM(x, y, 6, 0.006f, 0.5f);
 	}
 
-	OpenSimplexNoise noise1(rng.Range(0, 1 << 16));
-	for (U32 i = 0; i < width * height; i++) {
-		U32 y = (i / width);
-		U32 x = i - (y * height);
-		heightmap[i] += noise1.RidgedNoise(x, y, 6, 0.015f, 0.6f);
-		heightmap[i] = MathUtils::Clamp(heightmap[i], -1.0f, 1.0f);
-	}
+	//OpenSimplexNoise noise1(rng.Range(0, 1 << 16));
+	//for (U32 i = 0; i < width * height; i++) {
+	//	U32 y = (i / width);
+	//	U32 x = i - (y * height);
+	//	heightmap[i] += noise1.RidgedNoise(x, y, 6, 0.015f, 0.6f);
+	//	heightmap[i] = MathUtils::Clamp(heightmap[i], -1.0f, 1.0f);
+	//}
 
 	//OpenSimplexNoise low(time(NULL));
 	//for (U32 i = 0; i < width * height; i++) {
@@ -454,14 +477,17 @@ void Populate(Terrain2D* terrain) {
 
 void CreateDebugBiome(Biome* biome) {
 	std::vector<BiomeEntry> entries;
-	entries.push_back({ "textures/water.png", 0.5f, 0.0f, Color(0.0f, 0.0f, 1.0f, 0.0f)});
-	entries.push_back({ "textures/sand.png", 0.25f, 0.45f, Color(0.0f, 1.0f, 0.0f, 0.0f)});
+	entries.push_back({ 2, -0.5f, 0.0f, Color(0.0f, 0.0f, 1.0f, 1.0f)});
+	entries.push_back({ 0, 1.0f, 1.0f, Color(0.0f, 1.0f, 0.0f, 1.0f)});
 
 	biome->entryCount = entries.size();
 	biome->entries = new BiomeEntry[entries.size()];
-	for(auto i = 0; i < biome->entryCount; i++) {
+	for (auto i = 0; i < biome->entryCount; i++) {
 		biome->entries[i] = entries[i];
 	}
+
+	LoadTextureAtlasFromFile(&biome->atlas, "textures/biome/biome.atlas");
+	biome->textureID = CreateTextureFromPixels(biome->atlas.width, biome->atlas.height, biome->atlas.pixels);
 }
 
 // Terrain is created in meters. Tile size might vary!
@@ -548,6 +574,8 @@ static U32 gMoveFlags;
 void KeyCallback(int keycode, bool isDown) {
 	ImGuiIO& io = ImGui::GetIO();
 	io.KeysDown[keycode] = isDown;
+	if (keycode == KEY_LCTRL) io.KeyCtrl = isDown;
+
 	switch (keycode) {
 	case KEY_W: isDown ? gMoveFlags |= MOVE_FOWARD : gMoveFlags &= ~MOVE_FOWARD; break;
 	case KEY_S: isDown ? gMoveFlags |= MOVE_BACKWARD : gMoveFlags &= ~MOVE_BACKWARD; break;
@@ -568,9 +596,58 @@ inline Vector2 Lerp(Vector2& from, Vector2& to, F32 t) {
 	return result;
 }
 
+#if 0
+void DrawTerrain(Terrain2D* terrain, U32 startX, U32 startY, U32 endX, U32 endY) {
+	DEBUGBindGroup(&gRenderBuffer);
+	TileVertex vertices[4];
+	for (auto y = startY; y < endY; y++) {
+		for (auto x = startX; x < endX; x++) {
+			
+		}
+	}
+	DEBUGDrawGroup(&gRenderBuffer);
+}
+#endif
+
+#if 1
+void DrawTerrain(Terrain2D* terrain, U32 startX, U32 startY, U32 endX, U32 endY) {
+	DEBUGBindGroup(&gRenderBuffer);
+	TileVertex vertices[4];
+	TextureAtlas atlas = terrain->biome.atlas;
+	AtlasRegion* regions = terrain->biome.atlas.regions;
+	for (auto y = startY; y < endY; y++) {
+		for (auto x = startX; x < endX; x++) {
+			auto tileIndex = XYToArrayIndex(x, y, terrain->widthInTiles);
+			auto& tile = terrain->tilemap[tileIndex];
+			if (tile.overlaps) {
+				auto entryIndex = tile.entryID;	//We dont minus one because we want the actual index of the one above the tile
+				assert(entryIndex < terrain->biome.entryCount);	//Last biome entry transitions must be set to 1.0 Biome is not configured correctly! If this is the last biome entry then this is a problem and the 
+				BiomeEntry& entry = terrain->biome.entries[entryIndex];
+				Color color = entry.color;
+				AtlasRegion& region = regions[entry.atlasID];
+				vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector2(region.x, region.y), color };
+				vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector2(region.right, region.y), color };
+				vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector2(region.right, region.top), color };
+				vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector2(region.x, region.top), color };
+				DEBUGPushVertices(&gRenderBuffer, vertices, 4);
+			}
+			auto entryIndex = tile.entryID - 1;
+			BiomeEntry& entry = terrain->biome.entries[entryIndex];
+			AtlasRegion& region = regions[entry.atlasID];
+			vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector2(region.x, region.y), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha0) };
+			vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector2(region.right, region.y), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha1) };
+			vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector2(region.right, region.top), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha2) };
+			vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS),Vector2(region.x, region.top), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha3) };
+			DEBUGPushVertices(&gRenderBuffer, vertices, 4);
+		}
+	}
+	DEBUGDrawGroup(&gRenderBuffer);
+}
+#endif
+
 void MainLoop (Application* app) {
 	BENCHMARK_START(mainLoop);
-	float64 deltaTime = app->GetDeltaTime();
+	F64 deltaTime = app->GetDeltaTime();
 
 	//NOTE @CameraControls
 	static const F32 ZOOM_SPEED = 0.1f;
@@ -611,6 +688,7 @@ void MainLoop (Application* app) {
 	auto cameraTarget = (gPlayerTransform.position + (gPlayerTransform.size * 0.5f));
 	gCameraTransform.position = Lerp(gCameraTransform.position, cameraTarget, 0.75f);
 
+
 	auto halfViewportWidth = (gCameraTransform.size.x * 0.5f) * currentCameraZoom;
 	auto halfViewportHeight = (gCameraTransform.size.y * 0.5f) * currentCameraZoom;
 	auto left = floor((gCameraTransform.position.x - halfViewportWidth) / (F32)TILE_SIZE_METERS);
@@ -627,137 +705,146 @@ void MainLoop (Application* app) {
 	waveAngle += deltaTime * 1.0f;
 	if(waveAngle > RADIANS(360)) waveAngle = 0;
 
-	Matrix4 projection = TransformToOrtho(gCameraTransform, currentCameraZoom);
-
-	// NOTE @SpaceBackground
+	//// NOTE @SpaceBackground
 	Matrix4 screenProjection = Matrix4::Ortho(0.0f, app->GetWidth(), 0.0f, app->GetHeight(), 1.0);
-	static GLuint spaceTextureID = CreateTextureFromFile(ASSET("skybox/space/left.png"));
+	static GLuint spaceTextureID = CreateTextureFromFile("skybox/space/left.png");
 	static GLint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
-	if (currentCameraZoom > 15.0) {
-		glUseProgram(spriteProgramID);
-		glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &screenProjection[0][0]);
-		DEBUGBindGroup(&gRenderGroup);
-		DEBUGDrawTexture(&gRenderGroup, spaceTextureID, Vector2(0, 0), Vector2(app->GetWidth(), app->GetHeight()), Color());
-		DEBUGFlushGroup(&gRenderGroup);
-	}
+	//if (currentCameraZoom > 15.0) {
+	//	glUseProgram(spriteProgramID);
+	//	glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &screenProjection[0][0]);
+	//	DEBUGBindGroup(&gRenderGroup);
+	//	DEBUGDrawTexture(&gRenderGroup, spaceTextureID, Vector2(0, 0), Vector2(app->GetWidth(), app->GetHeight()), Color());
+	//	DEBUGFlushGroup(&gRenderGroup);
+	//}
 
-	// NOTE @Atmosphere
-	static GLuint atmoProgram = DEBUGLoadShaderFromFile(ASSET("shaders/Atmosphere2D.vert"), ASSET("shaders/Atmosphere2D.frag"));
-	static GLuint atmoProjectionLoc = GetUniformLocation(atmoProgram, "projection");
-	static const F32 atmosphereThickness = 45.0f;
-	if (currentCameraZoom > 15.0) {
-		glUseProgram(atmoProgram);
-		glUniformMatrix4fv(atmoProjectionLoc, 1, GL_FALSE, &projection[0][0]);
-		DEBUGFillRect(&gRenderGroup, -atmosphereThickness, -atmosphereThickness, gTerrain.widthInTiles + (atmosphereThickness * 2), gTerrain.heightInTiles + (atmosphereThickness * 2), Color());
-		DEBUGFlushGroup(&gRenderGroup);
-	}
 
 	static auto counterFrequency = SDL_GetPerformanceFrequency() / 1000.0;
 	auto drawStartTime = SDL_GetPerformanceCounter();
 	auto drawStartcycles = __rdtsc();
+	Matrix4 projection = TransformToOrtho(gCameraTransform, currentCameraZoom);
 	if (currentCameraZoom > 4.0f) {
-
 		glUseProgram(spriteProgramID);
 		glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
 		DEBUGBindGroup(&gRenderGroup);
 		DEBUGDrawTexture(&gRenderGroup, gTerrainTextureID, Vector2(0, 0), Vector2(gTerrain.widthInTiles, gTerrain.heightInTiles), Color());
 		DEBUGFlushGroup(&gRenderGroup);
-	}
-	else {
+	} else {
 		glUseProgram(gTerrainShader.shaderProgramID);
 		glUniform1f(gTerrainShader.waveAngleUniformLocation, waveAngle);
 		glUniformMatrix4fv(gTerrainShader.projectionUniformLocation, 1, GL_FALSE, &projection[0][0]);
-		BENCHMARK_START(draw);
-		static bool drawMapTexture = false;
-		static bool drawWater = true;
-		static bool drawSand = true;
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gTerrain.biome.textureID);
+		DrawTerrain(&gTerrain, startX, startY, endX, endY);
+		glBindTexture(GL_TEXTURE_2D, 0);
 		gRenderGroup.currentTextureID = gTerrain.biome.textureID;
-
-		std::vector<U32> waterTiles;
-		std::vector<U32> overlapWaterTiles;
-		TileVertex vertices[4];
-		auto terrain = &gTerrain;
-		for (U32 x = startX; x <= endX; x++) {
-			for (U32 y = startY; y <= endY; y++) {
-				auto tileIndex = XYToIndex(&gTerrain, x, y);
-				auto& tile = terrain->tilemap[tileIndex];
-				if (tile.overlaps) {
-					U32 id = tile.biomeEntryID - 1;
-					if (id != 0) {
-						if (id == terrain->biome.entryCount || id == terrain->biome.entryCount - 1) {
-							overlapWaterTiles.push_back(XYToIndex(&gTerrain, x, y));
-							continue;
-						}
-						auto& baseEntry = terrain->biome.entries[id - 1];
-						U32 entryIndex = id - 1;
-						vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector3(0.0f, 0.0f, entryIndex), baseEntry.color };
-						vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector3(1.0f, 0.0f, entryIndex), baseEntry.color };
-						vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(1.0f, 1.0f, entryIndex), baseEntry.color };
-						vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(0.0f, 1.0f, entryIndex), baseEntry.color };
-
-						DEBUGPushVertices(&gRenderBuffer, vertices, 4);
-					}
-				}
-
-				//We still push our overlap on! unless .....
-				if (tile.biomeEntryID == terrain->biome.entryCount || tile.biomeEntryID == terrain->biome.entryCount - 1) {
-					waterTiles.push_back(XYToIndex(&gTerrain, x, y));
-					continue;
-				}
-
-				if (!drawWater && tile.biomeEntryID == 2) continue;
-				if (!drawSand && tile.biomeEntryID == 1) continue;
-				U32 entryIndex = tile.biomeEntryID - 1;
-				BiomeEntry& entry = gTerrain.biome.entries[entryIndex];
-				vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector3(0.0f, 0.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha0) };
-				vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector3(1.0f, 0.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha1) };
-				vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(1.0f, 1.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha2) };
-				vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(0.0f, 1.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha3) };
-				DEBUGPushVertices(&gRenderBuffer, vertices, 4);
-			}
-		}
-		glUniform1i(gTerrainShader.isWaterUniformLocation, 0);
-		DEBUGDrawGroup(&gRenderBuffer);
-		for (auto& tileIndex : waterTiles) {
-			auto& tile = terrain->tilemap[tileIndex];
-			U32 y = (tileIndex / terrain->widthInTiles);
-			U32 x = tileIndex - (y * terrain->heightInTiles);
-			U32 entryIndex = tile.biomeEntryID - 1;
-			BiomeEntry& entry = gTerrain.biome.entries[entryIndex];
-			vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector3(0.0f, 0.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha0) };
-			vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector3(1.0f, 0.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha1) };
-			vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(1.0f, 1.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha2) };
-			vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(0.0f, 1.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha3) };
-			DEBUGPushVertices(&gRenderBuffer, vertices, 4);
-		}
-		for (auto& tileIndex : overlapWaterTiles) {
-			auto& tile = terrain->tilemap[tileIndex];
-			U32 y = (tileIndex / terrain->widthInTiles);
-			U32 x = tileIndex - (y * terrain->heightInTiles);
-			U32 entryIndex = tile.biomeEntryID - 2;
-			BiomeEntry& entry = gTerrain.biome.entries[entryIndex];
-			vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector3(0.0f, 0.0f, entryIndex), entry.color };
-			vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector3(1.0f, 0.0f, entryIndex), entry.color };
-			vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(1.0f, 1.0f, entryIndex), entry.color };
-			vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(0.0f, 1.0f, entryIndex), entry.color };
-			DEBUGPushVertices(&gRenderBuffer, vertices, 4);
-		}
-
-		glUniform1i(gTerrainShader.isWaterUniformLocation, 1);
-		DEBUGDrawGroup(&gRenderBuffer);
-		glUniform1i(gTerrainShader.isWaterUniformLocation, 0);
-
-		if (currentCameraZoom > 1.0f) {
-			static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
-			glUseProgram(spriteProgramID);
-			glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
-			DEBUGBindGroup(&gRenderGroup);
-			auto fade = (currentCameraZoom - 1.0f) / 3.0f;
-			DEBUGDrawTexture(&gRenderGroup, gTerrainTextureID, Vector2(0, 0), Vector2(gTerrain.widthInTiles, gTerrain.heightInTiles), Color(1.0, 1.0, 1.0, fade));
-			DEBUGFlushGroup(&gRenderGroup);
-		}
-		BENCHMARK_END(draw);
 	}
+
+
+
+	//// NOTE @Atmosphere
+	static GLuint atmoProgram = LoadShaderFromFile("shaders/Atmosphere2D.vert", "shaders/Atmosphere2D.frag");
+	static GLuint atmoProjectionLoc = GetUniformLocation(atmoProgram, "projection");
+	static const F32 atmosphereThickness = 45.0f;
+	//if (currentCameraZoom > 15.0) {
+	//	glUseProgram(atmoProgram);
+	//	glUniformMatrix4fv(atmoProjectionLoc, 1, GL_FALSE, &projection[0][0]);
+	//	DEBUGFillRect(&gRenderGroup, -atmosphereThickness, -atmosphereThickness, gTerrain.widthInTiles + (atmosphereThickness * 2), gTerrain.heightInTiles + (atmosphereThickness * 2), Color());
+	//	DEBUGFlushGroup(&gRenderGroup);
+	//}
+
+
+
+		//BENCHMARK_START(draw);
+		//static bool drawMapTexture = false;
+		//static bool drawWater = true;
+		//static bool drawSand = true;
+		//gRenderGroup.currentTextureID = gTerrain.biome.textureID;
+
+	//	std::vector<U32> waterTiles;
+	//	std::vector<U32> overlapWaterTiles;
+	//	TileVertex vertices[4];
+	//	auto terrain = &gTerrain;
+	//	for (U32 x = startX; x <= endX; x++) {
+	//		for (U32 y = startY; y <= endY; y++) {
+	//			auto tileIndex = XYToIndex(&gTerrain, x, y);
+	//			auto& tile = terrain->tilemap[tileIndex];
+	//			if (tile.overlaps) {
+	//				U32 id = tile.entryID;
+	//				if (id != 0) {
+	//					if (id == terrain->biome.entryCount || id == terrain->biome.entryCount - 1) {
+	//						overlapWaterTiles.push_back(XYToIndex(&gTerrain, x, y));
+	//						continue;
+	//					}
+	//					auto& baseEntry = terrain->biome.entries[id - 1];
+	//					U32 entryIndex = id - 1;
+	//					vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector3(0.0f, 0.0f, entryIndex), baseEntry.color };
+	//					vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector3(1.0f, 0.0f, entryIndex), baseEntry.color };
+	//					vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(1.0f, 1.0f, entryIndex), baseEntry.color };
+	//					vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(0.0f, 1.0f, entryIndex), baseEntry.color };
+
+	//					DEBUGPushVertices(&gRenderBuffer, vertices, 4);
+	//				}
+	//			}
+
+	//			//We still push our overlap on! unless .....
+	//			if (tile.entryID == terrain->biome.entryCount || tile.entryID == terrain->biome.entryCount - 1) {
+	//				waterTiles.push_back(XYToIndex(&gTerrain, x, y));
+	//				continue;
+	//			}
+
+	//			if (!drawWater && tile.entryID == 2) continue;
+	//			if (!drawSand && tile.entryID == 1) continue;
+	//			U32 entryIndex = tile.entryID - 1;
+	//			BiomeEntry& entry = gTerrain.biome.entries[entryIndex];
+	//			vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector3(0.0f, 0.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha0) };
+	//			vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector3(1.0f, 0.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha1) };
+	//			vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(1.0f, 1.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha2) };
+	//			vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(0.0f, 1.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha3) };
+	//			DEBUGPushVertices(&gRenderBuffer, vertices, 4);
+	//		}
+	//	}
+	//	glUniform1i(gTerrainShader.isWaterUniformLocation, 0);
+	//	DEBUGDrawGroup(&gRenderBuffer);
+	//	for (auto& tileIndex : waterTiles) {
+	//		auto& tile = terrain->tilemap[tileIndex];
+	//		U32 y = (tileIndex / terrain->widthInTiles);
+	//		U32 x = tileIndex - (y * terrain->heightInTiles);
+	//		U32 entryIndex = tile.entryID - 1;
+	//		BiomeEntry& entry = gTerrain.biome.entries[entryIndex];
+	//		vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector3(0.0f, 0.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha0) };
+	//		vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector3(1.0f, 0.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha1) };
+	//		vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(1.0f, 1.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha2) };
+	//		vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(0.0f, 1.0f, entryIndex), Color(entry.color.r, entry.color.g, entry.color.b, tile.alpha3) };
+	//		DEBUGPushVertices(&gRenderBuffer, vertices, 4);
+	//	}
+	//	for (auto& tileIndex : overlapWaterTiles) {
+	//		auto& tile = terrain->tilemap[tileIndex];
+	//		U32 y = (tileIndex / terrain->widthInTiles);
+	//		U32 x = tileIndex - (y * terrain->heightInTiles);
+	//		U32 entryIndex = tile.entryID - 2;
+	//		BiomeEntry& entry = gTerrain.biome.entries[entryIndex];
+	//		vertices[0] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS)), Vector3(0.0f, 0.0f, entryIndex), entry.color };
+	//		vertices[1] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS)), Vector3(1.0f, 0.0f, entryIndex), entry.color };
+	//		vertices[2] = { Vector2((x * TILE_SIZE_METERS) + TILE_SIZE_METERS, (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(1.0f, 1.0f, entryIndex), entry.color };
+	//		vertices[3] = { Vector2((x * TILE_SIZE_METERS), (y * TILE_SIZE_METERS) + TILE_SIZE_METERS), Vector3(0.0f, 1.0f, entryIndex), entry.color };
+	//		DEBUGPushVertices(&gRenderBuffer, vertices, 4);
+	//	}
+
+	//	glUniform1i(gTerrainShader.isWaterUniformLocation, 1);
+	//	DEBUGDrawGroup(&gRenderBuffer);
+	//	glUniform1i(gTerrainShader.isWaterUniformLocation, 0);
+
+	//	if (currentCameraZoom > 1.0f) {
+	//		static GLuint shaderProgramProjectionLoc = GetUniformLocation(spriteProgramID, "projection");
+	//		glUseProgram(spriteProgramID);
+	//		glUniformMatrix4fv(shaderProgramProjectionLoc, 1, GL_FALSE, &projection[0][0]);
+	//		DEBUGBindGroup(&gRenderGroup);
+	//		auto fade = (currentCameraZoom - 1.0f) / 3.0f;
+	//		DEBUGDrawTexture(&gRenderGroup, gTerrainTextureID, Vector2(0, 0), Vector2(gTerrain.widthInTiles, gTerrain.heightInTiles), Color(1.0, 1.0, 1.0, fade));
+	//		DEBUGFlushGroup(&gRenderGroup);
+	//	}
+	//	BENCHMARK_END(draw);
+	//}
 
 	//@ENTITY DRAW
 
@@ -779,7 +866,7 @@ void MainLoop (Application* app) {
 
 	static Vector2 vehiclePosition = Vector2(512, 512);
 	static Vector2 vehicleSize = Vector2(2.0f, 2.0f);
-	static GLuint vehicleTextureID = CreateTextureFromFile(ASSET("textures/vehicle.png"));
+	static GLuint vehicleTextureID = CreateTextureFromFile("textures/vehicle.png");
 	DEBUGBindGroup(&gRenderGroup);
 	DEBUGDrawTexture(&gRenderGroup, vehicleTextureID, vehiclePosition, vehicleSize, Color(1.0, 1.0, 1.0, 1.0));
 	DEBUGFlushGroup(&gRenderGroup);
@@ -803,7 +890,7 @@ void MainLoop (Application* app) {
 	auto drawCycles = __rdtsc() - drawStartcycles;
 
 	//NOTE @CloudRendering
-	static GLuint cloudShaderID = DEBUGLoadShaderFromFile(ASSET("shaders/clouds.vert"), ASSET("shaders/clouds.frag"));
+	static GLuint cloudShaderID = LoadShaderFromFile("shaders/clouds.vert", "shaders/clouds.frag");
 	static GLint cloudShaderProjectionloc = GetUniformLocation(cloudShaderID, "projection");
 	static GLint cloudShaderTimeLoc = GetUniformLocation(cloudShaderID, "cloudTime");
 	static F32 cloudTime = 1;
@@ -817,13 +904,13 @@ void MainLoop (Application* app) {
 		DEBUGFlushGroup(&gRenderGroup);
 	}
 
-	static GLuint shipTextureID = CreateTextureFromFile( ASSET("textures/ship.png") );
-	if (currentCameraZoom > 6.0f) {
-		glUseProgram(spriteProgramID);
-		DEBUGBindGroup(&gRenderGroup);
-		DEBUGDrawTexture(&gRenderGroup, shipTextureID, 460.0f, 460.0f, 500.0f, 500.0f, Color());
-		DEBUGFlushGroup(&gRenderGroup);
-	}
+	//static GLuint shipTextureID = CreateTextureFromFile("textures/ship.png");
+	//if (currentCameraZoom > 6.0f) {
+	//	glUseProgram(spriteProgramID);
+	//	DEBUGBindGroup(&gRenderGroup);
+	//	DEBUGDrawTexture(&gRenderGroup, shipTextureID, 460.0f, 460.0f, 500.0f, 500.0f, Color());
+	//	DEBUGFlushGroup(&gRenderGroup);
+	//}
 
 	//@SOUNDS
 	static Random rng(0);
@@ -864,24 +951,24 @@ void MainLoop (Application* app) {
 	//@BUTTONS
 	if (ImGui::Button("Reload Shader")) {
         glDeleteProgram(gTerrainShader.shaderProgramID);
-        gTerrainShader.shaderProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Terrain2DVertex.glsl"), ASSET("shaders/Terrain2DFragment.glsl"));
+        gTerrainShader.shaderProgramID = LoadShaderFromFile("shaders/Terrain2DVertex.glsl", "shaders/Terrain2DFragment.glsl");
         gTerrainShader.projectionUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "projection");
         gTerrainShader.isWaterUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "isWater");
         gTerrainShader.waveAngleUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "waveAngle");
 
 		glDeleteProgram(spriteProgramID);
-		spriteProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Sprite.vert"), ASSET("shaders/Sprite.frag"));
+		spriteProgramID = LoadShaderFromFile("shaders/Sprite.vert", "shaders/Sprite.frag");
 	}
 
 	if (ImGui::Button("ReloadCloudShader")) {
 		glDeleteProgram(cloudShaderID);
-		cloudShaderID = DEBUGLoadShaderFromFile(ASSET("shaders/clouds.vert"), ASSET("shaders/clouds.frag"));
+		cloudShaderID = LoadShaderFromFile("shaders/clouds.vert", "shaders/clouds.frag");
 	}
 
 
 	if (ImGui::Button("ReloadAtmosphereShader")) {
 		glDeleteProgram(atmoProgram);
-		atmoProgram = DEBUGLoadShaderFromFile(ASSET("shaders/Atmosphere2D.vert"), ASSET("shaders/Atmosphere2D.frag"));
+		atmoProgram = LoadShaderFromFile("shaders/Atmosphere2D.vert", "shaders/Atmosphere2D.frag");
 	}
 
 
@@ -900,16 +987,19 @@ void MainLoop (Application* app) {
 		ApplyBiome(&gTerrain, &gTerrain.biome);
 	}
 	ImGui::PushID("biomeconfig");
+	auto& biome = terrain->biome;
 	for (auto i = 0; i < terrain->biome.entryCount; i++) {
 		ImGui::PushID(i);
-		ImGui::SliderFloat("Transition Begin", &terrain->biome.entries[i].transitionBegin, -1.0f, 1.0f);
-		ImGui::SliderFloat("Transition End", &terrain->biome.entries[i].transitionEnd, -1.0f, 1.0f);
+		ImGui::SliderFloat("Transition Begin", &terrain->biome.entries[i].transitionBegin, i > 0 ? biome.entries[i - 1].transitionEnd : -1.0f, biome.entries[i].transitionEnd);
+		ImGui::SliderFloat("Transition End", &terrain->biome.entries[i].transitionEnd, biome.entries[i].transitionBegin, 1.0f);
 		ImGui::ColorEdit4("Color", &terrain->biome.entries[i].color.r, true);
 		ImGui::Separator();
 		ImGui::PopID();
 	}
 	ImGui::PopID();
 	ImGui::End();
+
+	ImGui::Image((ImTextureID)gTerrain.biome.textureID, ImVec2(512, 512));
 
 	ImGui::Begin("Profiler");
 	static const uint32 resolution = 32;
@@ -978,19 +1068,20 @@ int main () {
 	DEBUGCreateRenderGroup(&gRenderGroup, 4096);
 	DEBUGCreateBufferGroup(&gRenderBuffer, sizeof(TileVertex), 65536);
 	DEBUGAddAttribute(&gRenderBuffer, 0, 2, GL_FLOAT, sizeof(TileVertex), (GLvoid*)offsetof(TileVertex, position));
-	DEBUGAddAttribute(&gRenderBuffer, 1, 3, GL_FLOAT, sizeof(TileVertex), (GLvoid*)offsetof(TileVertex, texCoord));
+	DEBUGAddAttribute(&gRenderBuffer, 1, 2, GL_FLOAT, sizeof(TileVertex), (GLvoid*)offsetof(TileVertex, texCoord));
 	DEBUGAddAttribute(&gRenderBuffer, 2, 4, GL_FLOAT, sizeof(TileVertex), (GLvoid*)offsetof(TileVertex, color));
 
-    gTerrainShader.shaderProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Terrain2DVertex.glsl"), ASSET("shaders/Terrain2DFragment.glsl"));
+    gTerrainShader.shaderProgramID = LoadShaderFromFile("shaders/Terrain2DVertex.glsl","shaders/Terrain2DFragment.glsl");
     gTerrainShader.projectionUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "projection");
     gTerrainShader.isWaterUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "isWater");
     gTerrainShader.waveAngleUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "waveAngle");
 
-	LoadTextureAtlasFromFile(&gTextureAtlas, ASSET("textures/foliage/trees.atlas"));
+	LoadTextureAtlasFromFile(&gTextureAtlas, "textures/foliage/trees.atlas");
+	//LoadTextureAtlasFromFile(&gTextureAtlas, ASSET("textures/foliage/trees.atlas"));
 	gFoliageAtlasTextureID = CreateTextureFromPixels(gTextureAtlas.width, gTextureAtlas.height, gTextureAtlas.pixels);
 
-	spriteProgramID = DEBUGLoadShaderFromFile(ASSET("shaders/Sprite.vert"), ASSET("shaders/Sprite.frag"));
-	nullTextureID = CreateTextureFromFile(ASSET("textures/null.png"));
+	spriteProgramID = LoadShaderFromFile("shaders/Sprite.vert", "shaders/Sprite.frag");
+	nullTextureID = CreateTextureFromFile("textures/null.png");
 
 	soundEffects[0] = LoadSound(ASSET("sounds/wave00.ogg"));
 	soundEffects[1] = LoadSound(ASSET("sounds/wave01.ogg"));
