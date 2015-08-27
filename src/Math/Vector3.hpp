@@ -3,6 +3,11 @@
 #include <iostream>
 #include <cmath>
 
+struct Vector4 {
+	float x, y, z, w;
+	Vector4(float x, float y, float z, float w);
+};
+
 class Vector3 {
 public:
 	float x;

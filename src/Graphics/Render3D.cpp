@@ -58,6 +58,7 @@ namespace Raptor {
 		}
 	}
 
+
 	Material::~Material() {
 		glDeleteTextures(1, &diffuseMapID);
 		glDeleteTextures(1, &specularMapID);
@@ -208,11 +209,34 @@ namespace Raptor {
 		camera.projection = Matrix4::Perspective(45.0f, camera.viewportWidth / camera.viewportHeight, camera.nearClip, camera.farClip);
 	}
 
+
+	void CalculateNormals(Vertex3D* vertices, U32 vertexCount, U32* indices, U32 indexCount) {
+		for (U32 i = 0; i < vertexCount; i++)
+			vertices[i].normal = Vector3(0.0f, 0.0f, 0.0f);
+
+		for (uint32 i = 0; i < indexCount; i += 3) {
+			uint32 index0 = indices[i + 0];
+			uint32 index1 = indices[i + 1];
+			uint32 index2 = indices[i + 2];
+			Vector3 vert1 = vertices[index1].position - vertices[index0].position;
+			Vector3 vert2 = vertices[index2].position - vertices[index0].position;
+
+			Vector3 normal = vert1.Cross(vert2);
+			normal.Normalize();
+			vertices[index0].normal += normal;
+			vertices[index1].normal += normal;
+			vertices[index2].normal += normal;
+		}
+		for (uint32 i = 0; i < vertexCount; i++) {
+			vertices[i].normal.Normalize();
+		}
+	}
+
 	void FPSCameraControlUpdate(Application* app, Camera& camera) {
 		camera.yaw += app->GetCursorDeltaX();
 		camera.pitch -= app->GetCursorDeltaY();
 
-		const static float movementSpeed = 0.1f;
+		const static float movementSpeed = 0.3f;
 		auto speed = movementSpeed;
 		if (app->IsKeyDown(KEY_LSHIFT)) speed *= 3.0f;
 		if (app->IsKeyDown(KEY_W)) camera.position += speed * camera.front;
@@ -536,10 +560,12 @@ namespace Raptor {
 		glBindVertexArray(shader.quadVertexArray);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-		//glBindFramebuffer(GL_READ_FRAMEBUFFER, shader.gBuffer);
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // Write to default framebuffer
-		//glBlitFramebuffer(0, 0, 1280, 720, 0, 0, 1280, 720, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-		//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		int width, height;
+		GetWindowSize(&width, &height);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, shader.gBuffer);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // Write to default framebuffer
+		glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
 	void CreateDebugCube(GLuint* vertexArrayID, GLuint* vertexBufferID, float scale) {

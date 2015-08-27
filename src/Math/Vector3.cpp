@@ -1,5 +1,9 @@
 #include "Vector3.hpp"
 
+
+Vector4::Vector4(float x, float y, float z, float w)
+	: x(x), y(y), z(z), w(w) { }
+
 Vector3::Vector3() {
 	this->x = 0;
 	this->y = 0;

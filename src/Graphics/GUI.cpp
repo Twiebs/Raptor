@@ -1,10 +1,8 @@
 #include "GUI.hpp"
 
-
 void ImGUIRenderDrawLists(ImDrawList** const drawList, int drawListCount) {
 	if (drawListCount == 0) return;
 	GUIContext* imGuiContext = (GUIContext*)ImGui::GetIO().UserData;
-
 
 	glEnable(GL_BLEND);
 	glBlendEquation(GL_FUNC_ADD);
@@ -145,8 +143,8 @@ bool GUIContextInit(GUIContext* imGuiContext, U32 viewportWidth, U32 viewportHei
 
 	ImGuiIO& io = ImGui::GetIO();
 	io.UserData = imGuiContext;
-	io.DisplaySize.x = 1280.0f;
-	io.DisplaySize.y = 720.0f;
+	io.DisplaySize.x = viewportWidth;
+	io.DisplaySize.y = viewportHeight;
 	io.DeltaTime = 1.0f / 60.0f;
 	io.IniFilename = "imgui.ini";
 	io.KeyMap[ImGuiKey_Tab] = KEY_TAB;
@@ -172,7 +170,6 @@ bool GUIContextInit(GUIContext* imGuiContext, U32 viewportWidth, U32 viewportHei
 	io.RenderDrawListsFn = ImGUIRenderDrawLists;
 	// io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
 	// io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
-
 
 	imGuiContext->shaderProgramID = LoadShaderFromSource(vertex_shader, fragment_shader);
 	imGuiContext->samplerUniformLoc = GetUniformLocation(imGuiContext->shaderProgramID, "sampler");

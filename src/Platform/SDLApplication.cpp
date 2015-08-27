@@ -13,8 +13,8 @@
 #include <imgui/imgui.h>
 #include <Core/Audio.hpp>
 
-SDL_Window* window;
-SDL_GLContext context;
+global_variable SDL_Window* global_window;
+global_variable SDL_GLContext global_context;
 
 int Application::Create(const char* title, uint32 width, uint32 height, bool fullscreen) {
 	this->width = width;
@@ -47,10 +47,12 @@ int Application::Create(const char* title, uint32 width, uint32 height, bool ful
 
 	SDL_Surface* screen;
 	//TODO fullscren does nothing...
-	window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
-	if (!window)
+	global_window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
+	if (!global_window)
 		LOG_ERROR(SDL_GetError());
-	context = SDL_GL_CreateContext(window);
+	global_context = SDL_GL_CreateContext(global_window);
+	
+	if (fullscreen) SDL_SetWindowFullscreen(global_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 
 	glewExperimental = true;
 	if (glewInit() != GLEW_OK) {
@@ -84,7 +86,7 @@ void Application::EndFrame() {
 	mouseWheel = 0;
 	cursorDeltaX = 0;
 	cursorDeltaY = 0;
-	SDL_GL_SwapWindow(window);
+	SDL_GL_SwapWindow(global_window);
 }
 
 float64 Application::GetTime() {
@@ -96,7 +98,7 @@ void Application::SetCursorHidden(bool isHidden) {
 }
 
 void GetWindowSize(int* width, int* height) {
-	SDL_GetWindowSize(window, width, height);
+	SDL_GetWindowSize(global_window, width, height);
 }
 
 void Application::PollEvents() {

@@ -1,8 +1,14 @@
 
 #include <Core/Common.hpp>
 #include <Core/Application.hpp>
-#include <World/World.hpp>
-#include <World/Editor.hpp>
+
+#define RAPTOR_PLATFORM_IMPLEMENTATION
+#include <Core/Platform.h>
+
+#include <Engine/Assets.hpp>
+#include <Engine/Debug.hpp>
+#include <Engine/World.hpp>
+#include <Engine/Editor.hpp>
 
 #include <Math/Geometry2D.hpp>
 #include <Math/Geometry3D.hpp>
@@ -86,222 +92,6 @@ namespace Profiler {
 		}
 		ImGui::End();
 	}
-}
-
-
-// NOTE the extra fielname field is for shaderReloading
-//I dont really care about this for now.
-//This has the potental to represent an asset file inside a pack
-//There fore in the future it is going to need to required an assetTypeID;
-//There could also be a userdata field inorder to allow custom types!
-struct Asset {
-	std::string filename;
-	std::string filenameExtra;
-	Asset();
-	Asset(const std::string& filename);
-	Asset(const std::string& filename, const std::string& filenameExtra);
-};
-
-Asset::Asset() {
-
-}
-
-Asset::Asset(const std::string& filename) {
-	this->filename = filename;
-}
-
-Asset::Asset(const std::string& filename, const std::string& filenameExtra) {
-	this->filename = filename;
-	this->filenameExtra = filenameExtra;
-}
-
-void CreateVertexBuffersForMesh(const MeshData& mesh, VertexBufferGroup& group) {
-	glGenVertexArrays(1, &group.vertexArrayID);
-	glBindVertexArray(group.vertexArrayID);
-
-	glGenBuffers(1, &group.vertexBufferID);
-	glBindBuffer(GL_ARRAY_BUFFER, group.vertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, mesh.vertexCount * sizeof(Vertex3D), mesh.vertices, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &group.elementBufferID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, group.elementBufferID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indexCount * sizeof(U32), mesh.indices, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (GLvoid*)offsetof(Vertex3D, position));
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (GLvoid*)offsetof(Vertex3D, normal));
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (GLvoid*)offsetof(Vertex3D, texCoord));
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (GLvoid*)offsetof(Vertex3D, tangent));
-	glBindVertexArray(0);
-}
-
-struct AssetTable {
-	std::vector<Asset> modelAssets;
-	std::vector<DebugModelData> models;
-
-	std::vector<Asset> shaderAssets;
-	std::vector<GLSLProgram> shaderPrograms;
-};
-
-//@GLOBALS
-global_variable AssetTable global_assetTable;
-
-U32 LoadShader(const std::string& vertexFilename, const std::string& fragmentFilename) {
-	global_assetTable.shaderPrograms.emplace_back(vertexFilename, fragmentFilename);
-	global_assetTable.shaderAssets.emplace_back(vertexFilename, fragmentFilename);
-	return global_assetTable.shaderPrograms.size();
-}
-
-U32 LoadShader(const std::string& vertexFilename, const std::string& fragmentFilename, const std::string& geometryFilename) {
-	global_assetTable.shaderPrograms.emplace_back(vertexFilename, fragmentFilename, geometryFilename);
-	global_assetTable.shaderAssets.emplace_back(vertexFilename, fragmentFilename);
-	return global_assetTable.shaderPrograms.size();
-}
-
-void ShowAssetExplorer(AssetTable& table) {
-	ImGui::Begin("Asset Explorer");
-	if (ImGui::TreeNode("Assets")) {
-		if (ImGui::TreeNode("Models")) {
-			for (auto i = 0; i < table.modelAssets.size(); i++) {
-				auto& asset = table.modelAssets[i];
-				ImGui::Text(asset.filename.c_str());
-				ImGui::SameLine();
-				ImGui::PushID(i);
-				if (ImGui::SmallButton("Reload##%d")) {
-					auto& model = table.models[i];
-					model.materials.clear();
-					model.meshes.clear();
-					model.meshMaterialIndex.clear();
-					model.meshVertexBuffers.clear();
-					model.LoadFromFile(asset.filename);
-				}
-				ImGui::PopID();
-			}
-			ImGui::TreePop();
-		}
-
-		if (ImGui::TreeNode("Shaders")) {
-			for (auto i = 0; i < table.shaderPrograms.size(); i++) {
-				auto& asset = table.shaderAssets[i];
-				ImGui::Text(asset.filename.c_str());
-				ImGui::SameLine();
-				ImGui::PushID(i);
-				if (ImGui::SmallButton("Reload")) {
-					auto& shader = table.shaderPrograms[i];
-					shader.Dispose();
-					shader.Load(asset.filename, asset.filenameExtra);
-				}
-				ImGui::PopID();
-			}
-			ImGui::TreePop();
-		} 
-
-
-		ImGui::TreePop();
-	}
-	ImGui::End();
-}
-
-class DebugMesh {
-public:
-	GLuint vertexArrayID;
-	Vertex3D* vertices;
-	U32* indices;
-	U32 vertexCount;
-	U32 indexCount;
-
-private:
-	GLuint vertexBufferID;
-	GLuint elementBufferID;
-	U8* memory;
-
-public:
-	DebugMesh();
-	DebugMesh(U32 vertexCount, U32 indexCount);
-	~DebugMesh();
-
-	void Init(U32 vertexCount, U32 indexCount);
-	void InitGPU();
-};
-
-DebugMesh::DebugMesh() {
-	vertexCount = 0;
-}
-
-DebugMesh::DebugMesh(U32 vertexCount, U32 indexCount) {
-	Init(vertexCount, indexCount);
-}
-
-void DebugMesh::Init(U32 vertexCount, U32 indexCount) {
-	this->vertexCount = vertexCount;
-	this->indexCount = indexCount;
-	auto verticesMemorySize = sizeof(Vertex3D) * vertexCount;
-	auto indiciesMemorySize = sizeof(U32) * indexCount;
-	memory = new U8[verticesMemorySize + indiciesMemorySize];
-	vertices = (Vertex3D*)memory;
-	indices = (U32*)(memory + verticesMemorySize);
-}
-
-void CalculateNormals(DebugMesh& mesh) {
-	for (uint32 i = 0; i < mesh.vertexCount; i++) {
-		mesh.vertices[i].normal = Vector3(0.0f, 0.0f, 0.0f);
-	}
-	for (uint32 i = 0; i < mesh.indexCount; i += 3) {
-		uint32 index0 = mesh.indices[i + 0];
-		uint32 index1 = mesh.indices[i + 1];
-		uint32 index2 = mesh.indices[i + 2];
-		Vector3 vert1 = mesh.vertices[index1].position - mesh.vertices[index0].position;
-		Vector3 vert2 = mesh.vertices[index2].position - mesh.vertices[index0].position;
-
-		Vector3 normal = vert1.Cross(vert2);
-		normal.Normalize();
-		mesh.vertices[index0].normal += normal;
-		mesh.vertices[index1].normal += normal;
-		mesh.vertices[index2].normal += normal;
-	}
-	for (uint32 i = 0; i < mesh.vertexCount; i++) {
-		mesh.vertices[i].normal.Normalize();
-	}
-}
-
-void DebugMesh::InitGPU() {
-	glGenVertexArrays(1, &vertexArrayID);
-	glBindVertexArray(vertexArrayID);
-
-	glGenBuffers(1, &vertexBufferID);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-	glBufferData(GL_ARRAY_BUFFER, vertexCount * sizeof(Vertex3D), vertices, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &elementBufferID);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementBufferID);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * sizeof(U32), indices, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (GLvoid*)offsetof(Vertex3D, position));
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (GLvoid*)offsetof(Vertex3D, normal));
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex3D), (GLvoid*)offsetof(Vertex3D, texCoord));
-	glBindVertexArray(0);
-}
-
-DebugMesh::~DebugMesh() {
-	if (memory != nullptr) {
-		delete[] memory;
-	}
-	if (vertexArrayID != 0) {
-		glDeleteVertexArrays(1, &vertexArrayID);
-		glDeleteBuffers(1, &vertexBufferID);
-		glDeleteBuffers(1, &elementBufferID);
-	}
-}
-
-void Draw(const DebugMesh& mesh) {
-	glBindVertexArray(mesh.vertexArrayID);
-	glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, 0);
 }
 
 
@@ -415,33 +205,11 @@ void MakeTerrain(DebugMesh& mesh, float width, float height, U32 rows, U32 cols)
 		}
 	}
 
-	CalculateNormals(mesh);
+	CalculateNormals(mesh.vertices, mesh.vertexCount, mesh.indices, mesh.indexCount);
 
 	mesh.InitGPU();
 }
 
-void LoadModel(const std::string& filename) { 
-	global_assetTable.models.emplace_back(DebugModelData());
-	auto& model = global_assetTable.models[global_assetTable.models.size() - 1];
-	model.LoadFromFile(filename);
-	global_assetTable.modelAssets.emplace_back(filename);
-}
-
-U32 LoadShaderProgram(const std::string& vertexFilename, const std::string& fragmentFilename) {
-	global_assetTable.shaderPrograms.emplace_back(GLSLProgram(vertexFilename, fragmentFilename));
-	global_assetTable.shaderAssets.emplace_back(vertexFilename, fragmentFilename);
-	return global_assetTable.shaderPrograms.size() - 1;
-}
-
-GLSLProgram& GetShader(U32 assetID) {
-	return global_assetTable.shaderPrograms[assetID - 1];
-}
-
-GLSLProgram& GetAndUseShader(U32 assetID) {
-	auto& result = global_assetTable.shaderPrograms[assetID - 1];
-	result.Use();
-	return result;
-}
 
 struct Terrain {
 	DebugMesh mesh;
@@ -543,7 +311,25 @@ void AddRandomLights(World& world, U32 count) {
 	world.pointLightCount = count;
 }
 
-void DrawWorld(World& world, GLuint shader) {
+void StencilPass() {
+	glEnable(GL_DEPTH_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilMask(0xFF);
+}
+
+void BeginOutlinePass() {
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+	glStencilMask(0x00);
+	glDisable(GL_DEPTH_TEST);
+}
+
+void EndOutlinePass() {
+	glStencilMask(0xFF);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void DrawWorld (World& world, GLuint shader) {
 	Matrix4 modelMatrix;
 	modelMatrix = Matrix4::Identity();
 	glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
@@ -558,6 +344,22 @@ void DrawWorld(World& world, GLuint shader) {
 	}
 }
 
+void DrawWorld(World& world, Editor& editor, GLuint shader) {
+	Matrix4 modelMatrix;
+	modelMatrix = Matrix4::Identity();
+	glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
+	Draw(G_Terrain);
+
+	Transform3D* transforms = (Transform3D*)world.components[COMPONENT_TRANSFORM];
+	U32* modelIDs = (U32*)world.components[COMPONENT_MODELID];
+	for (auto i = 0; i < world.entityCount; i++) {
+		modelMatrix = TransformToMatrix(transforms[i]);
+		glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
+		Draw(global_assetTable.models[modelIDs[i]]);
+	}
+}
+
+#if 0
 void RenderWorld(World& world, Raptor::DeferredShader& shader, Raptor::Camera& camera) {
 	BeginDeferredShadingGeometryPass(shader, camera);
 	DrawWorld(world, shader.geometeryPassProgram);
@@ -572,6 +374,7 @@ void RenderWorld(World& world, Raptor::DeferredShader& shader, Raptor::Camera& c
 	Raptor::EndDeferredShadingLightingPass(shader);
 	DebugRenderWorldLights(world, global_debugLightShader, camera);
 }
+#endif
 
 void RenderWorld(World& world, FowardShader& shader, DepthShader& depthShader, Camera& camera) {
 	BeginDepthShadingPass(depthShader);
@@ -613,13 +416,17 @@ void CreateConfigUniformBuffer(GLuint* uniformBufferID) {
 void UpdateConfigUniforms(GLuint uniformBufferID) {
 	glBindBuffer(GL_UNIFORM_BUFFER, uniformBufferID);
 	GLvoid* buffer = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-	memcpy(buffer, &global_GPUConfig, sizeof(GPUConfig));;
+	memcpy(buffer, &global_GPUConfig, sizeof(GPUConfig));
 	glUnmapBuffer(GL_UNIFORM_BUFFER);
 }
+
+
 
 void MainLoop(Application* app) {
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+
+	if (PlatformGetKey(KEY_Q) && PlatformGetKey(KEY_LCTRL)) app->isRunning = false;
 
 	app->SetCursorHidden(false);
 	if (app->IsButtonDown(MOUSE_BUTTON_RIGHT)) {
@@ -651,7 +458,6 @@ void MainLoop(Application* app) {
 	ImGui::End();
 
 	ShowWorldEditor(global_world, global_editor);
-	ShowEntityInspector(global_world, global_editor);
 
 	ImGui::Text("Camera Position [%f, %f, %f]", global_editor.camera.position.x, global_editor.camera.position.y, global_editor.camera.position.z);
 	ImGui::Text("Yaw: %f", global_editor.camera.yaw);
@@ -661,7 +467,7 @@ void MainLoop(Application* app) {
 
 #if 1
 int main () {
-    Application app("Raptor Mesh Viewer", 1280, 720, false);
+    Application app("Raptor Mesh Viewer", 1920, 1080, true);
 	glEnable(GL_DEPTH_TEST);
 
 	CreateConfigUniformBuffer(&global_uniformBufferID);
@@ -689,20 +495,20 @@ int main () {
 
 #endif
 
-	AddRandomLights(global_world, 64);
+	//AddRandomLights(global_world, 64);
 	InitDepthShader(global_depthShader, 2048, 2048);
 	InitFowardShader(global_fowardShader);
 	InitDeferredShader(global_deferredShader, app.GetWidth(), app.GetHeight());
 	glUseProgram(global_deferredShader.lightingPassProgram);
 	glUniform1i(GetUniformLocation(global_deferredShader.lightingPassProgram, "pointLightCount"), global_world.pointLightCount);
 
-	auto& light = (PointLight&)global_world.components[COMPONENT_POINTLIGHT][0];
-	light.position = Vector3(10.0f, 10.0f, 20.0f);
-	light.color = Vector3(1.0f, 1.0f, 1.0f);
-	light.linear = 0.027f;
-	light.quadratic = 0.0028f;
-	GLfloat lightMax = std::fmaxf(std::fmaxf(light.color.x, light.color.y), light.color.z);
-	light.radius = (-light.linear + std::sqrtf(light.linear * light.linear - 4 * light.quadratic * (1.0 - (256.0 / 5.0) * lightMax))) / (2 * light.quadratic);
+	//auto& light = (PointLight&)global_world.components[COMPONENT_POINTLIGHT][0];
+	//light.position = Vector3(10.0f, 10.0f, 20.0f);
+	//light.color = Vector3(1.0f, 1.0f, 1.0f);
+	//light.linear = 0.027f;
+	//light.quadratic = 0.0028f;
+	//GLfloat lightMax = std::fmaxf(std::fmaxf(light.color.x, light.color.y), light.color.z);
+	//light.radius = (-light.linear + std::sqrtf(light.linear * light.linear - 4 * light.quadratic * (1.0 - (256.0 / 5.0) * lightMax))) / (2 * light.quadratic);
 
 	global_debugLightShader = LoadShaderFromFile("shaders/DebugLights.vert", "shaders/DebugLights.frag");
 

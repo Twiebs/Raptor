@@ -64,6 +64,7 @@ namespace Raptor {
 	};
 
 	void BindMaterial(const Material& material);
+	void CalculateNormals(Vertex3D* vertices, U32 vertexCount, U32* indices, U32 indexCount);
 
 	struct DebugModelData {
 		std::vector<MeshData> meshes;
@@ -92,6 +93,11 @@ namespace Raptor {
 
 	void UpdateCamera(Camera& camera);
 	void FPSCameraControlUpdate(Application* app, Camera& camera);
+
+	inline void PushMatrix(U32 location, const Matrix4& matrix);
+	inline void PushMatrix(U32 location, const Matrix4& matrix) {
+		glUniformMatrix4fv(location, 1, GL_FALSE, &matrix[0][0]);
+	}
 
 	struct PointLight {
 		Vector3 position;
@@ -125,7 +131,7 @@ namespace Raptor {
 	void BeginDepthShadingPass(DepthShader& shader);
 	void EndDepthShadingPass();
 
-	//Remove this stuff
+	// Remove this stuff
 	void DepthShadingPushLight(PointLight& light, DepthShader& shader);
 
 	// =======================================

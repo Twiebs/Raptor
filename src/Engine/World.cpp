@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include <imgui/imgui.h>
+#include <Engine/Assets.hpp>
 
 namespace Raptor {
 
@@ -47,6 +48,39 @@ void CreateEntity(World& world) {
 }
 void DestroyEntity(World& world) {
 	world.entityCount--;
+}
+
+void UpdateWorld(World& world) {
+}
+
+void DrawEntities(World& world, GLuint shader) {
+	Matrix4 modelMatrix = Matrix4::Identity();
+	glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
+
+	Transform3D* transforms = (Transform3D*)world.components[COMPONENT_TRANSFORM];
+	U32* modelIDs = (U32*)world.components[COMPONENT_MODELID];
+	for (auto i = 0; i < world.entityCount; i++) {
+		modelMatrix = TransformToMatrix(transforms[i]);
+		glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
+		Draw(global_assetTable.models[modelIDs[i]]);
+	}
+}
+
+void DrawLights(World& world, GLuint shader) {
+	PointLight* pointLights = (PointLight*)world.components[COMPONENT_POINTLIGHT];
+	for (auto i = 0; i < world.pointLightCount; i++) {
+		PushLight(pointLights[i], i, shader);
+	}
+}
+
+void RenderWorld(World& world, DeferredShader& shader, Camera& camera) {
+	BeginDeferredShadingGeometryPass(shader, camera);
+	DrawEntities(world, shader.geometeryPassProgram);
+	EndDeferredShadingGeometeryPass();
+
+	BeginDeferredShadingLightingPass(shader, camera);
+	DrawLights(world, shader.lightingPassProgram);
+	EndDeferredShadingLightingPass(shader);
 }
 
 void CreateTestWorld(World& world) {
@@ -182,6 +216,7 @@ void LoadWorld(World& world, const std::string& filename) {
 		SDL_RWseek(file, info.componentMemorySize[i] * info.initalComponentCount[i], RW_SEEK_CUR);
 	}
 
+	world.pointLightCount = 64;
 	SDL_RWclose(file);
 }
 
