@@ -1,8 +1,4 @@
 #pragma once
-
-//NOTE this is fucking stupid!
-#include <Core/Application.hpp>
-
 #include <GL/glew.h>
 #include <Math/Matrix4.hpp>
 #include <Math/Vector3.hpp>
@@ -10,6 +6,7 @@
 
 #include <Graphics/GLSLProgram.hpp>
 #include <Graphics/Texture.hpp>
+#include <Graphics/ModelData.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -31,37 +28,7 @@ namespace Raptor {
 
 	Matrix4 TransformToMatrix(const Transform3D& transform);
 
-	struct Vertex3D {
-		Vector3 position;
-		Vector3 normal;
-		Vector2 texCoord;
-		Vector3 tangent;
-	};
-
-	struct VertexBufferGroup {
-		GLuint vertexArrayID = 0;
-		GLuint vertexBufferID = 0;
-		GLuint elementBufferID = 0;
-
-		~VertexBufferGroup();
-	};
-
-	struct MeshData {
-		U32 vertexCount, indexCount;
-		Vertex3D* vertices;
-		U32* indices;
-		U8* memblock;
-	};
-
-	void ImportMeshData(MeshData& data, aiMesh* ai_mesh);
 	void CreateVertexBuffersForMeshData(const MeshData& mesh, VertexBufferGroup& group);
-
-	struct Material {
-		GLuint diffuseMapID = 0;
-		GLuint specularMapID = 0;
-		GLuint normalMapID = 0;
-		~Material();
-	};
 
 	void BindMaterial(const Material& material);
 	void CalculateNormals(Vertex3D* vertices, U32 vertexCount, U32* indices, U32 indexCount);
@@ -78,7 +45,7 @@ namespace Raptor {
 	void Draw(DebugModelData& model);
 
 	struct Camera {
-		float viewportWidth, viewportHeight;
+		float viewportWidth = 1280, viewportHeight = 720;
 		float yaw= -90, pitch = 0;
 		float nearClip = 0.1f, farClip = 100.0f;
 
@@ -86,13 +53,12 @@ namespace Raptor {
 		Vector3 front;
 		Matrix4 view;
 		Matrix4 projection;
-
 		Camera();
 		Camera(const Vector3& position, float viewportWidth, float viewportHeight);
 	};
 
 	void UpdateCamera(Camera& camera);
-	void FPSCameraControlUpdate(Application* app, Camera& camera);
+	void FPSCameraControlUpdate(Camera& camera);
 
 	inline void PushMatrix(U32 location, const Matrix4& matrix);
 	inline void PushMatrix(U32 location, const Matrix4& matrix) {

@@ -5,7 +5,7 @@
 #include <malloc.h>
 #include <cstring>
 
-#ifdef SDL_PLATFORM
+#ifdef PLATFORM_SDL
 #define KEY_UNKOWN 0
 #define KEY_A 4
 #define KEY_B 5

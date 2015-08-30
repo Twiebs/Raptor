@@ -1,4 +1,4 @@
-#ifdef SDL_PLATFORM
+#ifdef PLATFORM_SDL
 
 #include <Core/Application.hpp>
 
@@ -10,7 +10,7 @@
 
 #define GLEW_STATIC
 #include <GL/glew.h>
-#include <imgui/imgui.h>
+#include <Graphics/imgui.h>
 #include <Core/Audio.hpp>
 
 global_variable SDL_Window* global_window;

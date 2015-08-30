@@ -1,9 +1,7 @@
-
-#include <Core/Application.hpp>
 #include <Core/Platform.h>
 
 #include <Graphics/Render3D.hpp>
-#include <Graphics/GUI.hpp>
+#include <imgui/imgui.h>
 
 #include <Math/Random.hpp>
 
@@ -38,7 +36,6 @@ using namespace Raptor;
 global_variable World global_world;
 global_variable Editor global_editor;
 global_variable DeferredShader global_DeferredShader;
-global_variable GUIContext global_GUIContext;
 
 void RenderTest(Camera& camera) {
 	static GLuint basicShader = LoadShaderFromFile("shaders/Basic.vert", "shaders/Basic.frag");
@@ -83,7 +80,6 @@ void MouseCast(Camera& camera) {
 	int cursorX, cursorY;
 	int width, height;
 	PlatformGetCursorPos(&cursorX, &cursorY);
-	GetWindowSize(&width, &height);
 
 	float x = (2.0f * cursorX) / ((float)width - 1.0f);
 	float y = 1.0f - (2.0f * cursorY) / (float)height;
@@ -95,24 +91,23 @@ void Raycast(Vector3& origin);
 
 // Dont do this anymore!
 // Lets make the app only functions as it should have originaly been!
-void MainLoop(Application* app) {
+void MainLoop(F64 deltaTime) {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	if (app->IsKeyDown(KEY_ESCAPE)) {
+	if (PlatformGetKey(KEY_ESCAPE)) {
 		memset(global_editor.isSelected, 0, 64);
 		global_editor.selectedCount = 0;
 	}
 
-
-	if (PlatformGetKey(KEY_Q) && PlatformGetKey(KEY_LCTRL)) app->isRunning = false;
+	if (PlatformGetKey(KEY_Q) && PlatformGetKey(KEY_LCTRL)) PlatformExit();
 
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-	app->SetCursorHidden(false);
-	if (app->IsButtonDown(MOUSE_BUTTON_RIGHT)) {
-		app->SetCursorHidden(true);
-		FPSCameraControlUpdate(app, global_editor.camera);
+	//app->SetCursorHidden(false);
+	if (PlatformGetButton(MOUSE_BUTTON_RIGHT)) {
+		//app->SetCursorHidden(true);
+		FPSCameraControlUpdate(global_editor.camera);
 	}
 
 	UpdateCamera(global_editor.camera);
@@ -121,43 +116,53 @@ void MainLoop(Application* app) {
 	RenderWorld(global_world, global_DeferredShader, global_editor.camera);
 
 	OutlineSelected(global_world, global_editor, global_editor.camera);
-	//RenderTest(global_editor.camera);
 
-	GUIBeginFrame(&global_GUIContext, app);
-	static bool lastState = true;
-	static bool showEditor = false;
-	auto keydown = PlatformGetKey(KEY_F1);	
-	if (keydown && lastState != showEditor) {
-		lastState = showEditor;
-		showEditor = !showEditor;
-	}
-
-	ImGui::SetNextWindowCollapsed(!showEditor);
+	ImGui::BeginFrame();
 	ShowWorldEditor(global_world, global_editor);
-	GUIEndFrame();
+	ImGui::EndFrame();
+
+	//ImGui::BeginFrame();
+	//ImGui::Begin("Camera");
+	//ImGui::Text("Position: [%f, %f, %f]", global_editor.camera.position.x, global_editor.camera.position.y, global_editor.camera.position.z);
+	//ImGui::Text("Pitch: %f", global_editor.camera.pitch);
+	//ImGui::Text("Yaw: %f", global_editor.camera.yaw);
+	//ImGui::End();
+
+	//static bool lastState = true;
+	//static bool showEditor = false;
+	//auto keydown = PlatformGetKey(KEY_F1);	
+	//if (keydown && lastState != showEditor) {
+	//	lastState = showEditor;
+	//	showEditor = !showEditor;
+	//}
+
+	//ImGui::SetNextWindowCollapsed(!showEditor);
+	//ShowWorldEditor(global_world, global_editor);
+	//ImGui::EndFrame();
 }
 
 int main() {
-	Application app("WorldTest", 1920, 1080);
+	PlatformCreate("World Test");
 
 	LoadWorld(global_world, "test.world");
 	LoadEditor(global_editor, "test.editor");
 	LoadModel("models/containers/crate.obj");
 	LoadModel("models/Pillars/pillar/pillar.obj");
 
+	int width, height;
+	PlatformGetSize(&width, &height);
 	global_editor.camera.position = Vector3(128.0f, 2.0f, 128.0f);
-	global_editor.camera.viewportWidth = app.GetWidth();
-	global_editor.camera.viewportHeight = app.GetHeight();
+	global_editor.camera.viewportWidth = width;
+	global_editor.camera.viewportHeight = height;
 	global_editor.camera.nearClip = 0.1f;
 	global_editor.camera.farClip = 1000.0f;
 
-	int width, height;
-	GUIContextInit(&global_GUIContext, app.GetWidth(), app.GetHeight());
+	ImGui::Init();
 
-	InitDeferredShader(global_DeferredShader, app.GetWidth(), app.GetHeight());
+	InitDeferredShader(global_DeferredShader, width, height);
 	glUseProgram(global_DeferredShader.lightingPassProgram);
 	glUniform1i(GetUniformLocation(global_DeferredShader.lightingPassProgram, "pointLightCount"), global_world.pointLightCount);
 
-	app.Run(MainLoop);
+	PlatformRun(MainLoop);
 	return 0;
 }

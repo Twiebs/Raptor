@@ -1,6 +1,6 @@
 #include "Editor.hpp"
 
-#include <Graphics/GUI.hpp>
+#include <Graphics/imgui.h>
 #include <Core/Platform.h>
 
 namespace Raptor {

@@ -1,5 +1,6 @@
 #include "Render3D.hpp"
 #include <Math/Random.hpp>
+#include <Core/Platform.h>
 
 namespace Raptor {
 
@@ -23,41 +24,6 @@ namespace Raptor {
 		glDeleteBuffers(1, &elementBufferID);
 	}
 
-	void ImportMeshData(MeshData& data, aiMesh* ai_mesh) {
-		assert(data.memblock == nullptr);
-		data.vertexCount = ai_mesh->mNumVertices;
-		data.indexCount = ai_mesh->mNumFaces * 3;
-		auto verticesMemorySize = sizeof(Vertex3D) * data.vertexCount;
-		auto indiciesMemorySize = sizeof(U32) * data.indexCount;
-		data.memblock = new U8[verticesMemorySize + indiciesMemorySize];
-		data.vertices = (Vertex3D*)data.memblock;
-		data.indices = (U32*)(data.memblock + verticesMemorySize);
-
-		if (!ai_mesh->mTextureCoords[0]) {
-			LOG_WARNING("Mesh Does not contain textureCoordiantes!");
-		}
-
-		for (auto i = 0; i < ai_mesh->mNumVertices; i++) {
-			data.vertices[i].position.x = ai_mesh->mVertices[i].x;
-			data.vertices[i].position.y = ai_mesh->mVertices[i].y;
-			data.vertices[i].position.z = ai_mesh->mVertices[i].z;
-			data.vertices[i].normal.x = ai_mesh->mNormals[i].x;
-			data.vertices[i].normal.y = ai_mesh->mNormals[i].y;
-			data.vertices[i].normal.z = ai_mesh->mNormals[i].z;
-			//TODO dont check this in the loop
-			if (ai_mesh->mTextureCoords[0]) {
-				data.vertices[i].texCoord.x = ai_mesh->mTextureCoords[0][i].x;
-				data.vertices[i].texCoord.y = ai_mesh->mTextureCoords[0][i].y;
-			}
-		}
-
-		for (auto index = 0, i = 0; i < ai_mesh->mNumFaces * 3; index++, i += 3) {
-			data.indices[i + 0] = ai_mesh->mFaces[index].mIndices[0];
-			data.indices[i + 1] = ai_mesh->mFaces[index].mIndices[1];
-			data.indices[i + 2] = ai_mesh->mFaces[index].mIndices[2];
-		}
-	}
-
 
 	Material::~Material() {
 		glDeleteTextures(1, &diffuseMapID);
@@ -74,84 +40,8 @@ namespace Raptor {
 		glBindTexture(GL_TEXTURE_2D, material.normalMapID);
 	}
 
-
 	void DebugModelData::LoadFromFile(const std::string& filename) {
-		Assimp::Importer importer;
-		auto scene = importer.ReadFile(ASSET_DIR + filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
-		if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-			LOG_ERROR("Assimp failed to load file (" << filename << ") " << importer.GetErrorString());
-			return;
-		}
 
-		meshes.resize(scene->mNumMeshes);
-		meshMaterialIndex.resize(scene->mNumMeshes);
-		meshVertexBuffers.resize(scene->mNumMeshes);
-		for (auto i = 0; i < scene->mNumMeshes; i++) {
-			meshes[i] = MeshData();
-			auto aiMesh = scene->mMeshes[i];
-			meshMaterialIndex[i] = aiMesh->mMaterialIndex;
-			ImportMeshData(meshes[i], aiMesh);
-			CreateVertexBuffersForMeshData(meshes[i], meshVertexBuffers[i]);
-		}
-
-		auto directory = filename.substr(0, filename.find_last_of("/") + 1);
-		materials.resize(scene->mNumMaterials);
-
-		for (auto i = 0; i < scene->mNumMaterials; i++) {
-			auto material = scene->mMaterials[i];
-
-			auto diffuseTextureCount = material->GetTextureCount(aiTextureType_DIFFUSE);
-			if (diffuseTextureCount > 0) {
-				aiString texturePath;
-				material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
-				if (strcmp(texturePath.C_Str(), "")) {
-					materials[i].diffuseMapID = CreateTextureFromFile(directory + texturePath.C_Str());
-				}
-				else {
-					LOG_WARNING("Diffuse Texure for: " << filename << " has an invalid filename");
-				}
-			}
-			else {
-				LOG_WARNING("Model: " << filename << " does not have a diffuse texture!");
-			}
-
-			auto specularTextureCount = material->GetTextureCount(aiTextureType_SPECULAR);
-			if (specularTextureCount > 0) {
-				aiString texturePath;
-				material->GetTexture(aiTextureType_SPECULAR, 0, &texturePath);
-				if (strcmp(texturePath.C_Str(), "")) {
-					materials[i].specularMapID = CreateTextureFromFile(directory + texturePath.C_Str());
-				}
-				else {
-					LOG_WARNING("Diffuse Texure for: " << filename << " has an invalid filename");
-				}
-			}
-			else {
-				LOG_WARNING("Model: " << filename << " does not have a specular texture!");
-			}
-
-			if (material->GetTextureCount(aiTextureType_HEIGHT)) {
-				aiString texturePath;
-				material->GetTexture(aiTextureType_HEIGHT, 0, &texturePath);
-				materials[i].normalMapID = CreateTextureFromFile(directory + texturePath.C_Str());
-			}
-			else {
-				LOG_WARNING("Model: " << filename << " does not have a normal map");
-			}
-
-			//for (auto j = 0; j < matDiffuseCount; j++) {
-			//	aiString texturePath;
-			//	material->GetTexture(aiTextureType_DIFFUSE, j, &texturePath);
-			//	model->diffuseTextures[diffuseIndex++] = (CreateTextureFromFile(directory + texturePath.C_Str()));
-			//}
-
-			//for (auto j = 0; j < matSpecularCount; j++) {
-			//	aiString texturePath;
-			//	material->GetTexture(aiTextureType_SPECULAR, j, &texturePath);
-			//	model->specularTextures[specularIndex++] = (CreateTextureFromFile(directory + texturePath.C_Str()));
-			//}
-		}
-		importer.FreeScene();
 	}
 
 	void Draw(DebugModelData& model) {
@@ -209,7 +99,6 @@ namespace Raptor {
 		camera.projection = Matrix4::Perspective(45.0f, camera.viewportWidth / camera.viewportHeight, camera.nearClip, camera.farClip);
 	}
 
-
 	void CalculateNormals(Vertex3D* vertices, U32 vertexCount, U32* indices, U32 indexCount) {
 		for (U32 i = 0; i < vertexCount; i++)
 			vertices[i].normal = Vector3(0.0f, 0.0f, 0.0f);
@@ -232,20 +121,20 @@ namespace Raptor {
 		}
 	}
 
-	void FPSCameraControlUpdate(Application* app, Camera& camera) {
-		camera.yaw += app->GetCursorDeltaX();
-		camera.pitch -= app->GetCursorDeltaY();
+	void FPSCameraControlUpdate(Camera& camera) {
+		int dx, dy; PlatformGetCursorDelta(&dx, &dy);
+		camera.yaw += dx;
+		camera.pitch -= dy;
 
 		const static float movementSpeed = 0.3f;
 		auto speed = movementSpeed;
-		if (app->IsKeyDown(KEY_LSHIFT)) speed *= 3.0f;
-		if (app->IsKeyDown(KEY_W)) camera.position += speed * camera.front;
-		if (app->IsKeyDown(KEY_S)) camera.position -= speed * camera.front;
-		if (app->IsKeyDown(KEY_A)) camera.position -= camera.front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize() * speed;
-		if (app->IsKeyDown(KEY_D)) camera.position += camera.front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize()  * speed;
-		if (app->IsKeyDown(KEY_SPACE)) camera.position.y += speed;
-		if (app->IsKeyDown(KEY_LCTRL)) camera.position.y -= speed;
-
+		if (PlatformGetKey(KEY_LSHIFT)) speed *= 3.0f;
+		if (PlatformGetKey(KEY_W)) camera.position += speed * camera.front;
+		if (PlatformGetKey(KEY_S)) camera.position -= speed * camera.front;
+		if (PlatformGetKey(KEY_A)) camera.position -= camera.front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize() * speed;
+		if (PlatformGetKey(KEY_D)) camera.position += camera.front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize()  * speed;
+		if (PlatformGetKey(KEY_SPACE)) camera.position.y += speed;
+		if (PlatformGetKey(KEY_LCTRL)) camera.position.y -= speed;
 		camera.pitch = MathUtils::Clamp(camera.pitch, -89.0f, 89.0f);
 	}
 
@@ -561,7 +450,7 @@ namespace Raptor {
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 		int width, height;
-		GetWindowSize(&width, &height);
+		PlatformGetSize(&width, &height);
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, shader.gBuffer);
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // Write to default framebuffer
 		glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);

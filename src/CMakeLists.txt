@@ -13,7 +13,7 @@ set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML5 Windows Linux Mac Android
 if(EMSCRIPTEN)
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
 else(EMSCRPITEN)
-  add_definitions(-DSDL_PLATFORM)
+  add_definitions(-DPLATFORM_SDL)
 endif(EMSCRIPTEN)
 
 #EMSCRIPTEN allready handles these and MSVC does its own thing...
@@ -97,12 +97,12 @@ set(CORE_SRCS
   Core/Application.hpp
   Core/Audio.cpp
   Core/Audio.hpp
+  Core/Platform.cpp
   Core/Platform.h
   Core/Tasks.hpp
   Core/Tasks.cpp
   Platform/SDLApplication.cpp
   Platform/EmscriptenApplication.cpp
-  imgui/imgui.cpp
 )
 source_group(Core FILES ${CORE_SRCS})
 
@@ -127,17 +127,22 @@ set(MATH_SRCS
 source_group(Math FILES ${MATH_SRCS})
 
 set(GRAPHICS_SRCS
-	  Graphics/GUI.cpp
-	  Graphics/GUI.hpp
-    Graphics/Texture.cpp
-    Graphics/Texture.hpp
-    Graphics/Color.hpp
-    Graphics/DEBUGRenderer.cpp
-    Graphics/DEBUGRenderer.hpp
-    Graphics/GLSLProgram.cpp
-    Graphics/GLSLProgram.hpp
-	  Graphics/Render3D.hpp
-	  Graphics/Render3D.cpp
+	Graphics/Texture.cpp
+	Graphics/Texture.hpp
+	Graphics/Color.hpp
+	Graphics/DEBUGRenderer.cpp
+	Graphics/DEBUGRenderer.hpp
+	Graphics/GLSLProgram.cpp
+	Graphics/GLSLProgram.hpp
+	Graphics/Render3D.hpp
+	Graphics/Render3D.cpp
+	Graphics/ModelData.cpp
+	Graphics/ModelData.hpp
+	Graphics/imgui.cpp
+	Graphics/imgui_draw.cpp
+	Graphics/imgui_demo.cpp
+	Graphics/imgui_user.cpp
+	Graphics/imgui_user.h
 )
 source_group(Graphics FILES ${GRAPHICS_SRCS})
 
@@ -155,13 +160,17 @@ source_group(Engine FILES ${ENGINE_SRCS})
 
 add_library(RaptorEngine STATIC ${CORE_SRCS} ${MATH_SRCS} ${GRAPHICS_SRCS} ${ENGINE_SRCS})
 
-
-
 add_executable(WorldTest Tests/WorldTest.cpp )
 target_link_libraries(WorldTest RaptorEngine ${LIBS})
 
 add_executable(MeshViewer Tools/MeshViewer.cpp)
 target_link_libraries(MeshViewer RaptorEngine ${LIBS})
+
+add_executable(ModelViewer Tools/ModelViewer.cpp)
+target_link_libraries(ModelViewer RaptorEngine ${LIBS})
+
+add_executable(Manhattan Manhattan/Main.cpp)
+target_link_libraries(Manhattan RaptorEngine ${LIBS})
 
 set(EMSCRIPTEN_ASSET_PACK_FLAG "--preload-file ../Assets")
 

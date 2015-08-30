@@ -33,4 +33,14 @@ void LoadModel(const std::string& filename) {
 	model.LoadFromFile(filename);
 }
 
+void ImportModel(DebugModelData* model, const std::string& filename) {
+
+}
+
+void ImportModel(const std::string& filename) {
+	
+}
+
+
+
 }
