@@ -1,0 +1,44 @@
+cmake_minimum_required(VERSION 3.3)
+project(Raptor)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/Modules/")
+add_definitions(-DPLATFORM_SDL)
+
+if(NOT EMSCRIPTEN AND NOT MSVC)
+  foreach(lib OpenGL GLEW SDL2 SDL2_mixer SDL2_net ASSIMP)
+    find_package(${lib} REQUIRED)
+    string(TOUPPER ${lib} lib)
+    if(NOT ${lib}_FOUND)
+      message("Could not find" ${lib}! FATAL_ERROR)
+    endif(NOT ${lib}_FOUND)
+    list(APPEND INCS ${${lib}_INCLUDE_DIRS})
+    list(APPEND LIBS ${${lib}_LIBRARIES})
+    list(APPEND LIBS ${${lib}_LIBRARY})
+  endforeach(lib GLEW SDL)
+endif()
+
+if(MSVC)
+  include_directories(../include)
+  link_directories(../lib)
+  file(GLOB RELEASE_LIBS ../lib/Release)
+  file(GLOB DEBUG_LIBS ../lib/Debug)
+  set(LIBS
+    opengl32.lib
+    glew32s.lib
+    SOIL.lib
+    SDL2.lib
+    SDL2_image.lib
+    SDL2_mixer.lib
+    SDL2_net.lib
+    assimpd.lib
+    BulletCollision.lib
+    BulletDynamics.lib
+    LinearMath.lib
+  )
+endif(MSVC)
+
+add_subdirectory(src)
+add_subdirectory(tests)
+add_subdirectory(tools)
