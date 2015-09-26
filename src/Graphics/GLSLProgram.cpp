@@ -1,7 +1,6 @@
 #include "GLSLProgram.hpp"
 
 #include <fstream>
-#include <string>
 
 
 GLSLProgram::GLSLProgram() {
@@ -123,8 +122,11 @@ GLuint CompileShader(const std::string& filename, GLenum shaderType) {
 
 	stream.close();
 
+    return CompileShader(shaderSource.str().c_str(), shaderType);
+
+#if 0
 	GLuint shaderID = glCreateShader(shaderType);
-	glShaderSource(shaderID, 1, (const GLchar* const*)(shaderSource.str().c_str()), NULL);
+	glShaderSource(shaderID, 1, (const char*)(shaderSource.str().c_str()), NULL);
 	glCompileShader(shaderID);
 	GLint success;
 	GLchar infoLog[GLSL_LOG_SIZE];
@@ -136,6 +138,7 @@ GLuint CompileShader(const std::string& filename, GLenum shaderType) {
 		return 0;
 	}
 	return shaderID;
+#endif
 }
 
 GLuint CompileShader(const char* source, GLenum shaderType) {

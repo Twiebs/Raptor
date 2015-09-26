@@ -8,10 +8,10 @@
 #include <Graphics/Texture.hpp>
 #include <Graphics/ModelData.hpp>
 
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/mesh.h>
-#include <assimp/scene.h>
+//#include <assimp/Importer.hpp>
+//#include <assimp/postprocess.h>
+//#include <assimp/mesh.h>
+//#include <assimp/scene.h>
 
 #define MODEL_LOCATION 0
 #define VIEW_LOCATION 1

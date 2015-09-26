@@ -1,10 +1,19 @@
 cmake_minimum_required(VERSION 3.3)
+set(BUILD_TARGET "BuildTarget" CACHE STRING "Build target chosen by user at configure time")
+set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML Windows Linux Mac Android IOS)
+
 project(Raptor)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/Modules/")
-add_definitions(-DPLATFORM_SDL)
+if(NOT EMSCRIPTEN)
+    add_definitions(-DPLATFORM_SDL)
+endif(NOT EMSCRIPTEN)
+
+if(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+endif(EMSCRIPTEN)
 
 if(NOT EMSCRIPTEN AND NOT MSVC)
   foreach(lib OpenGL GLEW SDL2 SDL2_mixer SDL2_net ASSIMP)

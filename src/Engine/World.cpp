@@ -166,7 +166,8 @@ void LoadWorld(World& world, const std::string& filename) {
 #endif
 
 #if 1
-#include <SDL2/SDL.h>
+
+#include <SDL/SDL.h>
 void SaveWorld(const World& world, const std::string& filename) {
 	SDL_RWops* file = SDL_RWFromFile(filename.c_str(), "w");
 	SDL_RWwrite(file, &world.entityCount, sizeof(U32), 1);
@@ -191,6 +192,10 @@ void SaveWorld(const World& world, const std::string& filename) {
 void LoadWorld(World& world, const std::string& filename) {
 	assert(world.initalMemory == nullptr);
 	SDL_RWops* file = SDL_RWFromFile(filename.c_str(), "r");
+    if (file == nullptr) {
+        LOG_ERROR("Load World Failed to open file: " << filename);
+        return;
+    }
 	SDL_RWread(file, &world.entityCount, sizeof(U32), 1);
 	SDL_RWseek(file, sizeof(U32), RW_SEEK_CUR);
 

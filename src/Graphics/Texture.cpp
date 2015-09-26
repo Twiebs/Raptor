@@ -3,9 +3,9 @@
 #include <fstream>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
+#include <Utils/stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb/stb_image_write.h>
+#include <Utils/stb_image_write.h>
 
 void LoadPixmapFromFile(Pixmap* pixmap, std::string filename) {
 	filename = ASSET_DIR + filename;
@@ -118,18 +118,19 @@ GLuint CreateTextureFromFile(std::string filename) {
 	return textureID;
 }
 
+#ifndef __EMSCRIPTEN__
 GLuint CreateArrayTexture2D(U32 width, U32 height, std::vector<std::string>& filenames) {
 	GLuint textureID = 0;
 	GLuint mipLevelCount = 1;
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, textureID);
-	//Allocate the storage.
+	// Allocate the storage.
 	glTexStorage3D(GL_TEXTURE_2D_ARRAY, mipLevelCount, GL_RGBA8, width, height, filenames.size());
-	//Upload pixel data.
-	//The first 0 refers to the mipmap level (level 0, since there's only 1)
-	//The following 2 zeroes refers to the x and y offsets in case you only want to specify a subrectangle.
-	//The final 0 refers to the layer index offset (we start from index 0 and have 2 levels).
-	//Altogether you can specify a 3D box subset of the overall texture, but only one mip level at a time.
+	// Upload pixel data.
+	// The first 0 refers to the mipmap level (level 0, since there's only 1)
+	// The following 2 zeroes refers to the x and y offsets in case you only want to specify a subrectangle.
+	// The final 0 refers to the layer index offset (we start from index 0 and have 2 levels).
+	// Altogether you can specify a 3D box subset of the overall texture, but only one mip level at a time.
 
 	for (auto i = 0; i < filenames.size(); i++) {
 		Pixmap pixmap;
@@ -140,13 +141,14 @@ GLuint CreateArrayTexture2D(U32 width, U32 height, std::vector<std::string>& fil
 		delete[] pixmap.pixels;
 	}
 
-	//Always set reasonable texture parameters
+	// Always set reasonable texture parameters
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	return textureID;
 }
+#endif
 
 GLuint CreateTextureFromPixels(U32 width, U32 height, U8* pixels) {
 	assert(pixels != nullptr);

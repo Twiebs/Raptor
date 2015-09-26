@@ -5,9 +5,9 @@
 
 #define GLSL_LOG_SIZE 512
 
-//TODO Merge Shader Parsing and compilation into a singluar function
-//TODO consider moving all of this functionality into a Renderer.hpp
-//That file wont contain anything called a Renderer though!
+// TODO Merge Shader Parsing and compilation into a singluar function
+// TODO consider moving all of this functionality into a Renderer.hpp
+// That file wont contain anything called a Renderer though!
 
 struct GLSLProgram {
 	GLuint shaderProgramID = 0;

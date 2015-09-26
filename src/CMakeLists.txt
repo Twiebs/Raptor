@@ -1,8 +1,4 @@
-set(BUILD_TARGET "BuildTarget" CACHE STRING "Build target chosen by user at configure time")
-set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML Windows Linux Mac Android IOS)
-if(EMSCRIPTEN)
-  set(CMAKE_EXECUTABLE_SUFFIX ".html")
-endif(EMSCRIPTEN)
+
 
 include_directories(../src)
 include_directories(${INCS})
@@ -11,17 +7,14 @@ set(CORE_SRCS
   Core/Common.hpp
   Core/Console.hpp
   Core/Console.cpp
-  Core/Network.hpp
-  Core/Network.cpp
-  Core/Application.hpp
+  #Core/Network.hpp
+  #Core/Network.cpp
   Core/Audio.cpp
   Core/Audio.hpp
   Core/Platform.cpp
   Core/Platform.h
   Core/Tasks.hpp
   Core/Tasks.cpp
-  Platform/SDLApplication.cpp
-  Platform/EmscriptenApplication.cpp
 )
 source_group(Core FILES ${CORE_SRCS})
 
@@ -79,6 +72,6 @@ source_group(Engine FILES ${ENGINE_SRCS})
 
 add_library(RaptorEngine STATIC ${CORE_SRCS} ${MATH_SRCS} ${GRAPHICS_SRCS} ${ENGINE_SRCS})
 if(EMSCRIPTEN)
-  target_link_libraries(app "-s TOTAL_MEMORY=134217728")
-  target_link_libraries(app "--preload-file ../Assets")
+ # target_link_libraries(app "-s TOTAL_MEMORY=134217728")
+  #target_link_libraries(app "--preload-file ../Assets")
 endif()

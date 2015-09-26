@@ -1,25 +1,34 @@
 #include "Platform.h"
 
 #include <Core/Common.hpp>
+
+global_variable bool global_running = true;
+global_variable double global_deltaTime = 0.0;
+
+void PlatformExit() {
+    global_running = false;
+}
+
 #if PLATFORM_SDL
 #include <SDL2/SDL.h>
 #define GLEW_STATIC
 #include <GL/glew.h>
+
 global_variable SDL_Window* global_window;
 global_variable SDL_GLContext global_context;
-global_variable bool global_running = true;
-global_variable double global_deltaTime = 0.0;
+
 int PlatformCreate(const char* title, int width, int height, int flags) {
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		LOG_ERROR("Unable to initialize SDL:" << SDL_GetError());
 		return -1;
 	}
+
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
 
 	SDL_Surface* screen;
-	//TODO fullscren does nothing...
+	//TODO fullscreen does nothing...
 	global_window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
 	if (!global_window)
 		LOG_ERROR(SDL_GetError());
@@ -66,8 +75,73 @@ void PlatformRun(void(*mainLoop)(double)) {
 	}
 }
 
-void PlatformExit() {
-	global_running = false;
+#endif
+
+#ifdef __EMSCRIPTEN__
+#include <GL/glew.h>
+#include <SDL/SDL.h>
+#undef main
+#include <emscripten/emscripten.h>
+
+global_variable SDL_Surface* global_surface;
+int PlatformCreate(const char* title, int width, int height, int flags) {
+	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+		LOG_ERROR("Unable to initialize SDL:" << SDL_GetError());
+		return -1;
+	}
+
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    global_surface = SDL_SetVideoMode(1280, 720, 0, SDL_OPENGL);
+    if (!global_surface) {
+        LOG_ERROR("Unable to set video mode: " << SDL_GetError());
+        return -1;
+    }
+
+    glewExperimental = true;
+    if (glewInit() != GLEW_OK) {
+        LOG_ERROR("GLEW failed to initialize");
+        return -1;
+    }
+    return 0;
+}
+
+inline static void __EmscriptenMainLoop(void* mainLoopPtr) {
+    auto mainLoop = (void(*)(double))mainLoopPtr;
+    static double lastTime = emscripten_get_now();
+    double currentTime = emscripten_get_now();
+    global_deltaTime = (currentTime - lastTime) / 1000.0f;
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+            case SDL_QUIT: {
+                global_running = false;
+            } break;
+            case SDL_TEXTINPUT: {
+            } break;
+
+        }
+    }
+
+    mainLoop(global_deltaTime);
+    SDL_GL_SwapBuffers();
+}
+
+static void Stupid() {
+}
+
+void PlatformRun(void(*mainLoop)(double)) {
+    void* arg = (void*)mainLoop;
+    emscripten_set_main_loop_arg(__EmscriptenMainLoop, arg, 0, true);
+}
+
+double PlatformGetDeltaTime() {
+    return emscripten_get_now();
+}
+
+void PlatformGetSize(int* w, int* h) {
+	*w = global_surface->w;
+	*h = global_surface->h;
 }
 
 #endif

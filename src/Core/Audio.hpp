@@ -1,5 +1,5 @@
 #pragma once
-
+#ifndef __EMSCRIPTEN__
 #include <Core/Common.hpp>
 #include <SDL2/SDL_mixer.h>
 
@@ -27,3 +27,4 @@ void PlaySound(Mix_Chunk* sound, U32 loopCount = 0);
 
 Mix_Music* LoadMusic(const char* filename);
 void PlayMusic(Mix_Music* music, U32 loops = -1);
+#endif

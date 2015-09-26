@@ -1,3 +1,5 @@
 include_directories(../src)
-add_executable(WorldTest WorldTest.cpp )
+add_executable(WorldTest WorldTest.cpp)
+add_executable(SpriteTest SpriteTest.cpp)
+target_link_libraries(SpriteTest RaptorEngine ${LIBS})
 target_link_libraries(WorldTest RaptorEngine ${LIBS})

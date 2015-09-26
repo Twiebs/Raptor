@@ -1,5 +1,5 @@
 #include "Audio.hpp"
-
+#ifndef __EMSCRIPTEN__
 int AudioInit () {
 	int mixFlags = MIX_INIT_OGG | MIX_INIT_FLAC | MIX_INIT_MP3;
 	int mixInitialized = Mix_Init(mixFlags);
@@ -46,3 +46,4 @@ void PlayMusic(Mix_Music* music, U32 loops) {
         LOG_ERROR("Couldnt not play music!" << Mix_GetError());
     }
 }
+#endif
