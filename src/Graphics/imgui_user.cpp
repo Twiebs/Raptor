@@ -159,7 +159,7 @@ int ImGui::Init() {
 	// io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
 	// io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
 
-	global_shaderID = LoadShaderFromSource(vertex_shader, fragment_shader);
+	global_shaderID = CreateShaderFromSource(vertex_shader, fragment_shader);
 	global_samplerUniformLoc = GetUniformLocation(global_shaderID, "sampler");
 	global_projectionUniformLoc = GetUniformLocation(global_shaderID, "projection");
 

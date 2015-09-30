@@ -2,8 +2,6 @@
 
 namespace Raptor {
 
-	AssetTable global_assetTable;
-
 void CreateVertexBuffersForMesh(const MeshData& mesh, VertexBufferGroup& group) {
 	glGenVertexArrays(1, &group.vertexArrayID);
 	glBindVertexArray(group.vertexArrayID);
@@ -27,11 +25,11 @@ void CreateVertexBuffersForMesh(const MeshData& mesh, VertexBufferGroup& group) 
 	glBindVertexArray(0);
 }
 
-void LoadModel(const std::string& filename) {
-	global_assetTable.models.emplace_back(DebugModelData());
-	auto& model = global_assetTable.models[global_assetTable.models.size() - 1];
-	model.LoadFromFile(filename);
-}
+//void LoadModel(const std::string& filename) {
+//	global_assetTable.models.emplace_back(DebugModelData());
+//	auto& model = global_assetTable.models[global_assetTable.models.size() - 1];
+//	model.LoadFromFile(filename);
+//}
 
 void ImportModel(DebugModelData* model, const std::string& filename) {
 

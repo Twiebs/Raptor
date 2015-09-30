@@ -14,12 +14,10 @@ struct DEBUGRenderGroup {
 	GLuint vertexArrayID;
 	GLuint vertexBufferID;
 	GLuint elementBufferID;
-
 	GLuint currentTextureID;
 
-	U32 maxVertexCount;
-	U32 currentVertexCount = 0;
-	U32 drawCalls = 0;
+	U32 currentVertexCount;
+    U32 maxVertexCount;
 };
 
 void DEBUGBindGroup(DEBUGRenderGroup* group);

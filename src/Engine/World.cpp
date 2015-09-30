@@ -62,7 +62,7 @@ void DrawEntities(World& world, GLuint shader) {
 	for (auto i = 0; i < world.entityCount; i++) {
 		modelMatrix = TransformToMatrix(transforms[i]);
 		glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
-		Draw(global_assetTable.models[modelIDs[i]]);
+		// Draw(global_assetTable.models[modelIDs[i]]);
 	}
 }
 
@@ -74,23 +74,23 @@ void DrawLights(World& world, GLuint shader) {
 }
 
 void RenderWorld(World& world, DeferredShader& shader, Camera& camera) {
-	BeginDeferredShadingGeometryPass(shader, camera);
+	BeginDeferredShadingGeometryPass(&shader, &camera);
 	DrawEntities(world, shader.geometeryPassProgram);
 	EndDeferredShadingGeometeryPass();
 
-	BeginDeferredShadingLightingPass(shader, camera);
+	BeginDeferredShadingLightingPass(&shader, &camera);
 	DrawLights(world, shader.lightingPassProgram);
-	EndDeferredShadingLightingPass(shader);
+	EndDeferredShadingLightingPass(&shader);
 }
 
 void CreateTestWorld(World& world) {
 	ComponentUsageInfo info;
 	info.componentMemorySize[COMPONENT_TRANSFORM] = sizeof(Transform3D);
 	info.initalComponentCount[COMPONENT_TRANSFORM] = 64;
-		
+
 	info.componentMemorySize[COMPONENT_MODELID] = sizeof(U32);
 	info.initalComponentCount[COMPONENT_MODELID] = 64;
-		 
+
 	info.componentMemorySize[COMPONENT_POINTLIGHT] = sizeof(PointLight);
 	info.initalComponentCount[COMPONENT_POINTLIGHT] = 64;
 

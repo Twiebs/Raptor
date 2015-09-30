@@ -7,13 +7,15 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <Utils/stb_image_write.h>
 
-void LoadPixmapFromFile(Pixmap* pixmap, std::string filename) {
-	filename = ASSET_DIR + filename;
-	pixmap->pixels = stbi_load(filename.c_str(), (int*)&pixmap->width, (int*)&pixmap->height, nullptr, 4);
-	if (pixmap->pixels == nullptr) {
-		LOG_ERROR("Could not load pixels for file " << filename);
-		assert(false);
-	}
+// The ImageFormat enum matches the component integer stbi returns
+ImageData::ImageData(const std::string& filename) {
+    int compNum;
+    pixels = stbi_load(filename.c_str(), &width, &height, &compNum, 4);
+    format = (ImageFormat)compNum;
+}
+
+ImageData::~ImageData() {
+    stbi_image_free(pixels);
 }
 
 U8* GetPixelAddress(U8* pixels, U16 x, U16 y, U16 width, U16 height) {
@@ -39,8 +41,8 @@ void WritePixels(U16 srcWidth, U16 srcHeight, U8* src, U16 destX, U16 destY, U16
 }
 
 #if 1
-void LoadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename) {
-	filename = ASSET_DIR + filename;
+
+void LoadTextureAtlasFromFile (TextureAtlas* atlas, std::string filename) {
 	std::ifstream stream;
 	stream.open(filename);
 	if (!stream.is_open()) { LOG_ERROR("HUSTON WE HAVE A PROBLEM"); return; }
@@ -104,8 +106,7 @@ void WriteTextureAtlasToFile(TextureAtlas* atlas, std::string filename) {
 }
 #endif
 
-GLuint CreateTextureFromFile(std::string filename) {
-	filename = ASSET_DIR + filename;
+GLuint CreateTextureFromFile(const std::string& filename) {
 	int width, height;
 	U8* pixels = stbi_load(filename.c_str(), &width, &height, nullptr, 4);
 	if (pixels == nullptr) {
@@ -132,16 +133,15 @@ GLuint CreateArrayTexture2D(U32 width, U32 height, std::vector<std::string>& fil
 	// The final 0 refers to the layer index offset (we start from index 0 and have 2 levels).
 	// Altogether you can specify a 3D box subset of the overall texture, but only one mip level at a time.
 
-	for (auto i = 0; i < filenames.size(); i++) {
-		Pixmap pixmap;
-		LoadPixmapFromFile(&pixmap, filenames[i]);
-		ASSERT(pixmap.width == width);
-		ASSERT(pixmap.height == height);
-		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixmap.pixels);
-		delete[] pixmap.pixels;
+	for (U32 i = 0; i < filenames.size(); i++) {
+		int w, h;
+        auto pixels = stbi_load(filenames[i].c_str(), &w, &h, nullptr, 4);
+        assert(w == height);
+        assert(h == height);
+		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, width, height, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		stbi_image_free(pixels);
 	}
 
-	// Always set reasonable texture parameters
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

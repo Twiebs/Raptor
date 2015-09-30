@@ -1,11 +1,10 @@
 #include "Platform.h"
 
 #include <Core/Common.hpp>
-
 global_variable bool global_running = true;
 global_variable double global_deltaTime = 0.0;
 
-void PlatformExit() {
+extern "C" void PlatformExit() {
     global_running = false;
 }
 
@@ -77,19 +76,18 @@ void PlatformRun(void(*mainLoop)(double)) {
 
 #endif
 
-#ifdef __EMSCRIPTEN__
+#ifdef PLATFORM_HTML5
 #include <GL/glew.h>
 #include <SDL/SDL.h>
 #undef main
 #include <emscripten/emscripten.h>
 
 global_variable SDL_Surface* global_surface;
-int PlatformCreate(const char* title, int width, int height, int flags) {
+extern "C" int PlatformCreate (const char* title, int width, int height, int flags) {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		LOG_ERROR("Unable to initialize SDL:" << SDL_GetError());
 		return -1;
 	}
-
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     global_surface = SDL_SetVideoMode(1280, 720, 0, SDL_OPENGL);
     if (!global_surface) {
@@ -127,19 +125,17 @@ inline static void __EmscriptenMainLoop(void* mainLoopPtr) {
     SDL_GL_SwapBuffers();
 }
 
-static void Stupid() {
-}
 
-void PlatformRun(void(*mainLoop)(double)) {
+extern "C" void PlatformRun(void(*mainLoop)(double)) {
     void* arg = (void*)mainLoop;
     emscripten_set_main_loop_arg(__EmscriptenMainLoop, arg, 0, true);
 }
 
-double PlatformGetDeltaTime() {
+extern "C" double PlatformGetDeltaTime() {
     return emscripten_get_now();
 }
 
-void PlatformGetSize(int* w, int* h) {
+extern "C" void PlatformGetSize(int* w, int* h) {
 	*w = global_surface->w;
 	*h = global_surface->h;
 }

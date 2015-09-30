@@ -55,7 +55,7 @@ set(GRAPHICS_SRCS
 	Graphics/imgui_demo.cpp
 	Graphics/imgui_user.cpp
 	Graphics/imgui_user.h
-)
+        Graphics/SpriteBatch.cpp Graphics/SpriteBatch.hpp)
 source_group(Graphics FILES ${GRAPHICS_SRCS})
 
 SET(ENGINE_SRCS
@@ -67,7 +67,7 @@ SET(ENGINE_SRCS
   Engine/World.hpp
   Engine/Editor.cpp
   Engine/Editor.hpp
-)
+        Graphics/SpriteBatch.cpp Graphics/SpriteBatch.hpp)
 source_group(Engine FILES ${ENGINE_SRCS})
 
 add_library(RaptorEngine STATIC ${CORE_SRCS} ${MATH_SRCS} ${GRAPHICS_SRCS} ${ENGINE_SRCS})

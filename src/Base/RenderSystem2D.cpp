@@ -1,19 +1,19 @@
 #include "RenderSystem2D.hpp"
 
-//Allocates memory for the verticies and indicies in the sprite batch and
-//Creates vertex and element GLbuffers
+// Allocates memory for the verticies and indicies in the sprite batch and
+// Creates vertex and element GLbuffers
 RenderSystem2D::RenderSystem2D(uint32 batchCapacity) :
 		batchCapacity(batchCapacity) {
-	//Calculate the size in bytes of the vertices and indicies arrays
+	// Calculate the size in bytes of the vertices and indicies arrays
 	uint32 verticesMemorySize = sizeof(Vertex2D) * batchCapacity * 4;
 	uint32 indicesMemorySize = sizeof(GLuint) * batchCapacity * 6;
-	//Allocate the memory the vertices and indices will use
+	// Allocate the memory the vertices and indices will use
 	memory = new uint8[verticesMemorySize + indicesMemorySize];
 	//Set the pointer of the vertices and incides to there offset into the memory block
 	vertices = (Vertex2D*) memory;
 	indices = (GLuint*) (memory + verticesMemorySize);
 
-	//The indices will be static unlike the vertices so we set them now
+	// The indices will be static unlike the vertices so we set them now
 	for (uint32 i = 0, vertIndex = 0; i < batchCapacity * 6; i += 6, vertIndex += 4) {
 		//Triangle A
 		indices[i + 0] = vertIndex + 0;

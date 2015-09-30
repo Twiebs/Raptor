@@ -3,10 +3,36 @@
 
 #include <Core/Common.hpp>
 
-int  PlatformCreate(const char* title, int width = 1280, int height = 720, int flags = 0);
-void PlatformRun(void(*mainLoop)(double));
-void PlatformExit();
-double PlatformGetDeltaTime();
+extern "C" int  PlatformCreate(const char* title, int width = 1280, int height = 720, int flags = 0);
+extern "C" void PlatformRun(void(*mainLoop)(double));
+extern "C" void PlatformExit();
+extern "C" double PlatformGetDeltaTime();
+
+#ifdef PLATFORM_SDL
+#include <SDL2/SDL.h>
+#undef main
+#endif // PLATFORM_SDL
+
+#ifdef PLATFORM_HTML5
+#include <SDL/SDL.h>
+#undef main
+#endif
+
+#if defined(PLATFORM_SDL) || defined(PLATFORM_HTML5)
+#define PlatformGetCursorPos(xptr, yptr) SDL_GetMouseState(xptr, yptr)
+#define PlatformGetCursorDelta(xptr, yptr) SDL_GetRelativeMouseState(xptr, yptr)
+#define PlatformGetKey(keycode) __SDLPlatformGetKey(keycode)
+#define PlatformGetButton(button) (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(button))
+extern "C" void PlatformGetSize(int* w, int* h);
+
+static int __SDLPlatformGetKey(int keycode);
+static int __SDLPlatformGetKey(int keycode) {
+	static int keycount;
+	static const Uint8* keystates = SDL_GetKeyboardState(&keycount);
+	assert(keycode < keycount);
+	return keystates[keycode];
+}
+#endif  // defined(PLATFORM_SDL) || defined(__EMSCRIPTEN__)
 
 #ifdef PLATFORM_SDL
 #define KEY_UNKOWN 0
@@ -164,13 +190,9 @@ double PlatformGetDeltaTime();
 #define MOUSE_WHEEL_UP		4
 #define MOUSE_WHEEL_DOWN  	5
 
-
-#include <SDL2/SDL.h>
-#undef main
-
 #endif // PLATFORM_SDL
 
-#ifdef __EMSCRIPTEN__
+#ifdef PLATFORM_HTML5
 #include <SDL/SDL.h>
 
 #define	KEY_UNKNOWN		0
@@ -322,23 +344,6 @@ double PlatformGetDeltaTime();
 #define MOUSE_BUTTON_RIGHT  3
 #define MOUSE_WHEEL_UP		4
 #define MOUSE_WHEEL_DOWN  	5
-#endif
-
-#if defined(PLATFORM_SDL) || defined(__EMSCRIPTEN__)
-#define PlatformGetCursorPos(xptr, yptr) SDL_GetMouseState(xptr, yptr)
-#define PlatformGetCursorDelta(xptr, yptr) SDL_GetRelativeMouseState(xptr, yptr)
-#define PlatformGetKey(keycode) __SDLPlatformGetKey(keycode)
-#define PlatformGetButton(button) (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(button))
-void PlatformGetSize(int* w, int* h);
-
-static int __SDLPlatformGetKey(int keycode);
-static int __SDLPlatformGetKey(int keycode) {
-	static int keycount;
-	static const Uint8* keystates = SDL_GetKeyboardState(&keycount);
-	assert(keycode < keycount);
-	return keystates[keycode];
-}
-
-#endif  // defined(PLATFORM_SDL) || defined(__EMSCRIPTEN__)
+#endif	// __EMSCRIPTEN__
 
 #endif	// RAPTOR_PLATFORM_H

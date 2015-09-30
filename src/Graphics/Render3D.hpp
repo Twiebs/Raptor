@@ -57,8 +57,15 @@ namespace Raptor {
 		Camera(const Vector3& position, float viewportWidth, float viewportHeight);
 	};
 
-	void UpdateCamera(Camera& camera);
-	void FPSCameraControlUpdate(Camera& camera);
+	void UpdateCamera(Camera* camera);
+	void FPSCameraControlUpdate(Camera* camera);
+
+    inline void SetModelMatrix(Matrix4* matrix);
+    inline void SetModelMatrix(const Vector3& position, const Vector3& rotation, const Vector3& scale);
+    inline void SetModelMatrix(const Vector3& position, const Vector3& rotation, const Vector3& scale) {
+        auto modelMatrix = Matrix4::Transform(position, rotation, scale);
+        glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
+    }
 
 	inline void PushMatrix(U32 location, const Matrix4& matrix);
 	inline void PushMatrix(U32 location, const Matrix4& matrix) {
@@ -91,14 +98,14 @@ namespace Raptor {
 		Matrix4 shadowProjectionMatrix;
 	};
 
-	void InitDepthShader(DepthShader& shader, U32 mapWidth, U32 mapHeight);
+	void InitDepthShader(DepthShader* shader, U32 mapWidth, U32 mapHeight);
 	GLuint CreateDepthFramebuffer(GLuint depthCubemap);
 	GLuint CreateDepthCubemap(U32 textureWidth, U32 textureHeight);
-	void BeginDepthShadingPass(DepthShader& shader);
+	void BeginDepthShadingPass(DepthShader* shader);
 	void EndDepthShadingPass();
 
 	// Remove this stuff
-	void DepthShadingPushLight(PointLight& light, DepthShader& shader);
+	void DepthShadingPushLight(PointLight& light, DepthShader* shader);
 
 	// =======================================
 	//			Foward Shading
@@ -108,34 +115,27 @@ namespace Raptor {
 		GLuint program;
 	};
 
-	void InitFowardShader(FowardShader& shader);
-	void BeginFowardShadingPass(const FowardShader& shader, const DepthShader& depthShader, const Camera& camera);
+	void InitFowardShader(FowardShader* shader);
+	void BeginFowardShadingPass(const FowardShader* shader, const DepthShader& depthShader, const Camera* camera);
 	void EndFowardShadingPass();
 
 	// =======================================
 	//			Deferred Shading
 	// =======================================
 
-#if 1
 	struct DeferredShader {
 		GLuint gBuffer, renderBuffer;
 		GLuint gPosition, gNormal, gColor;
 		GLuint lightingPassProgram, geometeryPassProgram;
 		GLuint quadVertexArray;
 	};
-#else
-	struct DeferredShader {
-		GLuint gBuffer;
-		GLuint textures[3];
-	};
-#endif
 
-	void InitDeferredShader(DeferredShader& shader, U32 screenWidth, U32 screenHeight);
-	void RemoveDeferredShader(DeferredShader& shader);
-	void BeginDeferredShadingGeometryPass(DeferredShader& shader, Camera& camera);
-	void BeginDeferredShadingLightingPass(DeferredShader& shader, Camera& camera);
+	void InitDeferredShader(DeferredShader* shader, U32 screenWidth, U32 screenHeight);
+	void RemoveDeferredShader(DeferredShader* shader);
+	void BeginDeferredShadingGeometryPass(DeferredShader* shader, Camera* camera);
+	void BeginDeferredShadingLightingPass(DeferredShader* shader, Camera* camera);
 	void EndDeferredShadingGeometeryPass();
-	void EndDeferredShadingLightingPass(DeferredShader& shader);
+	void EndDeferredShadingLightingPass(DeferredShader* shader);
 
 	// ======================================
 	//		DEBUG stuff
@@ -143,5 +143,4 @@ namespace Raptor {
 
 	void CreateDebugCube(GLuint* vertexArrayID, GLuint* vertexBufferID, float scale = 1.0f);
 	void DrawDebugCube();
-
 };

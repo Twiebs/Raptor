@@ -12,22 +12,8 @@
 
 namespace Raptor {
 
-struct Asset {
-	std::string filename;
-};
-
-struct AssetTable {
-	std::vector<Asset> modelAssets;
-	std::vector<DebugModelData> models;
-
-	std::vector<Asset> shaderAssets;
-	std::vector<GLSLProgram> shaderPrograms;
-};
-
 void ImportModel(DebugModelData* model, const std::string& filename);
 void LoadModel(const std::string& filename);
 void CreateVertexBuffersForMesh(const MeshData& mesh, VertexBufferGroup& group);
-
-extern AssetTable global_assetTable;
 
 }

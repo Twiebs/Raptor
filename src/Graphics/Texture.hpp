@@ -7,10 +7,17 @@
 #include <Core/Common.hpp>
 #include <Math/Vector2.hpp>
 
-// TODO Make this a RAII object?
-struct Pixmap {
-	U16 width, height;
-	U8* pixels;
+enum class ImageFormat {
+    RGBA8 = 4,
+};
+
+struct ImageData {
+	int width, height;
+	ImageFormat format;
+    U8* pixels;
+
+    ImageData(const std::string& filename);
+    ~ImageData();
 };
 
 struct TextureRegion {
@@ -37,15 +44,13 @@ struct TextureAtlas {
 	U8* pixels;
 };
 
-void LoadPixmapFromFile(Pixmap* pixmap, std::string filename);
-
 void WriteTextureAtlasToFile(TextureAtlas* atlas, std::string filename);
 void LoadTextureAtlasFromFile(TextureAtlas* atlas, std::string filename);
 void FreeTextureAtlas(TextureAtlas* atlas);
 
 GLuint CreateArrayTexture2D(U32 width, U32 height, std::vector<std::string>& filenames);
 GLuint CreateTextureFromPixels(U32 width, U32 height, U8* pixels);
-GLuint CreateTextureFromFile(std::string filename);
+GLuint CreateTextureFromFile(const std::string& filename);
 
 Vector2 GetTexelCoords(U32 x, U32 y, U32 width, U32 height);
 void WritePixelsHack(U8* dest, U16 destX, U16 destY, U16 destWidth, U16 destHeight, U8* src, U16 srcWidth, U16 srcHeight);

@@ -11,7 +11,6 @@ void MainLoop(double deltaTime) {
     ImGui::BeginFrame();
     ImGui::Text("Hello World");
     ImGui::EndFrame();
-
 }
 
 int main() {

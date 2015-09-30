@@ -102,31 +102,12 @@ public:
 	inline static Matrix4 Translate(const Vector3& translation);
 	inline static Matrix4 Translate(float dx, float dy, float dz);
 
+    inline static Matrix4 Rotate(const Vector3& rotation);
+
 	inline static Matrix4 Scale(const Vector3& scale);
 	inline static Matrix4 Scale(float sclX, float sclY, float sclZ);
 
-	inline static Matrix4 Rotate(const Vector3& rotation) {
-		const float x = MathUtils::Radians(rotation.x);
-		const float y = MathUtils::Radians(rotation.y);
-		const float z = MathUtils::Radians(rotation.z);
-		
-		Matrix4 rx, ry, rz;
-		rx[0][0] = 1.0f; rx[1][0] = 0.0f;	rx[2][0] = 0.0f;	rx[3][0] = 0.0f;
-		rx[0][1] = 0.0f; rx[1][1] = cos(x); rx[2][1] = -sin(x); rx[3][1] = 0.0f;
-		rx[0][2] = 0.0f; rx[1][2] = sin(x); rx[2][2] = cos(x);	rx[3][2] = 0.0f;
-		rx[0][3] = 0.0f; rx[1][3] = 0.0f;	rx[2][3] = 0.0f;	rx[3][3] = 1.0f;
-
-		ry[0][0] = cos(y);	ry[1][0] = 0.0f; ry[2][0] = -sin(y);	ry[3][0] = 0.0f;
-		ry[0][1] = 0.0f;	ry[1][1] = 1.0f; ry[2][1] = 0.0f;		ry[3][1] = 0.0f;
-		ry[0][2] = sin(y);	ry[1][2] = 0.0f; ry[2][2] = cos(y);		ry[3][2] = 0.0f;
-		ry[0][3] = 0.0f;	ry[1][3] = 0.0f; ry[2][3] = 0.0f;		ry[3][3] = 1.0f;
-
-		rz[0][0] = cos(z);	rz[1][0] = -sin(z);	rz[2][0] = 0.0f; rz[3][0] = 0.0f;
-		rz[0][1] = sin(z);	rz[1][1] = cos(z);	rz[2][1] = 0.0f; rz[3][1] = 0.0f;
-		rz[0][2] = 0.0f;	rz[1][2] = 0.0f;	rz[2][2] = 1.0f; rz[3][2] = 0.0f;
-		rz[0][3] = 0.0f;	rz[1][3] = 0.0f;	rz[2][3] = 0.0f; rz[3][3] = 1.0f;
-		return rz * ry * rx;
-	}
+    inline static Matrix4 Transform(const Vector3& translation, const Vector3& rotation, const Vector3& scale);
 
 	inline static Matrix4 LookAt(Vector3 position, Vector3 target, Vector3 up);
 };
@@ -206,6 +187,29 @@ inline Matrix4 Matrix4::Translate(float dx, float dy, float dz) {
 	return r;
 }
 
+inline Matrix4 Matrix4::Rotate(const Vector3& rotation) {
+    const float x = MathUtils::Radians(rotation.x);
+    const float y = MathUtils::Radians(rotation.y);
+    const float z = MathUtils::Radians(rotation.z);
+
+    Matrix4 rx, ry, rz;
+    rx[0][0] = 1.0f; rx[1][0] = 0.0f;	rx[2][0] = 0.0f;	rx[3][0] = 0.0f;
+    rx[0][1] = 0.0f; rx[1][1] = cos(x); rx[2][1] = -sin(x); rx[3][1] = 0.0f;
+    rx[0][2] = 0.0f; rx[1][2] = sin(x); rx[2][2] = cos(x);	rx[3][2] = 0.0f;
+    rx[0][3] = 0.0f; rx[1][3] = 0.0f;	rx[2][3] = 0.0f;	rx[3][3] = 1.0f;
+
+    ry[0][0] = cos(y);	ry[1][0] = 0.0f; ry[2][0] = -sin(y);	ry[3][0] = 0.0f;
+    ry[0][1] = 0.0f;	ry[1][1] = 1.0f; ry[2][1] = 0.0f;		ry[3][1] = 0.0f;
+    ry[0][2] = sin(y);	ry[1][2] = 0.0f; ry[2][2] = cos(y);		ry[3][2] = 0.0f;
+    ry[0][3] = 0.0f;	ry[1][3] = 0.0f; ry[2][3] = 0.0f;		ry[3][3] = 1.0f;
+
+    rz[0][0] = cos(z);	rz[1][0] = -sin(z);	rz[2][0] = 0.0f; rz[3][0] = 0.0f;
+    rz[0][1] = sin(z);	rz[1][1] = cos(z);	rz[2][1] = 0.0f; rz[3][1] = 0.0f;
+    rz[0][2] = 0.0f;	rz[1][2] = 0.0f;	rz[2][2] = 1.0f; rz[3][2] = 0.0f;
+    rz[0][3] = 0.0f;	rz[1][3] = 0.0f;	rz[2][3] = 0.0f; rz[3][3] = 1.0f;
+    return rz * ry * rx;
+}
+
 inline Matrix4 Matrix4::Scale(const Vector3& scale) {
 	Matrix4 r;
 	r[0][0] = scale.x;	r[1][0] = 0.0f;		r[2][0] = 0.0f;		r[3][0] = 0.0f;
@@ -224,6 +228,9 @@ inline Matrix4 Matrix4::Scale(float sclX, float sclY, float sclZ) {
 	return r;
 }
 
+inline Matrix4 Matrix4::Transform(const Vector3& translation, const Vector3& rotation, const Vector3& scale) {
+    return Matrix4::Translate(translation) * Matrix4::Rotate(rotation) * Matrix4::Scale(scale);
+}
 
 Matrix4 Matrix4::LookAt(Vector3 position, Vector3 target, Vector3 up) {
 	const Vector3 f = (target - position).Normalize();

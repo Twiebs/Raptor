@@ -38,9 +38,9 @@ global_variable Editor global_editor;
 global_variable DeferredShader global_DeferredShader;
 
 void RenderTest(Camera& camera) {
-	static GLuint basicShader = LoadShaderFromFile("shaders/Basic.vert", "shaders/Basic.frag");
+	static GLuint basicShader = CreateShader("shaders/Basic.vert", "shaders/Basic.frag");
 	glUseProgram(basicShader);
-	auto& model = global_assetTable.models[1];
+	//auto& model = global_assetTable.models[1];
 	Matrix4 modelMatrix = Matrix4::Identity();
 	PushMatrix(MODEL_LOCATION, modelMatrix);
 	PushMatrix(VIEW_LOCATION, camera.view);
@@ -48,7 +48,7 @@ void RenderTest(Camera& camera) {
 	for (auto i = 0; i < 64; i++) {
 		modelMatrix = Matrix4::Translate(i * 1.5f, 0.0f, i * 1.5f);
 		PushMatrix(MODEL_LOCATION, modelMatrix);
-		Draw(model);
+	//	Draw(model);
 	}
 }
 
@@ -61,16 +61,16 @@ void OutlineSelected(World& world, Editor& editor, Camera& camera) {
 			U32* modelIDs = (U32*)world.components[COMPONENT_MODELID];
 			auto transforms = (Transform3D*)world.components[COMPONENT_TRANSFORM];
 			auto& transform = transforms[i];
-			auto& model = global_assetTable.models[modelIDs[i]];
+			//auto& model = global_assetTable.models[modelIDs[i]];
 
-			static GLuint basicShader = LoadShaderFromFile("shaders/Basic.vert", "shaders/Basic.frag");
+			static GLuint basicShader = CreateShader("shaders/Basic.vert", "shaders/Basic.frag");
 			glUseProgram(basicShader);
 
 			Matrix4 modelMatrix = TransformToMatrix(transform);
 			PushMatrix(MODEL_LOCATION, modelMatrix);
 			PushMatrix(VIEW_LOCATION, camera.view);
 			PushMatrix(PROJECTION_LOCATION, camera.projection);
-			Draw(model);
+		//	Draw(model);
 		}
 	}
 	glEnable(GL_DEPTH_TEST);
@@ -107,10 +107,10 @@ void MainLoop(F64 deltaTime) {
 	//app->SetCursorHidden(false);
 	if (PlatformGetButton(MOUSE_BUTTON_RIGHT)) {
 		//app->SetCursorHidden(true);
-		FPSCameraControlUpdate(global_editor.camera);
+		FPSCameraControlUpdate(&global_editor.camera);
 	}
 
-	UpdateCamera(global_editor.camera);
+	UpdateCamera(&global_editor.camera);
 
 	UpdateWorld(global_world);
 	RenderWorld(global_world, global_DeferredShader, global_editor.camera);
@@ -161,7 +161,7 @@ int main() {
 
 	ImGui::Init();
 
-	InitDeferredShader(global_DeferredShader, width, height);
+	InitDeferredShader(&global_DeferredShader, width, height);
 	glUseProgram(global_DeferredShader.lightingPassProgram);
 	glUniform1i(GetUniformLocation(global_DeferredShader.lightingPassProgram, "pointLightCount"), global_world.pointLightCount);
 

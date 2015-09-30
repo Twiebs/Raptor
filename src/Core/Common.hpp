@@ -4,11 +4,6 @@
 #include <stdint.h>
 #include <Core/Console.hpp>
 
-#define ASSET_DIR "../Assets/"
-//#define ASSET_DIR "../src/Tests/ShadowTest/"
-//#define ASSET_DIR "/home/torin/workspace/Raptor/Assets/"
-#define ASSET(x) ASSET_DIR x
-
 #define BENCHMARK 1
 #define CLOCK_RESOLUTION std::milli
 //#define MULTI_THREADED
@@ -46,7 +41,7 @@ typedef double	F64;
 
 //Error logging
 #define ASSERT(x) assert(x)
-//TODO provide console implementation to send error mesages to! 
+//TODO provide console implementation to send error mesages to!
 #define LOG_ERROR(msg) std::cerr << "[ERROR] " << msg << "\n"; Console::Instance().Stream() << msg; Console::Instance().AddEntry(LogLevel::ERROR)
 #define LOG_WARNING(msg) std::cout << "[WARNING]" << msg << "\n"
 #define LOG_INFO(x) std::cout << "[INFO] " << x << "\n"

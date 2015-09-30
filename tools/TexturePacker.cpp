@@ -22,7 +22,7 @@ void MainLoop(Application* app) {
 	static bool atlasLoaded = false;
 	ImGui::SetNextWindowPos(ImVec2(app->GetWidth() - 270, (app->GetHeight() * 0.5f) - ((app->GetHeight() - 20)* 0.5f)));
 	ImGui::Begin("TexturePacker", nullptr, ImVec2(250, app->GetHeight() - 20), 0.3f, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_NoResize);
-	
+
 	static char inputBuffer[64];
 	static char outFile[64];
 	static bool packPNG = false;
@@ -38,7 +38,7 @@ void MainLoop(Application* app) {
 	ImGui::SliderInt("Padding", &padding, 0, 12);
 	ImGui::Separator();
 	if (ImGui::Button("Woof TextureAtlas")) {
-		auto directory = ASSET_DIR + std::string(inputBuffer);
+		auto directory = std::string(inputBuffer);
 		std::vector<std::string> filenames;
 		tinydir_dir dir;
 		tinydir_open(&dir, directory.c_str());
@@ -97,7 +97,7 @@ void MainLoop(Application* app) {
 		static TextureAtlas atlas;
 		static GLuint atlasTextureID;
 		if (!atlasLoaded) {
-			std::string directory = std::string(ASSET_DIR) + std::string("textures/foliage/");
+			std::string directory = std::string("textures/foliage/");
 			LoadTextureAtlasFromFile(&atlas, directory + "trees.atlas");
 			//memset(atlas.pixels, 255, atlas.width * atlas.height * 4);
 			atlasTextureID = CreateTextureFromPixels(atlas.width, atlas.height, atlas.pixels);
@@ -114,7 +114,7 @@ void MainLoop(Application* app) {
 		ImGui::Image((ImTextureID)atlasTextureID, ImVec2(atlas.width, atlas.height), ImVec2(0, 0), ImVec2(1,1), ImVec4(1, 1, 1, 1), ImVec4(0.55, 0.55, 0.55, 0.55));
 		ImGui::End();
 		ImGui::PopStyleVar();
-	} 
+	}
 	GUIEndFrame();
 }
 

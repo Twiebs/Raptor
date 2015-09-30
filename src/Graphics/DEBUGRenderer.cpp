@@ -8,7 +8,6 @@ void DEBUGFlushGroup(DEBUGRenderGroup* group) {
 	glDrawElements(GL_TRIANGLES, (group->currentVertexCount / 4) * 6, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
 	group->currentVertexCount = 0;
-	group->drawCalls++;
 }
 
 void DEBUGPushVertices(DEBUGRenderGroup* group, Vertex2D* vertices, uint32 count) {
