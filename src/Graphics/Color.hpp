@@ -5,18 +5,16 @@
 #define Blend(base, blend, funcf) 		Color(funcf(base.r, blend.r), funcf(base.g, blend.g), funcf(base.b, blend.b), funcf(base.a, blend.a))
 #define BlendOverlay(base, blend) 		Blend(base, blend, BlendOverlayf)
 
+struct RGBA32 {
+    U32 rgba;
+};
+
 struct RGBA8 {
-	U8 r;
-	U8 g;
-	U8 b;
-	U8 a;
+	U8 r, g, b, a;
 };
 
 struct Color {
-	float r;
-	float g;
-	float b;
-	float a;
+	float r, g, b, a;
 
 	Color() : r(1.0f), g(1.0f), b(1.0f), a(1.0f) { }
 	Color(float r, float g, float b, float a) : r(r), g(g), b(b), a(a) { }
@@ -48,4 +46,11 @@ struct Color {
 		result.a = left.a + right.a;
 		return result;
 	}
+
+public:
+    static const Color WHITE;
+    static const Color RED;
 };
+
+
+

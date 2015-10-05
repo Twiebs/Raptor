@@ -3,8 +3,6 @@
 #include <Math/Vector2.hpp>
 #include <GL/glew.h>
 
-namespace Raptor {
-
 struct VertexBufferGroup {
 	U32 vertexArrayID = 0;
 	U32 vertexBufferID = 0;
@@ -19,28 +17,12 @@ struct Vertex3D {
 	Vector3 tangent;
 };
 
-struct ImportedMeshData {
+
+struct StaticMeshData {
 	U32 vertexCount, indexCount;
 	Vertex3D* vertices;
 	U32* indices;
 	U8* memblock;
-};
-
-struct MeshData {
-	U32 vertexCount, indexCount;
-	Vertex3D* vertices;
-	U32* indices;
-};
-
-struct MeshGPU {
-	U32 vertexArrayID;
-	U32 vertexBufferID;
-	U32 elementBufferID;
-};
-
-struct MeshDrawable {
-	U32 vertexArrayID;
-	U32 indexCount;
 };
 
 struct Material {
@@ -50,4 +32,14 @@ struct Material {
 	~Material();
 };
 
+struct DebugModelData {
+	std::vector<StaticMeshData> meshes;
+	std::vector<U32> meshMaterialIndex;
+	std::vector<VertexBufferGroup> meshVertexBuffers;
+	std::vector<Material> materials;
+
+	void ImportFromFile(const std::string& filename);
 };
+
+
+

@@ -1,5 +1,10 @@
 include_directories(../src)
 add_executable(WorldTest WorldTest.cpp)
 add_executable(SpriteTest SpriteTest.cpp)
+add_executable(PlatformerTest PlatformerTest.cpp)
+add_executable(FowardShadingTest FowardShadingTest.cpp)
+
+target_link_libraries(PlatformerTest RaptorEngine Box2D ${LIBS})
+target_link_libraries(FowardShadingTest RaptorEngine ${LIBS})
 target_link_libraries(SpriteTest RaptorEngine ${LIBS})
 target_link_libraries(WorldTest RaptorEngine ${LIBS})

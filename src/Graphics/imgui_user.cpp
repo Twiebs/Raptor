@@ -1,5 +1,4 @@
 #include "imgui.h"
-#include "imgui_user.h"
 #include <GL/glew.h>
 
 #include <Core/Common.hpp>
@@ -7,12 +6,70 @@
 #include <Math/Matrix4.hpp>
 #include <Graphics/GLSLProgram.hpp>
 
-global_variable GLuint global_vertexArrayID, global_vertexBufferID, global_elementBufferID;
-global_variable GLuint global_shaderID, global_samplerUniformLoc, global_projectionUniformLoc;
-global_variable GLuint global_fontTextureID;
+struct ImGuiRenderContext {
+	GLuint vertexArrayID;
+	GLuint vertexBufferID;
+	GLuint elementBufferID;
 
-static void ImGuiRenderDrawLists(ImDrawData* draw_data)
-{
+	GLuint shaderProgramID;
+	GLint samplerUniformLoc;
+	GLint projectionUniformLoc;
+
+	GLuint fontTextureID;
+} global_variable context;
+
+#if 0
+static void ImGuiRenderDrawLists(ImDrawData* draw_data) {
+	// Handle cases of screen coordinates != from framebuffer coordinates (e.g. retina displays)
+	ImGuiIO& io = ImGui::GetIO();
+	float fb_height = io.DisplaySize.y * io.DisplayFramebufferScale.y;
+	draw_data->ScaleClipRects(io.DisplayFramebufferScale);
+
+	// Setup orthographic projection matrix
+	const float ortho_projection[4][4] =
+	{
+		{ 2.0f / io.DisplaySize.x, 0.0f,                   0.0f, 0.0f },
+		{ 0.0f,                  2.0f / -io.DisplaySize.y, 0.0f, 0.0f },
+		{ 0.0f,                  0.0f,                  -1.0f, 0.0f },
+		{ -1.0f,                  1.0f,                   0.0f, 1.0f },
+	};
+
+	glUniformMatrix4fv(global_projectionUniformLoc, 1, GL_FALSE, &ortho_projection[0][0]);
+
+	for (int n = 0; n < draw_data->CmdListsCount; n++) {
+		const ImDrawList* drawList = draw_data->CmdLists[n];
+		const ImDrawIdx* idx_buffer_offset = 0;
+
+		glBindBuffer(GL_ARRAY_BUFFER, global_vertexBufferID);
+		glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, global_elementBufferID);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW);
+
+		for (const ImDrawCmd* pcmd = cmd_list->CmdBuffer.begin(); pcmd != cmd_list->CmdBuffer.end(); pcmd++) {
+			if (pcmd->UserCallback) {
+				pcmd->UserCallback(cmd_list, pcmd);
+			} else {
+				glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
+				glScissor((int)pcmd->ClipRect.x, (int)(fb_height - pcmd->ClipRect.w), (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
+				glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, GL_UNSIGNED_SHORT, idx_buffer_offset);
+			}
+			idx_buffer_offset += pcmd->ElemCount;
+		}
+	}
+
+	// Restore modified state
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	//glUseProgram(last_program);
+	glDisable(GL_SCISSOR_TEST);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+#endif
+
+#if 1 // Independent ImGuiRenderer
+static void ImGuiRenderDrawLists(ImDrawData* draw_data) {
 	// Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled
 	GLint last_program, last_texture;
 	glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
@@ -32,26 +89,26 @@ static void ImGuiRenderDrawLists(ImDrawData* draw_data)
 
 	// Setup orthographic projection matrix
 	const float ortho_projection[4][4] =
-	{
-		{ 2.0f / io.DisplaySize.x, 0.0f,                   0.0f, 0.0f },
-		{ 0.0f,                  2.0f / -io.DisplaySize.y, 0.0f, 0.0f },
-		{ 0.0f,                  0.0f,                  -1.0f, 0.0f },
-		{ -1.0f,                  1.0f,                   0.0f, 1.0f },
-	};
-	glUseProgram(global_shaderID);
-	glUniform1i(global_samplerUniformLoc, 0);
-	glUniformMatrix4fv(global_projectionUniformLoc, 1, GL_FALSE, &ortho_projection[0][0]);
-	glBindVertexArray(global_vertexArrayID);
+			{
+					{ 2.0f / io.DisplaySize.x, 0.0f,                   0.0f, 0.0f },
+					{ 0.0f,                  2.0f / -io.DisplaySize.y, 0.0f, 0.0f },
+					{ 0.0f,                  0.0f,                  -1.0f, 0.0f },
+					{ -1.0f,                  1.0f,                   0.0f, 1.0f },
+			};
+	glUseProgram(context.shaderProgramID);
+	glUniform1i(context.samplerUniformLoc, 0);
+	glUniformMatrix4fv(context.projectionUniformLoc, 1, GL_FALSE, &ortho_projection[0][0]);
+	glBindVertexArray(context.vertexArrayID);
 
 	for (int n = 0; n < draw_data->CmdListsCount; n++)
 	{
 		const ImDrawList* cmd_list = draw_data->CmdLists[n];
 		const ImDrawIdx* idx_buffer_offset = 0;
 
-		glBindBuffer(GL_ARRAY_BUFFER, global_vertexBufferID);
+		glBindBuffer(GL_ARRAY_BUFFER, context.vertexBufferID);
 		glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW);
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, global_elementBufferID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.elementBufferID);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW);
 
 		for (const ImDrawCmd* pcmd = cmd_list->CmdBuffer.begin(); pcmd != cmd_list->CmdBuffer.end(); pcmd++)
@@ -77,6 +134,7 @@ static void ImGuiRenderDrawLists(ImDrawData* draw_data)
 	glDisable(GL_SCISSOR_TEST);
 	glBindTexture(GL_TEXTURE_2D, last_texture);
 }
+#endif
 
 int ImGui::Init() {
 #ifndef __EMSCRIPTEN__
@@ -159,16 +217,16 @@ int ImGui::Init() {
 	// io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
 	// io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
 
-	global_shaderID = CreateShaderFromSource(vertex_shader, fragment_shader);
-	global_samplerUniformLoc = GetUniformLocation(global_shaderID, "sampler");
-	global_projectionUniformLoc = GetUniformLocation(global_shaderID, "projection");
+	context.shaderProgramID = CreateShaderFromSource(vertex_shader, fragment_shader);
+	context.samplerUniformLoc = GetUniformLocation(context.shaderProgramID, "sampler");
+	context.projectionUniformLoc = GetUniformLocation(context.shaderProgramID, "projection");
 
-	glGenVertexArrays(1, &global_vertexArrayID);
-	glGenBuffers(1, &global_vertexBufferID);
-	glGenBuffers(1, &global_elementBufferID);
+	glGenVertexArrays(1, &context.vertexArrayID);
+	glGenBuffers(1, &context.vertexBufferID);
+	glGenBuffers(1, &context.elementBufferID);
 
-	glBindVertexArray(global_vertexArrayID);
-	glBindBuffer(GL_ARRAY_BUFFER, global_vertexBufferID);
+	glBindVertexArray(context.vertexArrayID);
+	glBindBuffer(GL_ARRAY_BUFFER, context.vertexBufferID);
 	
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
@@ -185,19 +243,19 @@ int ImGui::Init() {
 	int width, height;
 	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
 
-	glGenTextures(1, &global_fontTextureID);
-	glBindTexture(GL_TEXTURE_2D, global_fontTextureID);
+	glGenTextures(1, &context.fontTextureID);
+	glBindTexture(GL_TEXTURE_2D, context.fontTextureID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
 	Matrix4 projection = Matrix4::Ortho(0.0f, (F32)width, 0.0f, (F32)height, -1.0f);
-	glUseProgram(global_shaderID);
-	glUniform1i(global_samplerUniformLoc, 0);
-	glUniformMatrix4fv(global_projectionUniformLoc, 1, GL_FALSE, &projection[0][0]);
+	glUseProgram(context.shaderProgramID);
+	glUniform1i(context.samplerUniformLoc, 0);
+	glUniformMatrix4fv(context.projectionUniformLoc, 1, GL_FALSE, &projection[0][0]);
 
 	// Store our identifier
-	io.Fonts->TexID = (void *)(intptr_t)global_fontTextureID;
+	io.Fonts->TexID = (void *)(intptr_t)context.fontTextureID;
 
 	// Cleanup (don't clear the input data if you want to append new fonts later)
 	io.Fonts->ClearInputData();
@@ -215,7 +273,7 @@ void ImGui::BeginFrame() {
 	io.KeyAlt = PlatformGetKey(KEY_RALT) || PlatformGetKey(KEY_LALT);
 	io.KeyCtrl = PlatformGetKey(KEY_RCTRL) || PlatformGetKey(KEY_LCTRL);
 	io.KeyShift = PlatformGetKey(KEY_LSHIFT) || PlatformGetKey(KEY_RSHIFT);
-	glUseProgram(global_shaderID);
+	glUseProgram(context.shaderProgramID);
 	ImGui::NewFrame();
 }
 

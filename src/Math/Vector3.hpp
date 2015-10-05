@@ -14,12 +14,6 @@ public:
 	float y;
 	float z;
 
-
-	static const Vector3 ZERO;
-	static const Vector3 UP;
-	static const Vector3 FOWARD;
-	static const Vector3 RIGHT;
-
 	Vector3();
 	Vector3(float x, float y, float z);
 	//Initalizes a new vector with each component being the given value.
@@ -29,7 +23,7 @@ public:
 	void Set(float x, float y, float z);
 	void Set(const Vector3* vector);
 
-	inline float Length();
+    inline float magnitude();
 
 	float Distance(Vector3& other);
 
@@ -107,4 +101,8 @@ private:
 
 float Vector3::Dot(const Vector3& v) const {
 	return (x*v.x) + (y*v.y) + (z*v.z);
+}
+
+inline float Vector3::magnitude() {
+    return std::sqrt((x * x) + (y * y) + (z * z));
 }

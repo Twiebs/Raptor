@@ -7,11 +7,7 @@
 #include <Graphics/GLSLProgram.hpp>
 #include <Graphics/Texture.hpp>
 #include <Graphics/ModelData.hpp>
-
-//#include <assimp/Importer.hpp>
-//#include <assimp/postprocess.h>
-//#include <assimp/mesh.h>
-//#include <assimp/scene.h>
+#include <Graphics/Lighting.hpp>
 
 #define MODEL_LOCATION 0
 #define VIEW_LOCATION 1
@@ -28,19 +24,8 @@ namespace Raptor {
 
 	Matrix4 TransformToMatrix(const Transform3D& transform);
 
-	void CreateVertexBuffersForMeshData(const MeshData& mesh, VertexBufferGroup& group);
-
 	void BindMaterial(const Material& material);
 	void CalculateNormals(Vertex3D* vertices, U32 vertexCount, U32* indices, U32 indexCount);
-
-	struct DebugModelData {
-		std::vector<MeshData> meshes;
-		std::vector<U32> meshMaterialIndex;
-		std::vector<VertexBufferGroup> meshVertexBuffers;
-		std::vector<Material> materials;
-
-		void LoadFromFile(const std::string& filename);
-	};
 
 	void Draw(DebugModelData& model);
 
@@ -72,13 +57,6 @@ namespace Raptor {
 		glUniformMatrix4fv(location, 1, GL_FALSE, &matrix[0][0]);
 	}
 
-	struct PointLight {
-		Vector3 position;
-		Vector3 color;
-		float linear;
-		float quadratic;
-		float radius;
-	};
 
 	//TODO should remove need to pass shader...
 	//Or even the index
@@ -116,7 +94,7 @@ namespace Raptor {
 	};
 
 	void InitFowardShader(FowardShader* shader);
-	void BeginFowardShadingPass(const FowardShader* shader, const DepthShader& depthShader, const Camera* camera);
+	void BeginFowardShadingPass(FowardShader* shader, DepthShader* depthShader, Camera* camera);
 	void EndFowardShadingPass();
 
 	// =======================================
@@ -131,7 +109,7 @@ namespace Raptor {
 	};
 
 	void InitDeferredShader(DeferredShader* shader, U32 screenWidth, U32 screenHeight);
-	void RemoveDeferredShader(DeferredShader* shader);
+	void DestroyDeferredShader(DeferredShader* shader);
 	void BeginDeferredShadingGeometryPass(DeferredShader* shader, Camera* camera);
 	void BeginDeferredShadingLightingPass(DeferredShader* shader, Camera* camera);
 	void EndDeferredShadingGeometeryPass();

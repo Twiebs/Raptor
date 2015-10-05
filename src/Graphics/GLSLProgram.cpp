@@ -80,6 +80,7 @@ static GLuint CompileShader (const char* source, GLenum shaderType) {
 		glGetShaderInfoLog(shaderID, GLSL_LOG_SIZE, NULL, infoLog);
 		auto shaderName = (shaderType == GL_VERTEX_SHADER) ? "VertexShader" : "FragmentShader";
 		LOG_ERROR(shaderName << " compilation failed! \n" << infoLog);
+        printf("Shader Source: %s", source);
 		return 0;
 	}
 	return shaderID;

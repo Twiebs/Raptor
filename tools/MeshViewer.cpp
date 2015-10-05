@@ -1,8 +1,6 @@
 
 #include <Core/Common.hpp>
-#include <Core/Application.hpp>
 
-#define RAPTOR_PLATFORM_IMPLEMENTATION
 #include <Core/Platform.h>
 
 #include <Engine/Assets.hpp>
@@ -21,6 +19,7 @@
 #include <Graphics/GLSLProgram.hpp>
 #include <Graphics/Texture.hpp>
 #include <Graphics/Render3D.hpp>
+#include <Graphics/imgui.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -31,8 +30,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include <Graphics/GUI.hpp>
 
 #include <SDL2/SDL.h>
 #undef main
@@ -306,7 +303,7 @@ void AddRandomLights(World& world, U32 count) {
 		light.linear = 0.027f;
 		light.quadratic = 0.0028f;
 		GLfloat lightMax = std::fmaxf(std::fmaxf(light.color.x, light.color.y), light.color.z);
-		light.radius = (-light.linear + std::sqrtf(light.linear * light.linear - 4 * light.quadratic * (1.0 - (256.0 / 5.0) * lightMax))) / (2 * light.quadratic);
+		light.radius = (-light.linear + sqrtf(light.linear * light.linear - 4 * light.quadratic * (1.0 - (256.0 / 5.0) * lightMax))) / (2 * light.quadratic);
 	}
 	world.pointLightCount = count;
 }

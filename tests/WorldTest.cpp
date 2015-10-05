@@ -146,10 +146,10 @@ int main() {
 
 	PlatformCreate("World Test");
 
-	LoadWorld(global_world, "test.world");
-	LoadEditor(global_editor, "test.editor");
-	LoadModel("models/containers/crate.obj");
-	LoadModel("models/Pillars/pillar/pillar.obj");
+	LoadWorld(global_world, "editor/test.world");
+	LoadEditor(global_editor, "editor/test.editor");
+	Assets::LoadModel("models/containers/crate.obj");
+	Assets::LoadModel("models/architecture/pillar.obj");
 
 	int width, height;
 	PlatformGetSize(&width, &height);

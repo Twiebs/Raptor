@@ -23,8 +23,8 @@ int PlatformCreate(const char* title, int width, int height, int flags) {
 	}
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
+	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
 	SDL_Surface* screen;
 	//TODO fullscreen does nothing...
@@ -51,11 +51,16 @@ double PlatformGetDeltaTime() {
 	return global_deltaTime;
 }
 
+double PlatformGetNow() {
+	return ((double)(SDL_GetPerformanceCounter()*1000) / (double)SDL_GetPerformanceFrequency());
+}
+
 void PlatformRun(void(*mainLoop)(double)) {
 	while (global_running) {
-		static double lastTime = SDL_GetTicks();
-		double currentTime = SDL_GetTicks();
-		global_deltaTime = (currentTime - lastTime) / 1000.0f;
+		static U32 lastTime = SDL_GetTicks();
+		U32 currentTime = SDL_GetTicks();
+		global_deltaTime = ((double)(currentTime - lastTime)) / 1000.0f;
+        lastTime = currentTime;
 
 		SDL_Event event;
 		while (SDL_PollEvent(&event)) {
@@ -71,6 +76,7 @@ void PlatformRun(void(*mainLoop)(double)) {
 
 		mainLoop(global_deltaTime);
 		SDL_GL_SwapWindow(global_window);
+
 	}
 }
 
@@ -107,7 +113,8 @@ inline static void __EmscriptenMainLoop(void* mainLoopPtr) {
     auto mainLoop = (void(*)(double))mainLoopPtr;
     static double lastTime = emscripten_get_now();
     double currentTime = emscripten_get_now();
-    global_deltaTime = (currentTime - lastTime) / 1000.0f;
+    global_deltaTime = (currentTime - lastTime) / 1000.0;
+    lastTime = currentTime;
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -123,6 +130,10 @@ inline static void __EmscriptenMainLoop(void* mainLoopPtr) {
 
     mainLoop(global_deltaTime);
     SDL_GL_SwapBuffers();
+}
+
+extern "C" double PlatformGetNow () {
+	return emscripten_get_now();
 }
 
 

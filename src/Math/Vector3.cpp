@@ -35,30 +35,23 @@ void Vector3::Set(const Vector3* vector) {
 }
 
 Vector3& Vector3::Normalize() {
-	const float length = Length();
-
-	this->x /= length;
-	this->y /= length;
-	this->z /= length;
-
+	const float length = magnitude();
+    x /= length;
+    y /= length;
+    z /= length;
 	return *this;
-}
-
-float Vector3::Length() {
-	return std::sqrt((x * x) + (y * y) + (z * z));
 }
 
 float Vector3::Distance(Vector3& other) {
 	Vector3 temp = *this - other;
-	return temp.Length();
+	return temp.magnitude();
 }
 
 
-Vector3 Vector3::Cross(const Vector3& vector) const {
+Vector3 Vector3::Cross (const Vector3& vector) const {
 	const float _x = (y * vector.z) - (z * vector.y);
 	const float _y = (z * vector.x) - (x * vector.z);
 	const float _z = (x * vector.y) - (y * vector.x);
-
 	return Vector3(_x, _y, _z);
 }
 

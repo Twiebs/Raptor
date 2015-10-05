@@ -32,12 +32,12 @@
 #endif
 
 struct Entity {
-	uint32 id = 0;
-	uint64 uuid = 0;
+	U32 id = 0;
+	U64 uuid = 0;
 };
 
 
-//NOTE
+// NOTE
 // - Components should not hold any data...
 // - They simply should just point to the data that they are referencing...
 
@@ -52,7 +52,7 @@ public:
 	ECSManager();
 	~ECSManager();
 
-	//TODO move to a delayed ropperation handling scheme... Opperations should be delayed until the next tick of the engine
+	// TODO move to a delayed ropperation handling scheme... Opperations should be delayed until the next tick of the engine
 	// Creates a new system and adds it to the entityManager
 	// Returns a raw pointer to the system that was just created
 	template<typename T, typename ... Args>
@@ -147,7 +147,7 @@ public:
 	void Update(double deltaTime);
 
 private:
-	//Any entity with an ID of zero was not created properly
+	// Any entity with an ID of zero was not created properly
 	uint32 nextEntityID = 1;	//The entity id is the index of the created entity.  These are recycled
 	uint64 nextEntityUUID = 1;	//This is a unique identifier every time a entity is recycled or created
 

@@ -5,7 +5,6 @@
 
 #include <GL/glew.h>
 
-#include <Core/Application.hpp>
 #include <Core/Audio.hpp>
 #include <Core/Network.hpp>
 
@@ -13,9 +12,9 @@
 
 #include <Graphics/Color.hpp>
 #include <Graphics/GLSLProgram.hpp>
-#include <Graphics/GUI.hpp>
 #include <Graphics/Texture.hpp>
 #include <Graphics/DEBUGRenderer.hpp>
+#include <Graphics/imgui.h>
 
 #include <Math/Geometry2D.hpp>
 #include <Math/Noise.hpp>
@@ -25,6 +24,7 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/archives/json.hpp>
+#include <Core/Platform.h>
 
 #define TILE_SIZE_METERS 1
 #define VIEWPORT_WIDTH_IN_METERS 30
@@ -251,9 +251,6 @@ GLuint gTerrainTextureID;
 TextureAtlas gTextureAtlas;
 GLuint gFoliageAtlasTextureID;
 
-
-GUIContext gGuiContext;
-
 Transform2D gCameraTransform;
 Transform2D gPlayerTransform;
 
@@ -411,7 +408,7 @@ void InitBiome(Terrain2D* terrain) {
 
 void LoadBiomeFromFile(Biome* biome) {
 	{
-		std::ifstream is(ASSET("biome.json"));
+		std::ifstream is("biome.json");
 		cereal::JSONInputArchive archive(is);
 		archive(cereal::make_nvp("Entries", *biome));
 	}
@@ -584,16 +581,6 @@ void KeyCallback(int keycode, bool isDown) {
 	case KEY_LSHIFT: isDown ? gMoveFlags |= MOVE_SPRINT : gMoveFlags &= ~MOVE_SPRINT; break;
 	case KEY_LCTRL: isDown ? gMoveFlags |= MOVE_DEBUG_HYPERSPRINT : gMoveFlags &= ~MOVE_DEBUG_HYPERSPRINT; break;
 	}
-}
-
-inline F32 Lerp(F32 from, F32 to, F32 t) {
-	auto result = ((1.0f - t) * from) + (t*to);
-	return result;
-}
-
-inline Vector2 Lerp(Vector2& from, Vector2& to, F32 t) {
-	auto result = ((1.0f - t) * from) + (t * to);
-	return result;
 }
 
 #if 0
@@ -925,7 +912,7 @@ void MainLoop (Application* app) {
 	}
 
 	BENCHMARK_END(mainLoop);
-	GUIBeginFrame(&gGuiContext, app);
+    ImGui::BeginFrame();
 	std::stringstream stream;
 	stream << "Player Position: " << gPlayerTransform.position;
 	ImGui::Text(stream.str().c_str());
@@ -1053,25 +1040,22 @@ void MainLoop (Application* app) {
 
 
 	ImGui::End();
-	GUIEndFrame();
+    ImGui::EndFrame();
 }
 
 #if 1
 #undef main
 int main () {
-	Application app("Inhabited", 1280, 720, true);
-	app.SetKeyCallback(KeyCallback);
+    PlatformCreate("Inhabited", 1280, 720, false);
+    ImGui::Init();
 
-	GUIContextInit(&gGuiContext, app.GetWidth(), app.GetHeight());
-	GUISetDisplaySize(&gGuiContext, app.GetWidth(), app.GetHeight());
-	
 	DEBUGCreateRenderGroup(&gRenderGroup, 4096);
 	DEBUGCreateBufferGroup(&gRenderBuffer, sizeof(TileVertex), 65536);
 	DEBUGAddAttribute(&gRenderBuffer, 0, 2, GL_FLOAT, sizeof(TileVertex), (GLvoid*)offsetof(TileVertex, position));
 	DEBUGAddAttribute(&gRenderBuffer, 1, 2, GL_FLOAT, sizeof(TileVertex), (GLvoid*)offsetof(TileVertex, texCoord));
 	DEBUGAddAttribute(&gRenderBuffer, 2, 4, GL_FLOAT, sizeof(TileVertex), (GLvoid*)offsetof(TileVertex, color));
 
-    gTerrainShader.shaderProgramID = LoadShaderFromFile("shaders/Terrain2DVertex.glsl","shaders/Terrain2DFragment.glsl");
+    gTerrainShader.shaderProgramID = CreateShader("shaders/Terrain2DVertex.glsl","shaders/Terrain2DFragment.glsl");
     gTerrainShader.projectionUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "projection");
     gTerrainShader.isWaterUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "isWater");
     gTerrainShader.waveAngleUniformLocation = GetUniformLocation(gTerrainShader.shaderProgramID, "waveAngle");
@@ -1080,22 +1064,23 @@ int main () {
 	//LoadTextureAtlasFromFile(&gTextureAtlas, ASSET("textures/foliage/trees.atlas"));
 	gFoliageAtlasTextureID = CreateTextureFromPixels(gTextureAtlas.width, gTextureAtlas.height, gTextureAtlas.pixels);
 
-	spriteProgramID = LoadShaderFromFile("shaders/Sprite.vert", "shaders/Sprite.frag");
+	spriteProgramID = CreateShader("shaders/Sprite.vert", "shaders/Sprite.frag");
 	nullTextureID = CreateTextureFromFile("textures/null.png");
 
-	soundEffects[0] = LoadSound(ASSET("sounds/wave00.ogg"));
-	soundEffects[1] = LoadSound(ASSET("sounds/wave01.ogg"));
-	soundEffects[2] = LoadSound(ASSET("sounds/wave02.ogg"));
-	soundEffects[3] = LoadSound(ASSET("sounds/wave03.ogg"));
-	soundEffects[4] = LoadSound(ASSET("sounds/wave04.ogg"));
-	soundEffects[5] = LoadSound(ASSET("sounds/wave05.ogg"));
-	soundEffects[6] = LoadSound(ASSET("sounds/wave06.ogg"));
-	soundEffects[7] = LoadSound(ASSET("sounds/wave07.ogg"));
+	soundEffects[0] = LoadSound("assets/sounds/wave00.ogg"));
+	soundEffects[1] = LoadSound("assets/sounds/wave01.ogg"));
+	soundEffects[2] = LoadSound("assets/sounds/wave02.ogg"));
+	soundEffects[3] = LoadSound("assets/sounds/wave03.ogg"));
+	soundEffects[4] = LoadSound("assets/sounds/wave04.ogg"));
+	soundEffects[5] = LoadSound("assets/sounds/wave05.ogg"));
+	soundEffects[6] = LoadSound("assets/sounds/wave06.ogg"));
+	soundEffects[7] = LoadSound("assets/sounds/wave07.ogg"));
 
-	music = LoadMusic(ASSET("music/celestial.mp3"));
+	music = LoadMusic("assets/music/celestial.mp3");
 	PlayMusic(music);
 
-	F32 viewportHeightInMeters = VIEWPORT_WIDTH_IN_METERS * (app.GetHeight() / app.GetWidth());
+
+	F32 viewportHeightInMeters = VIEWPORT_WIDTH_IN_METERS * (1280.0f / 720.0f);
 	gCameraTransform.size = Vector2(VIEWPORT_WIDTH_IN_METERS, viewportHeightInMeters);
 
 	CreateTerrain(&gTerrain, 1024, 1024);
@@ -1107,8 +1092,7 @@ int main () {
 	gTerrainTextureID = TerrainToTexture(&gTerrain);
 
 
-	app.Run(MainLoop);
-	app.Destroy();
+	PlatformRun(MainLoop);
 
 
 	glDeleteTextures(1, &gFoliageAtlasTextureID);

@@ -20,11 +20,17 @@ struct AudioSettings {
     F32 masterVolume = 1.0f;
 };
 
-int AudioInit();
+namespace Audio {
+
+void Init();
+void Terminate();
+
+}
 
 Mix_Chunk* LoadSound(const char* filename);
 void PlaySound(Mix_Chunk* sound, U32 loopCount = 0);
 
 Mix_Music* LoadMusic(const char* filename);
 void PlayMusic(Mix_Music* music, U32 loops = -1);
+
 #endif

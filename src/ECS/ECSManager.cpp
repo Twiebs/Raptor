@@ -1,5 +1,6 @@
-
 #include "ECSManager.hpp"
+
+
 
 ECSManager::ECSManager() :
 	componentsByEntityID(MAX_COMPONENTS, UnorderedArray<uint32>()),

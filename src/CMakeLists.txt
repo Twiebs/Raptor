@@ -19,8 +19,6 @@ set(CORE_SRCS
 source_group(Core FILES ${CORE_SRCS})
 
 set(MATH_SRCS
-  Math/RPhysics.cpp
-  Math/RPhysics.hpp
   Math/Geometry2D.cpp
   Math/Geometry2D.hpp
   Math/Geometry3D.cpp
@@ -41,13 +39,18 @@ source_group(Math FILES ${MATH_SRCS})
 set(GRAPHICS_SRCS
 	Graphics/Texture.cpp
 	Graphics/Texture.hpp
+    Graphics/Color.cpp
 	Graphics/Color.hpp
-	Graphics/DEBUGRenderer.cpp
-	Graphics/DEBUGRenderer.hpp
 	Graphics/GLSLProgram.cpp
 	Graphics/GLSLProgram.hpp
+    Graphics/GLRenderer.cpp
+    Graphics/GLRenderer.hpp
 	Graphics/Render3D.hpp
 	Graphics/Render3D.cpp
+    Graphics/Render2D.hpp
+    Graphics/Render2D.cpp
+    Graphics/Lighting.cpp
+    Graphics/Lighting.hpp
 	Graphics/ModelData.cpp
 	Graphics/ModelData.hpp
 	Graphics/imgui.cpp
@@ -55,22 +58,36 @@ set(GRAPHICS_SRCS
 	Graphics/imgui_demo.cpp
 	Graphics/imgui_user.cpp
 	Graphics/imgui_user.h
-        Graphics/SpriteBatch.cpp Graphics/SpriteBatch.hpp)
+)
 source_group(Graphics FILES ${GRAPHICS_SRCS})
 
 SET(ENGINE_SRCS
-  Engine/Assets.cpp
-  Engine/Assets.hpp
-  Engine/Debug.cpp
-  Engine/Debug.hpp
-  Engine/World.cpp
-  Engine/World.hpp
-  Engine/Editor.cpp
-  Engine/Editor.hpp
-        Graphics/SpriteBatch.cpp Graphics/SpriteBatch.hpp)
+    Engine/Assets.cpp
+    Engine/Assets.hpp
+    Engine/World.cpp
+    Engine/World.hpp
+    Engine/Physics2D.cpp
+    Engine/Physics2D.hpp
+    Engine/Physics3D.cpp
+    Engine/Physics3D.hpp
+    Engine/GFX2D.cpp
+    Engine/GFX2D.hpp
+    Engine/GFX3D.cpp
+    Engine/GFX3D.hpp
+
+    Engine/Debug.cpp
+    Engine/Debug.hpp
+    Engine/Editor.cpp
+    Engine/Editor.hpp
+)
 source_group(Engine FILES ${ENGINE_SRCS})
 
 add_library(RaptorEngine STATIC ${CORE_SRCS} ${MATH_SRCS} ${GRAPHICS_SRCS} ${ENGINE_SRCS})
+
+set(BOX2D_VERSION 2.3.1)
+set(BOX2D_BUILD_STATIC true)
+add_subdirectory(Box2D)
+
 if(EMSCRIPTEN)
  # target_link_libraries(app "-s TOTAL_MEMORY=134217728")
   #target_link_libraries(app "--preload-file ../Assets")

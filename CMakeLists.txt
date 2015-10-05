@@ -50,6 +50,7 @@ if(MSVC)
   )
 endif(MSVC)
 
+link_directories(../build/src/Box2D)
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(tools)

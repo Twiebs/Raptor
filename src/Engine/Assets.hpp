@@ -10,10 +10,7 @@
 //There fore in the future it is going to need to required an assetTypeID;
 //There could also be a userdata field inorder to allow custom types!
 
-namespace Raptor {
-
-void ImportModel(DebugModelData* model, const std::string& filename);
-void LoadModel(const std::string& filename);
-void CreateVertexBuffersForMesh(const MeshData& mesh, VertexBufferGroup& group);
+namespace Assets {
+using namespace Raptor;
 
 }

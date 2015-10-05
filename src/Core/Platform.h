@@ -24,6 +24,7 @@ extern "C" double PlatformGetDeltaTime();
 #define PlatformGetKey(keycode) __SDLPlatformGetKey(keycode)
 #define PlatformGetButton(button) (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(button))
 extern "C" void PlatformGetSize(int* w, int* h);
+extern "C" double PlatformGetNow();
 
 static int __SDLPlatformGetKey(int keycode);
 static int __SDLPlatformGetKey(int keycode) {
