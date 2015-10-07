@@ -75,6 +75,9 @@ SET(ENGINE_SRCS
     Engine/GFX3D.cpp
     Engine/GFX3D.hpp
 
+    Engine/ECSManager.cpp
+    Engine/ECSManager.hpp
+
     Engine/Debug.cpp
     Engine/Debug.hpp
     Engine/Editor.cpp

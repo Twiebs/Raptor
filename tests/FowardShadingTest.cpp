@@ -13,8 +13,6 @@ Camera camera;
 PointLight light(Vector3(1.0f, 1.0f, 1.0f));
 
 void MainLoop(F64 deltaTime) {
-
-
 	UpdateCamera(&camera);
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	BeginFowardShadingPass(&fowardShader, &depthShader, &camera);

@@ -5,6 +5,19 @@
 #include <Engine/Physics2D.hpp>
 #include <Graphics/imgui.h>
 #include <Engine/GFX2D.hpp>
+#include <Engine/ECSManager.hpp>
+
+ECSManager manager(512);
+
+enum COMPONENT_TYPE {
+	COMPONENT_BODY,
+	COMPONENT_SPRITE,
+};
+
+struct PhysicsBody2D {
+	b2Body* body;
+};
+
 
 b2Body* playerBody;
 Box2DRenderer* box2DRenderer;
@@ -74,7 +87,7 @@ void MainLoop (F64 deltaTime) {
     PlatformerControls(playerBody);
 
 	world.Step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
-	world.DrawDebugData();
+	//world.DrawDebugData();
 
     static Camera2D camera(30.0f, 18.0f);
     camera.update();
@@ -83,6 +96,13 @@ void MainLoop (F64 deltaTime) {
 
 	GFX2D::Begin();
 	GFX2D::SetProjectionMatrix(camera.projectionView());
+	manager.ProcessComponent(COMPONENT_SPRITE, [](const Entity& entity, void* spritePointer) {
+		auto sprite = (Sprite*)spritePointer;
+		auto body = (PhysicsBody2D*)manager.GetComponent(entity, COMPONENT_BODY);
+		GFX2D::FillRect(body->body->GetPosition().x - 0.5f, body->body->GetPosition().y - 0.5f, 1.0f, 1.0f);
+	});
+
+
 	GFX2D::FillRect(playerBody->GetPosition().x - 0.5f, playerBody->GetPosition().y - 0.5f, 1.0f, 1.0f);
 	GFX2D::Texture(nullTextureID, 0.0f, 0.0f, 1.0f, 1.0f);
 	GFX2D::FillRect(1.0f, -2.0f, 3.0f, 3.0f, Color::RED);
@@ -99,6 +119,21 @@ int main() {
     PlatformCreate("Platfomer Test");
 	GFX2D::Init();
 	ImGui::Init();
+
+	manager.RegisterComponentType(COMPONENT_BODY, sizeof(PhysicsBody2D), 512);
+	manager.RegisterComponentType(COMPONENT_SPRITE, sizeof(Sprite), 512);
+	manager.Init();
+
+	for (U32 i = 0; i < 10; i++) {
+		auto& entity = manager.CreateEntity();
+		auto body = (PhysicsBody2D*)manager.CreateComponent(entity, COMPONENT_BODY);
+		body->body = CreateBody();
+
+		auto sprite = (Sprite*)manager.CreateComponent(entity, COMPONENT_SPRITE);
+		sprite->width = 1.0f;
+		sprite->height = 1.0f;
+	}
+
 
     playerBody = CreateBody();
     CreatePlatform(Vector2(0.0f, -5.0f), Vector2(30.0f, 1.0f));

@@ -59,7 +59,7 @@ std::unique_ptr<CelestialBody>& Universe::CreateCelestialBody(CelestialBodyType 
 	else if (standard.type == JOVIAN)
 		data.semiMajorAxis = 0.005f * AU;
 
-	//Create the mesh
+	// Create the mesh
 	std::vector<Vertex> verticies;
 	std::vector<unsigned int> indicies;
 
