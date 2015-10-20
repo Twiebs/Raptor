@@ -85,6 +85,17 @@ vec3 apply_fragment_lighting (int materialIndex) {
 	return result;
 }
 
+#define BlendOverlayf(base, blend) 	(base < 0.5 ? (2.0 * base * blend) : (1.0 - 2.0 * (1.0 - base) * (1.0 - blend)))
+#define Blend(base, blend, funcf) 		vec4(funcf(base.r, blend.r), funcf(base.g, blend.g), funcf(base.b, blend.b), funcf(base.a, blend.a))
+#define BlendOverlay(base, blend) 		Blend(base, blend, BlendOverlayf)
+
+#define internal_overlay(a, b) (a < 0.5f ? (2.0 * a * b) : (1.0 - 2.0 * (1.0 - a) * 1.0 - b))
+#define internal_blend(a, b, function) vec4(function(a.r, b.r), function(a.g, b.g), function(a.b, b.b))
+
+#define overlay(a, b) internal_blend(a, b, internal_overlay)
+
+uniform int debugAlphaMapIndex = -1;
+
 void main () {
 //	vec4 diffuse_colors[MATERIAL_COUNT];
 //	for (int i = 0; i < MATERIAL_COUNT; i++)
@@ -96,14 +107,29 @@ void main () {
 //	vec4 diffuseColor1 = texture(diffuseSampler1, fs_in.texCoord);
 //	vec4 diffuseColor2 = texture(diffuseSampler2, fs_in.texCoord);
 
-	vec4 color;
 
-	vec4 colors[MATERIAL_COUNT];
+
+	vec3 baseColor = vec3(0.0, 0.0, 0.0);
 	for (int i = 0; i < MATERIAL_COUNT; i++) {
-		colors[i] = vec4(apply_fragment_lighting(i), 1.0);
-		colors[i] *= texture(alpha_samplers[i], vec2(fs_in.position.x / TERRAIN_WIDTH, fs_in.position.z / TERRAIN_LENGTH)).r;
-		color += colors[i];
+		vec3 diffuse_color = texture(diffuse_samplers[i], fs_in.texCoord).rgb;
+		float alpha = texture(alpha_samplers[i], vec2((fs_in.texCoord.x * TERRAIN_CELLS_PER_TEXCOORD) / TERRAIN_WIDTH, (fs_in.texCoord.y * TERRAIN_CELLS_PER_TEXCOORD) / TERRAIN_LENGTH)).r;
+		diffuse_color *= alpha;
+		diffuse_color += baseColor * (1.0 - alpha);
+		baseColor = diffuse_color;
 	}
+
+
+
+
+
+//
+//	vec4 resultColor = baseColor;
+//
+//	for (int i = 1; i < MATERIAL_COUNT; i++) {
+//		vec4 color = vec4(apply_fragment_lighting(i), 1.0);
+//		color *= texture(alpha_samplers[i], vec2(fs_in.position.x / TERRAIN_WIDTH, fs_in.position.z / TERRAIN_LENGTH)).r;
+//		resultColor += color;
+//	}
 
 
 //	float alpha0 = texture(alphaSampler0, vec2(fs_in.position.x / TERRAIN_WIDTH, fs_in.position.z / TERRAIN_LENGTH)).r;
@@ -120,8 +146,10 @@ void main () {
 
 //	outColor = diffuseColor0 + diffuseColor1 + diffuseColor2;
 
-	// outColor = color;
-	// outColor = texture(diffuse_samplers[1], fs_in.texCoord);
+	if (debugAlphaMapIndex > -1) {
+		outColor = texture(alpha_samplers[debugAlphaMapIndex], vec2((fs_in.texCoord.x * TERRAIN_CELLS_PER_TEXCOORD) / TERRAIN_WIDTH, (fs_in.texCoord.y * TERRAIN_CELLS_PER_TEXCOORD) / TERRAIN_LENGTH));
+	} else {
+		outColor = vec4(baseColor, 1.0);
+	}
 
-	outColor = texture(alpha_samplers[1], vec2((fs_in.texCoord.x * TERRAIN_CELLS_PER_TEXCOORD) / TERRAIN_WIDTH, (fs_in.texCoord.y * TERRAIN_CELLS_PER_TEXCOORD) / TERRAIN_LENGTH));
 }

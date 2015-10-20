@@ -102,12 +102,29 @@ inline float Vector3::magnitude() {
     return std::sqrt((x * x) + (y * y) + (z * z));
 }
 
-inline Vector3&& operator- (const Vector3& a, const Vector3& b) {
-    const float x = a.x - b.x;
-    const float y = a.y - b.y;
-    const float z = a.z - b.z;
-    return std::move<Vector3>(Vector3(x, y, z));
+//inline Vector3&& operator- (const Vector3& a, const Vector3& b) {
+//    const float x = a.x - b.x;
+//    const float y = a.y - b.y;
+//    const float z = a.z - b.z;
+//    return std::move<Vector3>(Vector3(x, y, z));
+//}
+
+//inline Vector3 operator- (const Vector3& left, const Vector3& right) {
+//	Vector3 vector(
+//			left.x - right.x,
+//			left.y - right.y,
+//			left.z - right.z );
+//	return vector;
+//}
+
+inline Vector3 operator- (const Vector3& a, const Vector3& b) {
+	Vector3 result = {};
+	result.x = a.x - b.x;
+	result.y = a.y - b.y;
+	result.z = a.z - b.z;
+	return result;
 }
+
 
 inline Vector3&& cross (const Vector3& a, const Vector3& b);
 inline float dot (const Vector3& a, const Vector3& b);

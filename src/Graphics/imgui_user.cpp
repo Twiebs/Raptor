@@ -136,7 +136,6 @@ static void ImGuiRenderDrawLists(ImDrawData* draw_data) {
 }
 #endif
 
-#define RENDER_OPENGL_ES
 int ImGui::Init() {
 #ifdef RENDER_OPENGL_ES
     auto vertex_source = R"(

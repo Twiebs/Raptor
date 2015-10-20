@@ -176,6 +176,34 @@ TerrainStreamer::TerrainStreamer(U32 materialCount, U32 max_width, U32 max_lengt
 }
 
 
+void ShowTerrainProperties (const TerrainManager& manager) {
+	static GLint debugAlphaMapIndexLocation = GetUniformLocation(manager.shaderID, "debugAlphaMapIndex");
+
+	ImGui::Begin("Terrain Manager Properties");
+	for (auto i = 0; i < manager.materialCount; i++) {
+		ImGui::Text("Material: %d", i);
+		ImGui::SameLine();
+		ImGui::PushID(i);
+		if (ImGui::Button("Show Alpha Map")) {
+			GLint last_program;
+			glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+			glUseProgram(manager.shaderID);
+			glUniform1i(debugAlphaMapIndexLocation, i);
+			glUseProgram(last_program);
+		}
+		ImGui::PopID();
+	}
+
+	if (ImGui::Button("Clear Alpha Map")) {
+		GLint last_program;
+		glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+		glUseProgram(manager.shaderID);
+		glUniform1i(debugAlphaMapIndexLocation, -1);
+		glUseProgram(last_program);
+	}
+
+	ImGui::End();
+}
 
 
 #define MANAGER_IMPLEMENTATION
@@ -317,7 +345,8 @@ void RunBasicGLTest() {
 	OpenSimplexNoise materialNoise(567657);
 	auto MaterialMaskGenerationProc = [&materialNoise, &terrain_manager](float x, float y, U32 materialIndex) -> U8 {
 		if (materialIndex % terrain_manager.materialCount == 0) return 255;
-		auto value = materialNoise.FBM(x, y, 6, 0.01f, 0.5f);
+
+		auto value = materialNoise.FBM(x, y, 1, 0.1f, 0.5f);
 		value = (value + 1.0f) / 2.0f;
 		return (U8)(value * 255);
 	};
@@ -330,7 +359,7 @@ void RunBasicGLTest() {
 			for (U32 z = 0; z < terrain_manager.terrainResolution; z++) {
 				for (U32 x = 0; x < terrain_manager.terrainResolution; x++) {
 					U32 alphaIndex = (z * terrain_manager.terrainResolution) + x;
-					alphaData[alphaIndex] = MaterialMaskGenerationProc(x + (terrainXIndex * terrain_manager.terrainWidth), z + (terrainZIndex * terrain_manager.terrainLength), n);
+					alphaData[alphaIndex] = MaterialMaskGenerationProc(x + (terrainXIndex * terrain_manager.terrainResolution), z + (terrainZIndex * terrain_manager.terrainResolution), n);
 				}
 			}
 
@@ -380,7 +409,7 @@ void RunBasicGLTest() {
 	}
 
 	terrain_manager.materials[0] = LoadMaterial("assets/materials/dirt0/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
-	terrain_manager.materials[1] = LoadMaterial("assets/materials/toon_stone0/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
+	terrain_manager.materials[1] = LoadMaterial("assets/materials/grass0/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
 	//terrain_manager.materials[2] = LoadMaterial("assets/materials/smooth_stone/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
 
 #endif
@@ -397,7 +426,6 @@ void RunBasicGLTest() {
 		if (PlatformGetButton(MOUSE_BUTTON_RIGHT)) FPSCameraControlUpdate(&camera);
 
 
-
 		UniformDirectionalLight(terrain_manager.shaderID, 0, directionalLight);
 
 		UpdateCamera(&camera);
@@ -405,6 +433,9 @@ void RunBasicGLTest() {
 		SetMatrix4Uniform(MODEL_MATRIX_LOCATION, Matrix4::Translate(0.0f, 0.0f, -1.0f));
 		SetMatrix4Uniform(VIEW_MATRIX_LOCATION, camera.view);
 		SetMatrix4Uniform(PROJECTION_MATRIX_LOCATION, camera.projection);
+
+		glEnable(GL_BLEND);
+		// glBlendFunc()
 
 
 		// BeginWireframe();
@@ -442,6 +473,7 @@ void RunBasicGLTest() {
 		ImGui::BeginFrame();
 		ShowCameraDebug(camera);
 		ShowLightParamaters(directionalLight);
+		ShowTerrainProperties(terrain_manager);
 		ImGui::EndFrame();
 	});
 }
