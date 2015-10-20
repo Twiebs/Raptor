@@ -163,6 +163,20 @@ void TerrainManager::draw() {
 	}
 }
 
+struct TerrainStreamer {
+    TerrainManager terrainManager;
+    std::vector<U8*> maskDatas;
+    std::vector<MeshData> meshDatas;
+
+    TerrainStreamer(U32 materialCount, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrainResolution, U32 cellsPerTexcoord);
+};
+
+TerrainStreamer::TerrainStreamer(U32 materialCount, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrainResolution, U32 cellsPerTexcoord) :
+    terrainManager(materialCount, max_width, max_length, terrainWidth, terrainLength, terrainResolution, cellsPerTexcoord) {
+}
+
+
+
 
 #define MANAGER_IMPLEMENTATION
 void RunBasicGLTest() {

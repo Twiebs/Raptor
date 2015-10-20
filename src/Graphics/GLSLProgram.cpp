@@ -4,7 +4,11 @@
 static inline GLuint CheckShaderErrors (GLuint shaderID, GLenum errorType, GLenum shaderType = 0);
 
 GLSLCompiler::GLSLCompiler() {
+#ifdef RENDER_OPENGL_ES
+    addDefnition("#version 100\n");
+#else
 	addDefnition("#version 450 core\n");
+#endif
 }
 
 GLSLCompiler::~GLSLCompiler() { }

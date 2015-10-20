@@ -136,56 +136,68 @@ static void ImGuiRenderDrawLists(ImDrawData* draw_data) {
 }
 #endif
 
+#define RENDER_OPENGL_ES
 int ImGui::Init() {
-#ifndef __EMSCRIPTEN__
-	const GLchar *vertex_shader =
-		"#version 330\n"
-		"layout (location = 0) in vec2 position;"
-		"layout (location = 1) in vec2 uv;"
-		"layout (location = 2) in vec4 color;"
-		"out vec2 fragUV;"
-		"out vec4 fragColor;"
-		"uniform mat4 projection;"
-		"void main() {"
-		"	fragUV = uv;"
-		"	fragColor = color;"
-		"	gl_Position = projection * vec4(position.xy, 0.0, 1.0);"
-		"};";
+#ifdef RENDER_OPENGL_ES
+    auto vertex_source = R"(
+        #version 100
+        attribute vec2 position;
+        attribute vec2 uv;
+        attribute vec4 color;
+        varying vec2 fragUV;
+        varying vec4 fragColor;
+        uniform mat4 projection;
+        void main() {
+        	fragUV = uv;
+        	fragColor = color;
+        	gl_Position = projection * vec4(position.xy, 0.0, 1.0);
+        }
+    )";
 
-	const GLchar* fragment_shader =
-		"#version 330\n"
-		"in vec2 fragUV;"
-		"in vec4 fragColor;"
-		"out vec4 outColor;"
-		"uniform sampler2D sampler;"
-		"void main() {"
-		"	outColor = fragColor * texture(sampler, fragUV);"
-		"}";
+
+	auto fragment_source = R"(
+        #version 100
+        precision mediump float;
+		varying vec2 fragUV;
+		varying vec4 fragColor;
+		uniform sampler2D sampler;
+		void main() {
+			gl_FragColor = fragColor * texture2D(sampler, fragUV);
+		}
+	)";
+
 
 #else
-	const GLchar* vertex_shader =
-		"attribute vec2 position;"
-		"attribute vec2 uv;"
-		"attribute vec4 color;"
-		"varying vec2 fragUV;"
-		"varying vec4 fragColor;"
-		"uniform mat4 projection;"
-		"void main() {"
-		"	fragUV = uv;"
-		"	fragColor = color;"
-		"	gl_Position = projection * vec4(position.xy, 0.0, 1.0);"
-		"}";
 
-	const GLchar* fragment_shader =
-		"precision mediump float;"
-		"varying vec2 fragUV;"
-		"varying vec4 fragColor;"
-		"uniform sampler2D sampler;"
-		"void main() {"
-		"	gl_FragColor = fragColor * texture2D(sampler, fragUV);"
-		"}";
+    auto vertex_source = R"(
+        #version 330
+        layout (location = 0) in vec2 position;
+        layout (location = 1) in vec2 uv;
+        layout (location = 2) in vec4 color;
+        out vec2 fragUV;
+        out vec4 fragColor;
+        uniform mat4 projection;
+        void main() {
+            fragUV = uv;
+            fragColor = color;
+            gl_Position = projection * vec4(position.xy, 0.0, 1.0);
+        };
+
+    )";
+
+    auto fragment_source = R"(
+        #version 330
+        in vec2 fragUV;
+        in vec4 fragColor;
+        out vec4 outColor;
+        uniform sampler2D sampler;
+        void main() {
+            outColor = fragColor * texture(sampler, fragUV);
+        };
+    )";
 
 #endif
+
 	int viewportWidth, viewportHeight;
 	PlatformGetSize(&viewportWidth, &viewportHeight);
 	ImGuiIO& io = ImGui::GetIO();
@@ -217,7 +229,7 @@ int ImGui::Init() {
 	// io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;
 	// io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
 
-	context.shaderProgramID = CreateShaderFromSource(vertex_shader, fragment_shader);
+	context.shaderProgramID = CreateShaderFromSource(vertex_source, fragment_source);
 	context.samplerUniformLoc = GetUniformLocation(context.shaderProgramID, "sampler");
 	context.projectionUniformLoc = GetUniformLocation(context.shaderProgramID, "projection");
 

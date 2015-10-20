@@ -6,7 +6,7 @@
 #define BlendOverlay(base, blend) 		Blend(base, blend, BlendOverlayf)
 
 struct RGBA32 {
-    U32 rgba;
+
 };
 
 struct RGBA8 {
