@@ -2,9 +2,11 @@
 #define RAPTOR_PLATFORM_H
 
 #include <Core/Common.hpp>
+#include <functional>
 
 extern "C" int  PlatformCreate(const char* title, int width = 1280, int height = 720, int flags = 0);
 extern "C" void PlatformRun(void(*mainLoop)(double));
+void PlatformRun(std::function<void(double)>);
 extern "C" void PlatformExit();
 extern "C" double PlatformGetDeltaTime();
 

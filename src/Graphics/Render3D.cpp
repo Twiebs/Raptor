@@ -18,7 +18,6 @@ namespace Raptor {
 		return result;
 	}
 
-
 	void BindMaterial(const Material& material) {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, material.diffuseMapID);
@@ -53,7 +52,7 @@ namespace Raptor {
 		this->viewportHeight = viewportHeight;
 	}
 
-	void UpdateCamera(Camera* camera) {
+	void UpdateCamera (Camera* camera) {
 		camera->front.x = cos(RADIANS(camera->yaw)) * cos(RADIANS(camera->pitch));
 		camera->front.y = sin(RADIANS(camera->pitch));
 		camera->front.z = sin(RADIANS(camera->yaw)) * cos(RADIANS(camera->pitch));
@@ -85,13 +84,17 @@ namespace Raptor {
 	}
 
 	void FPSCameraControlUpdate(Camera* camera) {
-		int dx, dy; PlatformGetCursorDelta(&dx, &dy);
+		int dx, dy;
+		PlatformGetCursorDelta(&dx, &dy);
+
 		camera->yaw += dx;
 		camera->pitch -= dy;
 
-		const static float movementSpeed = 0.3f;
-		auto speed = movementSpeed;
-		if (PlatformGetKey(KEY_LSHIFT)) speed *= 3.0f;
+		static const float MOVEMENT_SPEED = 0.3f;
+		static const float SPRINT_MULTIPLIER = 3.0f;
+		float speed = MOVEMENT_SPEED;
+
+		if (PlatformGetKey(KEY_LSHIFT)) speed *= SPRINT_MULTIPLIER;
 		if (PlatformGetKey(KEY_W)) camera->position += speed * camera->front;
 		if (PlatformGetKey(KEY_S)) camera->position -= speed * camera->front;
 		if (PlatformGetKey(KEY_A)) camera->position -= camera->front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize() * speed;

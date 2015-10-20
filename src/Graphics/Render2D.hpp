@@ -54,7 +54,9 @@ struct Camera2D {
 struct Sprite {
     float x, y;
     float width, height;
-    GLuint textureID;
+
+	Color color;
+	GLuint textureID;
 };
 
 class SpriteBatch {

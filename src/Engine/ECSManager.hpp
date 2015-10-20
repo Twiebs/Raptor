@@ -3,6 +3,7 @@
 #include <Core/Common.hpp>
 #include <cstring>
 #include <functional>
+#include <Utils/Metafuck.hpp>
 
 template<typename T>
 class StaticArray {
@@ -144,6 +145,7 @@ void Array<T>::Resize(size_t newSize) {
 	}
 }
 
+template<typename TComponentList>
 class ECSManager;
 
 class ComponentManager {
@@ -164,12 +166,13 @@ public:
 	void* Data();
 
 private:
+	template<typename TComponentList>
 	friend class ECSManager;
 	U32 componentTypeID;
 	size_t componentSize;
 	size_t count;
 	size_t capacity;
-	void* data;
+	U8* data;
 
 	Array<U32> owners;
 
@@ -179,7 +182,7 @@ private:
 
 ComponentManager::ComponentManager (U32 componentTypeID, size_t componentSize, size_t initialCount)
 	: componentTypeID(componentTypeID), componentSize(componentSize), count(0) {
-	data = malloc(componentSize * initialCount);
+	data = (U8*)malloc(componentSize * initialCount);
 	owners.Resize(initialCount);
 	capacity = initialCount;
 }
@@ -191,9 +194,6 @@ ComponentManager::~ComponentManager() {
 }
 
 void* ComponentManager::CreateComponent (U32 entityID) {
-	static void* lastData = data;
-	lastData = data;
-
 	if (count + 1 > capacity)
 		Grow();
 
@@ -204,8 +204,8 @@ void* ComponentManager::CreateComponent (U32 entityID) {
 }
 
 S32 ComponentManager::DestroyComponent (size_t id) {
-	void* componentToDestroy = data + (componentSize * id);
-	void* componentToMove = data + (componentSize * (count - 1));
+	U8* componentToDestroy = data + (componentSize * id);
+	U8* componentToMove = data + (componentSize * (count - 1));
 	memcpy(componentToDestroy, componentToMove, componentSize);
 
 	auto newOwner = owners[count--];
@@ -232,7 +232,7 @@ void ComponentManager::Grow() {
 void ComponentManager::Grow (size_t newCapacity) {
 	assert(data != nullptr);
 	assert(componentSize > 0);
-	void* newData = malloc(componentSize * newCapacity);
+	U8* newData = (U8*)malloc(componentSize * newCapacity);
 	memcpy(newData, data, componentSize * count);
 	free(data);
 	capacity = newCapacity;
@@ -247,25 +247,63 @@ struct Entity {
 	Entity(U32 id, U64 uuid) : id(id), uuid(uuid) { }
 };
 
+
+template<typename TComponentList>
 class ECSManager {
 public:
 	ECSManager(U32 initalEntityCount);
 	~ECSManager();
 
-
-	void Init();
-	void RegisterComponentType(U32 componentTypeID, size_t componentSize, U32 initalComponentStorageCount);
-
 	Entity& CreateEntity();
 	void DestroyEntity(const Entity& entity);
 
-	void* CreateComponent(const Entity& entity, U32 componentTypeIndex);
-	void DestroyComponent(const Entity& entity, U32 componentTypeIndex);
-	void* GetComponent(const Entity& entity, U32 componentTypeID);
+	template <typename TComponent>
+	TComponent* CreateComponent (const Entity &entity) {
+		auto index = IndexOf<TComponent, TComponentList>();
+		auto& manager = componentManagers[index];
+		auto component = (TComponent*)manager.CreateComponent(entity.id);
+		auto& assignedComponents = entityComponentTables[entity.id];
+		assignedComponents[index] = manager.Count() - 1;
+		return component;
+	}
 
-	void ProcessComponent(U32 componentTypeID, std::function<void(const Entity&, void*)> procedure);
+	template <typename TComponent>
+	void DestroyComponent (const Entity& entity) {
+		assert(entity.uuid != 0 && "This entity has been removed from the manager");
+		auto componentTypeID = IndexOf<TComponent, TComponentList>();
+		auto& components = entityComponentTables[entity.id];
+		auto& manager = componentManagers[componentTypeID];
+		assert(components[componentTypeID] != -1 && "Entity does not own this component type");
+		auto newOwner = manager.DestroyComponent(components[componentTypeID]);
 
-private:
+		auto& newOwnerComponents = entityComponentTables[newOwner];
+		newOwnerComponents[componentTypeID] = newOwner;
+	}
+
+	template <typename TComponent>
+	TComponent* GetComponent (const Entity& entity) {
+		auto componentTypeIndex = IndexOf<TComponent, TComponentList>();
+		auto& components = entityComponentTables[entity.id];
+		auto& manager = componentManagers[componentTypeIndex];
+		auto component = manager[components[componentTypeIndex]];
+		return (TComponent*)component;
+	}
+
+
+	template<typename TComponent>
+	void ProcessComponent (std::function<void(const Entity&, TComponent* component)> procedure) {
+		auto componentTypeIndex = IndexOf<TComponent, TComponentList>();
+		auto& manager = componentManagers[componentTypeIndex];
+		TComponent* componentPointer = (TComponent*)manager.Data();
+		for (U32 i = 0; i < manager.Count(); i++) {
+			auto& entity = entities[manager.owners[i]];
+			procedure(entity, componentPointer);
+			componentPointer += 1;
+		}
+	}
+
+
+	private:
 	friend class ComponentManager;
 
 	Array<Entity> entities;
@@ -273,31 +311,27 @@ private:
 	Array<Array<S32>> entityComponentTables;
 
 	Array<ComponentManager> componentManagers;
-	U32 componentTypesRegistered = 0;
 
 	U32 nextUUID = 1;
 };
 
-ECSManager::ECSManager(U32 initalEntityCount) {
+template <typename TComponentList>
+ECSManager<TComponentList>::ECSManager(U32 initalEntityCount) {
 	entities.Resize(initalEntityCount);
 	entityComponentTables.Resize(initalEntityCount);
+	auto componentCount = TComponentList::Size();
+	componentManagers.Resize(TComponentList::Size());
+//	for (U32 i = 0; i < componentCount; i++) {
+//		componentManagers.Create(i, sizeof(AtIndex<i, TComponentList>), size_t initalSize)
+//	}
 }
-
-ECSManager::~ECSManager() {
-
-}
-
-void ECSManager::RegisterComponentType (U32 componentTypeID, size_t componentSize, U32 initalComponentStorageCount) {
-	assert(componentTypesRegistered == componentManagers.Count());
-	componentManagers.Create(componentTypeID, componentSize, initalComponentStorageCount);
-	componentTypesRegistered += 1;
-}
-
-void ECSManager::Init() {
+template<typename TComponentList>
+ECSManager<TComponentList>::~ECSManager() {
 
 }
 
-Entity& ECSManager::CreateEntity() {
+template<typename TComponentList>
+Entity& ECSManager<TComponentList>::CreateEntity() {
 	if (removedEntityIDs.Count() > 0) {
 		auto id = removedEntityIDs.PopAndReturn();
 		auto& entity = entities[id];
@@ -306,11 +340,12 @@ Entity& ECSManager::CreateEntity() {
 	}
 
 	auto& entity = entities.CreateAndReturn(entities.Count(), nextUUID++);
-	entityComponentTables.CreateAndReturn(componentTypesRegistered, -1);
+	entityComponentTables.CreateAndReturn(TComponentList::Size(), -1);
 	return entity;
 }
 
-void ECSManager::DestroyEntity (const Entity& entity) {
+template<typename TComponentList>
+void ECSManager<TComponentList>::DestroyEntity (const Entity& entity) {
 	assert(entity.uuid != 0 && "This is a deleted entity");
 	assert(entities[entity.id].uuid == entity.uuid && "Entity uuid mismatch");
 	entities[entity.id].uuid = 0;
@@ -326,43 +361,62 @@ void ECSManager::DestroyEntity (const Entity& entity) {
 		}
 	}
 }
+//
+//template<typename TComponentList, typename TComponentType>
+//void* ECSManager<TComponentList>::CreateComponent<TComponentType> (const Entity &entity) {
+//	assert(componentManagers.Count() > IndexOf<TComponentType, TComponentList>() && "componentTypeIndex out of bounds!");
+//	auto index = IndexOf<TComponentType, TComponentList>();
+//	auto& manager = componentManagers[index];
+//	auto component = manager.CreateComponent(entity.id);
+//	auto& assignedComponents = entityComponentTables[entity.id];
+//	assignedComponents[index] = manager.Count() - 1;
+//	return component;
+//}
 
-void* ECSManager::CreateComponent (const Entity &entity, U32 componentTypeIndex) {
-	assert(componentManagers.Count() > componentTypeIndex && "componentTypeIndex out of bounds!");
-	auto& manager = componentManagers[componentTypeIndex];
-	auto component = manager.CreateComponent(entity.id);
-	auto& assignedComponents = entityComponentTables[entity.id];
-	assignedComponents[componentTypeIndex] = manager.Count() - 1;
-	return component;
-}
+//template <typename TComponentList, typename TComponentType>
+//void ECSManager<TComponentList>::DestroyComponent<TComponentType> (const Entity& entity) {
+//	assert(entity.uuid != 0 && "This entity has been removed from the manager");
+//	auto componentTypeID = TypeOf<TComponentType, TComponentList>();
+//	auto& components = entityComponentTables[entity.id];
+//	auto& manager = componentManagers[componentTypeID];
+//	assert(components[componentTypeID] != -1 && "Entity does not own this component type");
+//	auto newOwner = manager.DestroyComponent(components[componentTypeID]);
+//
+//	auto& newOwnerComponents = entityComponentTables[newOwner];
+//	newOwnerComponents[componentTypeID] = newOwner;
+//}
 
-void ECSManager::DestroyComponent (const Entity& entity, U32 componentTypeID) {
-	assert(entity.uuid != 0 && "This entity has been removed from the manager");
-	auto& components = entityComponentTables[entity.id];
-	auto& manager = componentManagers[componentTypeID];
-	assert(components[componentTypeID] != -1 && "Entity does not own this component type");
-	auto newOwner = manager.DestroyComponent(components[componentTypeID]);
+//void ECSManager::ProcessComponent(U32 componentTypeID, std::function<void(const Entity&, void*)> procedure) {
+//	assert(componentTypeID < componentTypesRegistered);
+//	auto& manager = componentManagers[componentTypeID];
+//	U8* componentPointer = (U8*)manager.Data();
+//	for (U32 i = 0; i < manager.Count(); i++) {
+//		auto& entity = entities[manager.owners[i]];
+//		procedure(entity, componentPointer);
+//		componentPointer += manager.ComponentSize();
+//	}
+//}
 
-	auto& newOwnerComponents = entityComponentTables[newOwner];
-	newOwnerComponents[componentTypeID] = newOwner;
-}
+//
+//template <typename TComponentList, typename TComponent>
+//void ECSManager<TComponentList>::ProcessComponent<TComponent>(std::function<void(const Entity&, TComponent* component)> procedure) {
+//	auto componetTypeID = IndexOf<TComponent, TComponentList>();
+//	auto& manager = componentManagers[componentTypeID];
+//	TComponent* componentPointer = manager.Data();
+//	for (U32 i = 0; i < manager.Count(); i++) {
+//		auto& entity = entities[manager.owners[i]];
+//		procedure(entity, componentPointer);
+//		componentPointer += 1;
+//	}
+//}
 
-void ECSManager::ProcessComponent(U32 componentTypeID, std::function<void(const Entity&, void*)> procedure) {
-	assert(componentTypeID < componentTypesRegistered);
-	auto& manager = componentManagers[componentTypeID];
-	void* componentPointer = manager.Data();
-	for (U32 i = 0; i < manager.Count(); i++) {
-		auto& entity = entities[manager.owners[i]];
-		procedure(entity, componentPointer);
-		componentPointer += manager.ComponentSize();
-	}
-}
 
-void* ECSManager::GetComponent(const Entity& entity, U32 componentTypeID) {
-	auto& components = entityComponentTables[entity.id];
-	auto& manager = componentManagers[componentTypeID];
-	auto component = manager[components[componentTypeID]];
-	return component;
-}
+
+//void* ECSManager::GetComponent(const Entity& entity, U32 componentTypeID) {
+//	auto& components = entityComponentTables[entity.id];
+//	auto& manager = componentManagers[componentTypeID];
+//	auto component = manager[components[componentTypeID]];
+//	return component;
+//}
 
 #endif //RAPTOR_ECSMANAGER_HPP

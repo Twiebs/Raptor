@@ -63,6 +63,7 @@ void PlatformRun(void(*mainLoop)(double)) {
         lastTime = currentTime;
 
 		SDL_Event event;
+		SDL_GetRelativeMouseState(nullptr, nullptr);
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 			case SDL_QUIT: {
@@ -77,6 +78,31 @@ void PlatformRun(void(*mainLoop)(double)) {
 		mainLoop(global_deltaTime);
 		SDL_GL_SwapWindow(global_window);
 
+	}
+}
+
+void PlatformRun(std::function<void(double)> mainLoop) {
+	while (global_running) {
+		static U32 lastTime = SDL_GetTicks();
+		U32 currentTime = SDL_GetTicks();
+		global_deltaTime = ((double)(currentTime - lastTime)) / 1000.0f;
+		lastTime = currentTime;
+
+		SDL_Event event;
+		SDL_GetRelativeMouseState(nullptr, nullptr);
+		while (SDL_PollEvent(&event)) {
+			switch (event.type) {
+				case SDL_QUIT: {
+					global_running = false;
+				} break;
+				case SDL_TEXTINPUT: {
+				} break;
+
+			}
+		}
+
+		mainLoop(global_deltaTime);
+		SDL_GL_SwapWindow(global_window);
 	}
 }
 

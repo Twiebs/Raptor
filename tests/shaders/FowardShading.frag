@@ -14,7 +14,7 @@ struct PointLight {
 
   float linear;
   float quadratic;
-	float radius;
+  float radius;
 };
 
 #define MAX_POINT_LIGHTS 64

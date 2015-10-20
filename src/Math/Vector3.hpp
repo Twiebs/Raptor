@@ -106,3 +106,5 @@ float Vector3::Dot(const Vector3& v) const {
 inline float Vector3::magnitude() {
     return std::sqrt((x * x) + (y * y) + (z * z));
 }
+
+Vector3&& cross (const Vector3& a, const Vector3& b);

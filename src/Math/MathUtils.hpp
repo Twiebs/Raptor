@@ -16,6 +16,17 @@ inline F32 Lerp (F32 from, F32 to, F32 t) {
 	return result;
 }
 
+inline float Clamp (float value, float min, float max) {
+	if (value > max) return max;
+	if (value < min) return min;
+	return value;
+}
+
+inline float SmoothStep (float a, float b, float x) {
+	x = Clamp((x - a)/(b - a), 0.0f, 1.0f);
+	return x*x*(3 - 2*x);
+}
+
 namespace MathUtils {
 
 	inline static F32 Clamp(F32 value, F32 min, F32 max) {

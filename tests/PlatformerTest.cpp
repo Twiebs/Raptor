@@ -6,21 +6,27 @@
 #include <Graphics/imgui.h>
 #include <Engine/GFX2D.hpp>
 #include <Engine/ECSManager.hpp>
+#include <Math/Random.hpp>
 
-ECSManager manager(512);
+
 
 enum COMPONENT_TYPE {
 	COMPONENT_BODY,
-	COMPONENT_SPRITE,
+	COMPONENT_TEXTURE,
+	COMPONENT_TOTAL_COUNT
 };
 
 struct PhysicsBody2D {
 	b2Body* body;
 };
 
+struct TextureComponent {
+	U32 textureID;
+};
+
+Box2DRenderer* box2DRenderer;
 
 b2Body* playerBody;
-Box2DRenderer* box2DRenderer;
 
 GLuint nullTextureID;
 
@@ -29,20 +35,14 @@ GLuint nullTextureID;
 #define POSITION_ITERATIONS 12
 b2World world(b2Vec2(0.0f, -9.8f));
 
-b2Body* CreateBody() {
-    b2BodyDef bodyDef;
-    bodyDef.type = b2_dynamicBody;
 
-    auto body = world.CreateBody(&bodyDef);
+// Template-metafuck test
+typedef TypeList<
+		PhysicsBody2D,
+		TextureComponent
+> ComponentList;
 
-    b2FixtureDef fixDef;
-    b2CircleShape shape;
-    shape.m_radius = 0.5f;
-    fixDef.shape = &shape;
-
-    body->CreateFixture(&fixDef);
-    return body;
-}
+ECSManager<ComponentList> manager(512);
 
 b2Body* CreatePlatform (const Vector2& position, const Vector2& size) {
     b2BodyDef bodyDef;
@@ -79,6 +79,89 @@ void PlatformerControls (b2Body* body) {
     body->SetLinearVelocity(b2Vec2(vx, vy));
 }
 
+struct ParticleEmitter2D {
+	Array<Particle2D> particles;
+	Vector2 position;
+	Vector2 velocity;
+
+	float fadeoutPeriod;
+	float particlesPerSecond;
+
+	float speed0, speed1;
+	float theta0, theta1;
+
+	float size0;
+	float size1;
+
+	float drag0;
+	float drag1;
+
+	float lifetime0;
+	float lifetime1;
+
+	float lifetime;
+	float elapsedTime;
+
+	Color color0;
+	Color color1;
+};
+
+
+struct Particle2D {
+	Vector2 position;
+	Vector2 velocity;
+
+	float size;
+	float drag;
+	Color color;
+
+	float lifetime;
+	float elapsedTime;
+};
+
+static void UpdateParticleEmitter2D (ParticleEmitter2D* emitter, float deltaTime) {
+	static auto spawnParticle = [](ParticleEmitter2D* emitter) {
+		auto particle = emitter->particles.CreateAndReturn();
+		particle.position = emitter->position;
+		particle.velocity = emitter->velocity;
+
+		particle.size = Random::Range(emitter->size0, emitter->size1);
+		particle.drag = Random::Range(emitter->drag0, emitter->drag1);
+		particle.lifetime = Random::Range(emitter->lifetime0, emitter->lifetime1);
+
+		auto colorLerpCoefficeant = Random::Range(0.0f, 1.0f);
+		particle.color = Lerp(emitter->color0, emitter->color1, colorLerpCoefficeant);
+
+		auto speed = Random::Range(emitter->speed0, emitter->speed1);
+		auto theta = Random::Range(emitter->theta0, emitter->theta1);
+
+		auto vx = speed * cos(theta);
+		auto vy = speed * sin(theta);
+		particle.velocity = Vector2(vx, vy);
+	};
+
+	static auto simulateParticle = [](Particle2D* particle, float deltaTime) {
+		particle->velocity *= particle->drag;
+		particle->elapsedTime += deltaTime;
+	};
+
+	for (U32 i = 0; i < emitter->particles.Count(); i++) {
+		auto particle = &emitter->particles[i];
+		simulateParticle(particle, deltaTime);
+		if (particle->elapsedTime > particle->lifetime) {
+			// Remove the particle here
+		}
+	}
+
+	emitter->elapsedTime += deltaTime;
+	if (emitter->elapsedTime > emitter->lifetime) {
+
+	}
+}
+
+
+
+
 void MainLoop (F64 deltaTime) {
     if (PlatformGetKey(KEY_ESCAPE)) {
         PlatformExit();
@@ -96,17 +179,23 @@ void MainLoop (F64 deltaTime) {
 
 	GFX2D::Begin();
 	GFX2D::SetProjectionMatrix(camera.projectionView());
-	manager.ProcessComponent(COMPONENT_SPRITE, [](const Entity& entity, void* spritePointer) {
-		auto sprite = (Sprite*)spritePointer;
-		auto body = (PhysicsBody2D*)manager.GetComponent(entity, COMPONENT_BODY);
-		GFX2D::FillRect(body->body->GetPosition().x - 0.5f, body->body->GetPosition().y - 0.5f, 1.0f, 1.0f);
+
+	manager.ProcessComponent<TextureComponent>([](const Entity& entity, TextureComponent* textureComponent) {
+		auto physicsComponent = manager.GetComponent<PhysicsBody2D>(entity);
+		const b2Vec2& position = physicsComponent->body->GetPosition();
+		auto size = physicsComponent->body->GetFixtureList()->GetShape()->m_radius;
+		GFX2D::Texture(textureComponent->textureID, position.x, position.y, size, size);
+		// GFX2D::FillRect(body->body->GetPosition().x - 0.5f, body->body->GetPosition().y - 0.5f, 1.0f, 1.0f, textureComponent->textureID == 1 ? Color::WHITE : Color::RED);
 	});
 
 
-	GFX2D::FillRect(playerBody->GetPosition().x - 0.5f, playerBody->GetPosition().y - 0.5f, 1.0f, 1.0f);
-	GFX2D::Texture(nullTextureID, 0.0f, 0.0f, 1.0f, 1.0f);
-	GFX2D::FillRect(1.0f, -2.0f, 3.0f, 3.0f, Color::RED);
 	GFX2D::End();
+
+
+//	GFX2D::FillRect(playerBody->GetPosition().x - 0.5f, playerBody->GetPosition().y - 0.5f, 1.0f, 1.0f);
+//	GFX2D::Texture(nullTextureID, 0.0f, 0.0f, 1.0f, 1.0f);
+//	GFX2D::FillRect(1.0f, -2.0f, 3.0f, 3.0f, Color::RED);
+
 
 	ImGui::BeginFrame();
 	ImGui::Text("Test");
@@ -115,27 +204,41 @@ void MainLoop (F64 deltaTime) {
 }
 
 
+typedef TypeList<PhysicsBody2D, TextureComponent> Test;
+
 int main() {
     PlatformCreate("Platfomer Test");
 	GFX2D::Init();
 	ImGui::Init();
 
-	manager.RegisterComponentType(COMPONENT_BODY, sizeof(PhysicsBody2D), 512);
-	manager.RegisterComponentType(COMPONENT_SPRITE, sizeof(Sprite), 512);
-	manager.Init();
+	Random rng;
+
+	auto CreatePlatformerCharacter = [](const Vector2& position, U32 textureID) -> b2Body* {
+		auto& entity = manager.CreateEntity();
+		auto physicsBody = manager.CreateComponent<PhysicsBody2D>(entity);
+		b2BodyDef bodyDef;
+		bodyDef.position = b2Vec2(position.x, position.y);
+		bodyDef.type = b2_dynamicBody;
+
+		auto body = world.CreateBody(&bodyDef);
+
+		b2FixtureDef fixDef;
+		b2CircleShape shape;
+		shape.m_radius = 0.5f;
+		fixDef.shape = &shape;
+		body->CreateFixture(&fixDef);
+		physicsBody->body = body;
+
+		auto textureComponent = manager.CreateComponent<TextureComponent>(entity);
+		textureComponent->textureID = textureID;
+		return body;
+	};
 
 	for (U32 i = 0; i < 10; i++) {
-		auto& entity = manager.CreateEntity();
-		auto body = (PhysicsBody2D*)manager.CreateComponent(entity, COMPONENT_BODY);
-		body->body = CreateBody();
-
-		auto sprite = (Sprite*)manager.CreateComponent(entity, COMPONENT_SPRITE);
-		sprite->width = 1.0f;
-		sprite->height = 1.0f;
+		CreatePlatformerCharacter(Vector2(rng.Range(-5.0f, 5.0f), rng.Range(-0.5f, 0.5f)), 0);
 	}
 
-
-    playerBody = CreateBody();
+	playerBody = CreatePlatformerCharacter(Vector2(0.0f, 0.0f), 1);
     CreatePlatform(Vector2(0.0f, -5.0f), Vector2(30.0f, 1.0f));
 
 	nullTextureID = CreateTextureFromFile("assets/null.png");
@@ -144,8 +247,8 @@ int main() {
     box2DRenderer = &b2Renderer;
     world.SetDebugDraw(box2DRenderer);
 	world.SetAllowSleeping(true);
-	world.SetContinuousPhysics(true);
-	world.SetSubStepping(true);
+//	world.SetContinuousPhysics(true);
+//	world.SetSubStepping(true);
 
     PlatformRun(MainLoop);
 }

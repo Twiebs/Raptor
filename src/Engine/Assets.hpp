@@ -11,6 +11,9 @@
 //There could also be a userdata field inorder to allow custom types!
 
 namespace Assets {
-using namespace Raptor;
+
+
+U32 LoadModel(const std::string& filename);
+
 
 }

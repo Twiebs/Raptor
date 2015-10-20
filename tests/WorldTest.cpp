@@ -37,7 +37,7 @@ global_variable World global_world;
 global_variable Editor global_editor;
 global_variable DeferredShader global_DeferredShader;
 
-void RenderTest(Camera& camera) {
+void RenderTest (Camera& camera) {
 	static GLuint basicShader = CreateShader("shaders/Basic.vert", "shaders/Basic.frag");
 	glUseProgram(basicShader);
 	//auto& model = global_assetTable.models[1];

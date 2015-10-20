@@ -464,6 +464,7 @@ void MainLoop(Application* app) {
 
 #if 1
 int main () {
+	Platf
     Application app("Raptor Mesh Viewer", 1920, 1080, true);
 	glEnable(GL_DEPTH_TEST);
 
@@ -507,7 +508,7 @@ int main () {
 	//GLfloat lightMax = std::fmaxf(std::fmaxf(light.color.x, light.color.y), light.color.z);
 	//light.radius = (-light.linear + std::sqrtf(light.linear * light.linear - 4 * light.quadratic * (1.0 - (256.0 / 5.0) * lightMax))) / (2 * light.quadratic);
 
-	global_debugLightShader = LoadShaderFromFile("shaders/DebugLights.vert", "shaders/DebugLights.frag");
+	global_debugLightShader = CreateShader("shaders/DebugLights.vert", "shaders/DebugLights.frag");
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 

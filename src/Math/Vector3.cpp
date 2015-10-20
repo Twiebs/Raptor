@@ -55,6 +55,13 @@ Vector3 Vector3::Cross (const Vector3& vector) const {
 	return Vector3(_x, _y, _z);
 }
 
+Vector3&& cross (const Vector3& a, const Vector3& b) {
+	const float x = (a.y * b.z) - (a.z * b.y);
+	const float y = (a.z * b.x) - (a.x * b.z);
+	const float z = (a.x * b.y) - (a.y * b.x);
+	return Vector3(x, y, z);
+}
+
 
 Vector3::~Vector3() {
 }

@@ -118,7 +118,7 @@ vec3 CalculateDirectionalLightColor(DirectionalLight light, vec3 normal, vec3 vi
 	vec3 lightDir = normalize(light.direction);
 	float diffuseFactor = max(dot(normal, lightDir), 0.0);
 
-  vec3 reflectDir = reflect(-lightDir, normal);
+  	vec3 reflectDir = reflect(-lightDir, normal);
 	float specularFactor = pow(max(dot(viewDir, reflectDir), 0.0), 32);
 
 	vec3 ambientColor = light.ambient * vec3(texture(material.diffuse, fragTexCoord));

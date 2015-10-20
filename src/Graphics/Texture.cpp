@@ -120,7 +120,7 @@ GLuint CreateTextureFromFile(const std::string& filename) {
 }
 
 #ifndef __EMSCRIPTEN__
-GLuint CreateArrayTexture2D(U32 width, U32 height, std::vector<std::string>& filenames) {
+GLuint CreateArrayTexture2D (U32 width, U32 height, std::vector<std::string>& filenames) {
 	GLuint textureID = 0;
 	GLuint mipLevelCount = 1;
 	glGenTextures(1, &textureID);
@@ -166,7 +166,60 @@ GLuint CreateTextureFromPixels(U32 width, U32 height, U8* pixels) {
 	return textureID;
 }
 
-Vector2 GetTexelCoords(U32 x, U32 y, U32 width, U32 height) {
+
+static inline void SetTextureParameters (GLenum wrap_mode, GLenum filter_mode) {
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, wrap_mode);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
+}
+
+GLuint LoadTextureReleaseData (const std::string& filename, GLenum wrap_mode) {
+	int width, height;
+	U8* pixels = stbi_load(filename.c_str(), &width, &height, nullptr, 4);
+	if (pixels == nullptr) {
+		LOG_ERROR("Could not load image: " << filename);
+		return 0;
+	}
+
+	auto textureID = CreateRGBATexture(width, height, pixels, wrap_mode);
+	stbi_image_free(pixels);
+	return textureID;
+}
+
+GLuint CreateRGBATexture (U32 width, U32 height, U8* data, GLenum wrap_mode) {
+	assert(width > 0 && height > 0);
+	assert(data != nullptr);
+
+	GLuint textureID;
+
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SetTextureParameters(wrap_mode, GL_LINEAR_MIPMAP_LINEAR);
+	return textureID;
+}
+
+GLuint CreateAlphaMap (U32 width, U32 height, U8* data) {
+	GLuint textureID;
+
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width, height, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	return textureID;
+}
+
+Vector2 GetTexelCoords (U32 x, U32 y, U32 width, U32 height) {
 	F32 u = (F32)(x) / (F32)width;
 	F32 v = (F32)(y) / (F32)height;
 	return Vector2(u, v);

@@ -13,7 +13,6 @@ Vector3 PointToQuadrilateralizedSphere(const Vector3& point) {
 }
 
 const static float GOLDEN_RATIO = 1.61803398875f;
-
 const static int NUM_ICOSOHEDRON_VERTICES = 12;
 const static Vector3 ICOSOHEDRON_VERTICES[12] = {
 	Vector3(-1.0f, GOLDEN_RATIO, 0.0f),

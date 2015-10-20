@@ -17,4 +17,6 @@ void BuildBottomQuad(int subdivisionLevel, Vector3* positions, U32* indices);
 void BuildLeftQuad(int subdivisionLevel, Vector3* positions, U32* indices);
 void BuildRightQuad(int subdivisionLevel, Vector3* positions, U32* indices);
 
+
+
 #endif //RAPTOR_GEOMETRY3D_H

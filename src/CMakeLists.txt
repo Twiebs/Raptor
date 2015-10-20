@@ -15,10 +15,15 @@ set(CORE_SRCS
   Core/Platform.h
   Core/Tasks.hpp
   Core/Tasks.cpp
+
+    Utils/utils.cpp
+    Utils/utils.hpp
 )
 source_group(Core FILES ${CORE_SRCS})
 
 set(MATH_SRCS
+    Math/Procedural3D.cpp
+    Math/Procedural3D.hpp
   Math/Geometry2D.cpp
   Math/Geometry2D.hpp
   Math/Geometry3D.cpp
@@ -53,6 +58,8 @@ set(GRAPHICS_SRCS
     Graphics/Lighting.hpp
 	Graphics/ModelData.cpp
 	Graphics/ModelData.hpp
+        Graphics/Mesh.cpp
+        Graphics/Mesh.hpp
 	Graphics/imgui.cpp
 	Graphics/imgui_draw.cpp
 	Graphics/imgui_demo.cpp

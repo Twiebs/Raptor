@@ -51,6 +51,12 @@ void FreeTextureAtlas(TextureAtlas* atlas);
 GLuint CreateArrayTexture2D(U32 width, U32 height, std::vector<std::string>& filenames);
 GLuint CreateTextureFromPixels(U32 width, U32 height, U8* pixels);
 GLuint CreateTextureFromFile(const std::string& filename);
+GLuint CreateAlphaMap(U32 width, U32 height, U8* data);
+
+GLuint LoadTextureReleaseData (const std::string& filename, GLenum wrap_mode = GL_CLAMP_TO_EDGE);
+GLuint CreateRGBATexture (U32 width, U32 height, U8* data, GLenum wrap_mode = GL_CLAMP_TO_EDGE);
+
+
 
 Vector2 GetTexelCoords(U32 x, U32 y, U32 width, U32 height);
 void WritePixelsHack(U8* dest, U16 destX, U16 destY, U16 destWidth, U16 destHeight, U8* src, U16 srcWidth, U16 srcHeight);

@@ -3,6 +3,10 @@
 #include <Core/Common.hpp>
 #include <random>
 
+float RandomInRange (float min, float max);
+int RandomInRange (int min, int max);
+
+
 //Generates random numbers
 class Random {
 public:

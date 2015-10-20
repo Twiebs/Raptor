@@ -29,7 +29,7 @@ struct FragmentInfo {
   float specular;
 };
 
-void UnpackGBuffer(ivec2 texcoord, out FragmentInfo fragment) {
+void UnpackGBuffer (ivec2 texcoord, out FragmentInfo fragment) {
   fragment.position = texelFetch(gPosition, texcoord, 0).rgb;
   fragment.normal = texelFetch(gNormal, texcoord, 0).rgb;
   fragment.color = texelFetch(gColor, texcoord, 0).rgb;
