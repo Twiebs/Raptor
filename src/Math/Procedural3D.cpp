@@ -4,8 +4,6 @@
 // This is compleatly wrong... the vertex normals will not be summed together properly
 // because the vertices are duplicated!
 void CalculateSurfaceNormals (Vertex3D* vertices, U32 vertexCount, U32* indices, U32 indexCount) {
-	assert(vertexCount == 65536 && indexCount == 98304);
-
 	for (U32 i = 0; i < indexCount; i+=3) {
 		auto index0 = indices[i + 0];
 		auto index1 = indices[i + 1];
@@ -90,7 +88,7 @@ void CreatePlaneMesh (MeshData* meshData, float x, float y, float w, float h, in
 
 	auto gridArea = cellCount * cellCount;
 	auto vertexCount = gridArea * 4;
-	auto indexCount = gridArea * 6;
+	auto indexCount = (cellCount-1)*(cellCount-1)*6;
 	AllocateMeshData(meshData, vertexCount, indexCount);
 
 	auto vertices = meshData->vertices;
@@ -127,7 +125,7 @@ void CreatePlaneMesh (MeshData* meshData, float x, float y, float w, float h, in
 		currentIndex += 6;
 	}
 
-
+	assert(currentIndex == indexCount);
 	CalculateSurfaceNormals(vertices, vertexCount, indices, indexCount);
 }
 

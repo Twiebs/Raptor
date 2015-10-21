@@ -7,6 +7,7 @@ std::string ReadEntireFile (const std::string& filename) {
 	std::ifstream file(filename, std::ios::binary);
 	if (!file.is_open()) {
 		LOG_ERROR("Could not open " << filename << " when attempting to read entire file");
+		return std::string("ERROR_FILE_NOT_READ_CORRECTLY");
 	}
 
 	file.seekg(0, std::ios::end);

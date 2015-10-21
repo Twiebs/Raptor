@@ -23,6 +23,21 @@
 
 using namespace Raptor;
 
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
+#ifndef ASSET_DIRECTORY
+#define ASSET_DIRECTORY "../../resources/assets/"
+#endif
+
+#ifndef SHADER_DIRECTORY
+#define SHADER_DIRECTORY "../../resources/shaders/"
+#endif
+
+#define ASSET_FILE(filename) ASSET_DIRECTORY filename
+#define SHADER_FILE(filename) SHADER_DIRECTORY filename
+
 
 void DrawMesh (MeshData* data, MeshVertexBuffer* buffer) {
 	glBindVertexArray(buffer->vertexArrayID);
@@ -91,8 +106,6 @@ struct TerrainManager {
 	U32 terrainCount;
 	std::vector<GLuint> alphaMaps; // materialCount per terrainMesh
 
-
-
 	U32 managerMaxWidth;
 	U32 managerMaxLength;
 	U32 managerArea;
@@ -107,18 +120,104 @@ struct TerrainManager {
 	GLuint shaderID;
 
 	TerrainManager(U32 materialCount, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrainResolution, U32 cellsPerTexcoord);
+	~TerrainManager();
 
 	void draw();
 };
 
 
 
+struct Work {
+	std::function<void()> execute;
+	std::function<void()> finalize;
+};
+
+struct WorkQueue {
+	std::mutex mutex;
+	std::condition_variable condition_variable;
+	
+	std::vector<Work> workToExecute;
+	std::vector<Work> workToFinalize;
+};
+
+struct TaskManager {
+	std::vector<std::thread> threads;
+	WorkQueue workQueue;
+};
+
+global_variable TaskManager g_TaskManager;
+
+
+static void ThreadProc(WorkQueue* queue) {
+	bool isRunning = true;
+
+	Work work;
+	bool workNeedsDoing = false;
+
+	while (isRunning) {
+		if (workNeedsDoing) {
+			work.execute();
+			workNeedsDoing = false;
+
+			queue->mutex.lock();
+			queue->workToFinalize.push_back(work);
+			queue->mutex.unlock();
+		}
+
+
+		std::unique_lock<std::mutex> lock(queue->mutex);
+		queue->condition_variable.wait(lock);
+
+		if (queue->workToExecute.size() > 0) {
+			work = queue->workToExecute.back();
+			queue->workToExecute.pop_back();
+			workNeedsDoing = true;
+		}
+	}
+}
+
+void InitTaskManager (TaskManager* manager) {
+	auto threadCount = std::thread::hardware_concurrency() - 1;
+	manager->threads.resize(threadCount);
+
+	for (U32 i = 0; i < threadCount; i++) {
+		manager->threads[i] = std::thread(ThreadProc, &manager->workQueue);
+	}
+}
+
+void InitTaskManager() {
+	InitTaskManager(&g_TaskManager);
+}
+
+// DONT SUBMIT NEW WORK IN A FINALIZER!
+void SubmitTask (std::function<void()> execute, std::function<void()> finalize) {
+	WorkQueue* queue = &g_TaskManager.workQueue;
+
+	queue->mutex.lock();
+	queue->workToExecute.push_back({ execute, finalize });
+	queue->condition_variable.notify_one();
+	queue->mutex.unlock();
+}
+
+
+
+void FinializeCompletedTasks() {
+	WorkQueue* queue = &g_TaskManager.workQueue;
+
+	queue->mutex.lock();
+	for (U32 i = 0; i < queue->workToFinalize.size(); i++) {
+		queue->workToFinalize[i].finalize();
+	}
+
+	queue->workToFinalize.clear();
+	queue->mutex.unlock();
+}
+
 TerrainManager::TerrainManager (U32 material_count, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrain_resolution, U32 cellsPerTexcoord) :
 	terrainWidth(terrainWidth),
 	terrainLength(terrainLength),
 	terrainResolution(terrain_resolution),
 	terrainCellsPerTexcoord(cellsPerTexcoord)
-
 {
 	materialCount = material_count;
 	managerMaxWidth = max_width;
@@ -132,15 +231,17 @@ TerrainManager::TerrainManager (U32 material_count, U32 max_width, U32 max_lengt
 	terrainMeshes.resize(managerArea);
 
 	GLSLCompiler compiler;
-	compiler.addSourceFile(VERTEX_SHADER, "shaders/terrain.vert");
-	compiler.addSourceFile(FRAGMENT_SHADER, "shaders/terrain.frag");
+	compiler.addSourceFile(VERTEX_SHADER,	SHADER_FILE("terrain.vert"));
+	compiler.addSourceFile(FRAGMENT_SHADER, SHADER_FILE("terrain.frag"));
 	compiler.addDefnition("#define MATERIAL_COUNT " + std::to_string(materialCount) + "\n");
 	compiler.addDefnition("#define TERRAIN_WIDTH " + std::to_string(terrainWidth) + "\n");
 	compiler.addDefnition("#define TERRAIN_LENGTH " + std::to_string(terrainLength) + "\n");
 	compiler.addDefnition("#define TERRAIN_CELLS_PER_TEXCOORD " + std::to_string(terrainCellsPerTexcoord) + "\n");
-
-	// compiler.addDefnition("#define TERRAIN_RESOLUTION " + std::to_string(terrainResolution) + "\n");
 	shaderID = compiler.compile();
+}
+
+TerrainManager::~TerrainManager() {
+	glDeleteProgram(shaderID);
 }
 
 
@@ -150,13 +251,20 @@ inline void BindTexture2DToUnit (GLuint textureID, U32 unitIndex) {
 }
 
 void TerrainManager::draw() {
+
+	auto BindAlphaMaps = [&](U32 terrainChunkIndex) {
+		for (U32 i = 0; i < materialCount; i++) {
+			BindTexture2DToUnit(alphaMaps[(terrainChunkIndex * materialCount) + i], materialCount + i);
+		}
+	};
+
 	for (U32 i = 0; i < materialCount; i++) {
 		auto& material = GetMaterial(materials[i]);
 		BindTexture2DToUnit(material.diffuseMapID, (materialCount * 0) + i);
-		BindTexture2DToUnit(alphaMaps[i], (materialCount * 1) + i);
 	}
 
 	for (U32 i = 0; i < managerArea; i++) {
+		BindAlphaMaps(i);
 		auto& terrainMesh = terrainMeshes[i];
 		glBindVertexArray(terrainMesh.vertexArrayID);
 		glDrawElements(GL_TRIANGLES, terrainMesh.indexCount, GL_UNSIGNED_INT, 0);
@@ -206,10 +314,11 @@ void ShowTerrainProperties (const TerrainManager& manager) {
 }
 
 
-#define MANAGER_IMPLEMENTATION
 void RunBasicGLTest() {
 	PlatformCreate("Basic GLTest");
 	// auto shaderID = CreateShader("shaders/terrain.vert", "shaders/terrain.frag");
+
+	InitTaskManager();
 
 	Camera camera(Vector3(20.0f, 5.0f, 200.0f), 1280.0f, 720.0f);
 	camera.farClip = 10000.0f;
@@ -217,112 +326,16 @@ void RunBasicGLTest() {
 	DirectionalLight directionalLight;
 	// UniformDirectionalLight(shaderID, 0, directionalLight);
 
-
-#ifndef MANAGER_IMPLEMENTATION
-	static const int WORLD_WIDTH = 1;
-	static const int WORLD_HEIGHT = 1;
-	static const int WORLD_AREA = WORLD_WIDTH * WORLD_HEIGHT;
-	static const float TERRAIN_WIDTH = 128.0f;
-	static const float TERRAIN_HEIGHT = 128.0f;
-	static const int TERRAIN_GRID_SEGMENTS = 128;
-	static const int TERRAIN_MATERIAL_COUNT = 3;
-
-	GLuint alphaMaps[TERRAIN_MATERIAL_COUNT];
-	U8* alphaData = (U8*)malloc(TERRAIN_GRID_SEGMENTS * TERRAIN_GRID_SEGMENTS);
-	memset(alphaData, 255, TERRAIN_GRID_SEGMENTS * TERRAIN_GRID_SEGMENTS);
-	alphaMaps[0] = CreateAlphaMap(TERRAIN_GRID_SEGMENTS, TERRAIN_GRID_SEGMENTS, alphaData);
-
-	OpenSimplexNoise texnoise(0);
-	for (U32 n = 0; n < TERRAIN_GRID_SEGMENTS * TERRAIN_GRID_SEGMENTS; n++) {
-		auto x = n % TERRAIN_GRID_SEGMENTS;
-		auto z = n / TERRAIN_GRID_SEGMENTS;
-		auto value = texnoise.FBM(x, z, 6, 0.001f, 0.05f);
-		alphaData[n] = (U8)(value * 255);
-	}
-	alphaMaps[1] = CreateAlphaMap(TERRAIN_GRID_SEGMENTS, TERRAIN_GRID_SEGMENTS, alphaData);
-
-	OpenSimplexNoise noise0(34534);
-	for (U32 n = 0; n < TERRAIN_GRID_SEGMENTS * TERRAIN_GRID_SEGMENTS; n++) {
-		auto x = n % TERRAIN_GRID_SEGMENTS;
-		auto z = n / TERRAIN_GRID_SEGMENTS;
-		auto value = noise0.FBM(x, z, 6, 0.1f, 0.5f);
-		alphaData[n] = (U8)(value * 255);
-	}
-	alphaMaps[2] = CreateAlphaMap(TERRAIN_GRID_SEGMENTS, TERRAIN_GRID_SEGMENTS, alphaData);
-
-
-	free(alphaData);
-
-	MeshData terrainDatas[WORLD_AREA];
-	Mesh terrainMeshes[WORLD_AREA];
-	for (U32 i = 0; i < WORLD_AREA; i++) {
-		auto& terrainMesh = terrainMeshes[i];
-		auto& terrainData = terrainDatas[i];
-		auto terrainX = (i % WORLD_WIDTH) * TERRAIN_WIDTH;
-		auto terrainY = (i / WORLD_HEIGHT) * TERRAIN_HEIGHT;
-		CreatePlaneMesh(&terrainData, terrainX, terrainY, TERRAIN_WIDTH, TERRAIN_HEIGHT, TERRAIN_GRID_SEGMENTS, 4, [](float x, float y) {
-			OpenSimplexNoise noise(0);
-			return noise.FBM(x, y, 6, 0.005f, 0.5f) * 80;
-		});
-
-		InitMesh(&terrainMesh, &terrainData);
-		terrainMesh.materialID = LoadMaterial("assets/materials/dirt0/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
-	}
-
-#else
-
-//	static const int WORLD_WIDTH = 1;
-//	static const int WORLD_HEIGHT = 1;
-//	static const int WORLD_AREA = WORLD_WIDTH * WORLD_HEIGHT;
-//	static const float TERRAIN_WIDTH = 128.0f;
-//	static const float TERRAIN_HEIGHT = 128.0f;
-//	static const int TERRAIN_GRID_SEGMENTS = 128;
-//
-//	U8* alphaData = (U8*)malloc(TERRAIN_GRID_SEGMENTS * TERRAIN_GRID_SEGMENTS);
-//	memset(alphaData, 255, TERRAIN_GRID_SEGMENTS * TERRAIN_GRID_SEGMENTS);
-//
-//	TerrainManager terrain_manager(3, WORLD_WIDTH, WORLD_HEIGHT, TERRAIN_GRID_SEGMENTS);
-//	terrain_manager.alphaMaps[0] = CreateAlphaMap(TERRAIN_GRID_SEGMENTS, TERRAIN_GRID_SEGMENTS, alphaData);
-//	terrain_manager.materials[0] = LoadMaterial("assets/materials/dirt0/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
-//	terrain_manager.materials[1] = LoadMaterial("assets/materials/dirt0/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
-//	terrain_manager.materials[2] = LoadMaterial("assets/materials/dirt0/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
-//
-//	OpenSimplexNoise texnoise(0);
-//	for (U32 n = 0; n < TERRAIN_GRID_SEGMENTS * TERRAIN_GRID_SEGMENTS; n++) {
-//		auto x = n % TERRAIN_GRID_SEGMENTS;
-//		auto z = n / TERRAIN_GRID_SEGMENTS;
-//		auto value = texnoise.FBM(x, z, 6, 0.001f, 0.05f);
-//		alphaData[n] = (U8)(value * 255);
-//	}
-//	terrain_manager.alphaMaps[1] = CreateAlphaMap(TERRAIN_GRID_SEGMENTS, TERRAIN_GRID_SEGMENTS, alphaData);
-//
-//	OpenSimplexNoise noise0(34534);
-//	for (U32 n = 0; n < TERRAIN_GRID_SEGMENTS * TERRAIN_GRID_SEGMENTS; n++) {
-//		auto x = n % TERRAIN_GRID_SEGMENTS;
-//		auto z = n / TERRAIN_GRID_SEGMENTS;
-//		auto value = noise0.FBM(x, z, 6, 0.1f, 0.5f);
-//		alphaData[n] = (U8)(value * 255);
-//	}
-//	terrain_manager.alphaMaps[2] = CreateAlphaMap(TERRAIN_GRID_SEGMENTS, TERRAIN_GRID_SEGMENTS, alphaData);
-//
-//
-//	free(alphaData);
-//
-//	MeshData terrainDatas[WORLD_AREA];
-//	for (U32 i = 0; i < WORLD_AREA; i++) {
-//		auto& terrainMesh = terrain_manager.terrainMeshes[i];
-//		auto& terrainData = terrainDatas[i];
-//		auto terrainX = (i % WORLD_WIDTH) * TERRAIN_WIDTH;
-//		auto terrainY = (i / WORLD_HEIGHT) * TERRAIN_HEIGHT;
-//		CreatePlaneMesh(&terrainData, terrainX, terrainY, TERRAIN_WIDTH, TERRAIN_HEIGHT, TERRAIN_GRID_SEGMENTS, 4, [](float x, float y) {
-//			OpenSimplexNoise noise(0);
-//			return noise.FBM(x, y, 6, 0.005f, 0.5f) * 80;
-//		});
-//
-//		InitMesh(&terrainMesh, &terrainData);
-//	}
-
 	// TODO action bar style terrain placer thingy
+
+	SubmitTask([&directionalLight]() {
+		std::cout << "Started A Task\n";
+		directionalLight.color = Vector3(1.0f, 0.0f, 0.0f);
+	}, 
+
+	[]() {
+		std::cout << "Finished a task\n";
+	});
 
 	static const int WORLD_WIDTH = 2;
 	static const int WORLD_HEIGHT = 2;
@@ -343,8 +356,8 @@ void RunBasicGLTest() {
 //	}
 
 	OpenSimplexNoise materialNoise(567657);
-	auto MaterialMaskGenerationProc = [&materialNoise, &terrain_manager](float x, float y, U32 materialIndex) -> U8 {
-		if (materialIndex % terrain_manager.materialCount == 0) return 255;
+	auto MaterialMaskGenerationProc = [&materialNoise](float x, float y, U32 materialIndex) -> U8 {
+		if (materialIndex == 0) return 255;
 
 		auto value = materialNoise.FBM(x, y, 1, 0.1f, 0.5f);
 		value = (value + 1.0f) / 2.0f;
@@ -353,40 +366,22 @@ void RunBasicGLTest() {
 
 
 	for (U32 i = 0; i < terrain_manager.terrainCount; i++) {
+		U32 terrainXIndex = i % terrain_manager.managerMaxWidth;
+		U32 terrainZIndex = i / terrain_manager.managerMaxWidth;
+		float terrainWorldX = terrainXIndex * (terrain_manager.terrainWidth - 1);
+		float terrainWorldZ = terrainZIndex * (terrain_manager.terrainLength - 1);
 		for (U32 n = 0; n < terrain_manager.materialCount; n++) {
-			U32 terrainXIndex = i % terrain_manager.managerMaxWidth;
-			U32 terrainZIndex = i / terrain_manager.managerMaxWidth;
 			for (U32 z = 0; z < terrain_manager.terrainResolution; z++) {
 				for (U32 x = 0; x < terrain_manager.terrainResolution; x++) {
 					U32 alphaIndex = (z * terrain_manager.terrainResolution) + x;
-					alphaData[alphaIndex] = MaterialMaskGenerationProc(x + (terrainXIndex * terrain_manager.terrainResolution), z + (terrainZIndex * terrain_manager.terrainResolution), n);
+					auto xCoord = x + terrainWorldX;
+					auto zCoord = z + terrainWorldZ;
+					alphaData[alphaIndex] = MaterialMaskGenerationProc(xCoord, zCoord, n);
 				}
 			}
-
 			terrain_manager.alphaMaps[(i * terrain_manager.materialCount) + n] = CreateAlphaMap(terrain_manager.terrainResolution, terrain_manager.terrainResolution, alphaData);
 		}
 	}
-
-
-//
-//	OpenSimplexNoise texnoise(0);
-//	for (U32 n = 0; n < TERRAIN_RESOLUTION * TERRAIN_RESOLUTION; n++) {
-//		auto x = n % TERRAIN_RESOLUTION;
-//		auto z = n / TERRAIN_RESOLUTION;
-//		auto value = texnoise.FBM(x, z, 6, 0.001f, 0.05f);
-//		alphaData[n] = (U8)(value * 255);
-//	}
-//	terrain_manager.alphaMaps[1] = CreateAlphaMap(TERRAIN_RESOLUTION, TERRAIN_RESOLUTION, alphaData);
-//
-//	OpenSimplexNoise noise0(34534);
-//	for (U32 n = 0; n < TERRAIN_RESOLUTION * TERRAIN_RESOLUTION; n++) {
-//		auto x = n % TERRAIN_RESOLUTION;
-//		auto z = n / TERRAIN_RESOLUTION;
-//		auto value = noise0.FBM(x, z, 6, 0.1f, 0.5f);
-//		alphaData[n] = (U8)(value * 255);
-//	}
-//	terrain_manager.alphaMaps[2] = CreateAlphaMap(TERRAIN_RESOLUTION, TERRAIN_RESOLUTION, alphaData);
-//
 
 	free(alphaData);
 
@@ -408,11 +403,9 @@ void RunBasicGLTest() {
 		InitMesh(&terrainMesh, &terrainData);
 	}
 
-	terrain_manager.materials[0] = LoadMaterial("assets/materials/dirt0/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
-	terrain_manager.materials[1] = LoadMaterial("assets/materials/grass0/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
+	terrain_manager.materials[0] = LoadMaterial(ASSET_FILE("materials/dirt0/diffuse.tga"),  ASSET_FILE("materials/toon_stone0/diffuse.tga"), ASSET_FILE("materials/smooth_stone/diffuse.tga"));
+	terrain_manager.materials[1] = LoadMaterial(ASSET_FILE("materials/grass0/diffuse.tga"), ASSET_FILE("materials/toon_stone0/diffuse.tga"), ASSET_FILE("materials/smooth_stone/diffuse.tga"));
 	//terrain_manager.materials[2] = LoadMaterial("assets/materials/smooth_stone/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
-
-#endif
 
 
 	ImGui::Init();
@@ -439,35 +432,7 @@ void RunBasicGLTest() {
 
 
 		// BeginWireframe();
-#ifdef MANAGER_IMPLEMENTATION
 		terrain_manager.draw();
-#else
-		for (U32 i = 0; i < WORLD_AREA; i++) {
-			auto& terrainMesh = terrainMeshes[i];
-//			glActiveTexture(GL_TEXTURE0);
-//			glBindTexture(GL_TEXTURE_2D, materials[0].diffuseMapID);
-			auto& material = GetMaterial(terrainMesh.materialID);
-
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, material.diffuseMapID);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, material.specularMapID);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, material.normalMapID);
-
-			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, alphaMaps[0]);
-			glActiveTexture(GL_TEXTURE4);
-			glBindTexture(GL_TEXTURE_2D, alphaMaps[1]);
-			glActiveTexture(GL_TEXTURE5);
-			glBindTexture(GL_TEXTURE_2D, alphaMaps[2]);
-
-
-			glBindVertexArray(terrainMesh.vertexArrayID);
-			glDrawElements(GL_TRIANGLES, terrainMesh.indexCount, GL_UNSIGNED_INT, 0);
-		}
-#endif
-
 		// EndWireframe();
 
 		ImGui::BeginFrame();
@@ -475,6 +440,8 @@ void RunBasicGLTest() {
 		ShowLightParamaters(directionalLight);
 		ShowTerrainProperties(terrain_manager);
 		ImGui::EndFrame();
+
+		FinializeCompletedTasks();
 	});
 }
 

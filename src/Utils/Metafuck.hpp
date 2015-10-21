@@ -27,9 +27,9 @@ struct IndexOf;
 template<typename T, typename... Ts>
 struct IndexOf<T, TypeList<T, Ts...>> : std::integral_constant<std::size_t, 0> { };
 
-template<typename T, typename TOther, typename... Ts>
-struct IndexOf<T, TypeList<TOther, Ts...>>
-		: std::integral_constant<std::size_t, 1 + IndexOf<T, TypeList<Ts...>>{}> { };
+//template<typename T, typename TOther, typename... Ts>
+//struct IndexOf<T, TypeList<TOther, Ts...>>
+//		: std::integral_constant<std::size_t, 1 + IndexOf<T, TypeList<Ts...>>{}> { };
 
 template <std::size_t TIndex, typename TTypeList>
 using AtIndex = std::tuple_element_t<TIndex, Tuple<TTypeList>>;

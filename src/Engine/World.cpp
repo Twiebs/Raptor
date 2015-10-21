@@ -165,10 +165,10 @@ void LoadWorld(World& world, const std::string& filename) {
 }
 #endif
 
-#if 1
+#if 0
 
 #include <SDL/SDL.h>
-void SaveWorld(const World& world, const std::string& filename) {
+void SaveWorld (const World& world, const std::string& filename) {
 	SDL_RWops* file = SDL_RWFromFile(filename.c_str(), "w");
 	SDL_RWwrite(file, &world.entityCount, sizeof(U32), 1);
 	SDL_RWseek(file, sizeof(U32), RW_SEEK_CUR);

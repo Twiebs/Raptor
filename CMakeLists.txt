@@ -8,6 +8,7 @@ set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/Modules/")
+
 if(NOT EMSCRIPTEN)
     add_definitions(-DPLATFORM_SDL)
 else()
@@ -32,10 +33,10 @@ if(NOT EMSCRIPTEN AND NOT MSVC)
 endif()
 
 if(MSVC)
-  include_directories(../include)
-  link_directories(../lib)
-  file(GLOB RELEASE_LIBS ../lib/Release)
-  file(GLOB DEBUG_LIBS ../lib/Debug)
+  include_directories(include)
+  link_directories(lib)
+  file(GLOB RELEASE_LIBS lib/Release)
+  file(GLOB DEBUG_LIBS lib/Debug)
   set(LIBS
     opengl32.lib
     glew32s.lib
@@ -51,7 +52,7 @@ if(MSVC)
   )
 endif(MSVC)
 
-link_directories(../build/src/Box2D)
+link_directories(build/src/Box2D)
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(tools)
