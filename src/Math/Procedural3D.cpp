@@ -1,5 +1,7 @@
 #include "Procedural3D.hpp"
 
+#include <Core/logging.h>
+
 
 // This is compleatly wrong... the vertex normals will not be summed together properly
 // because the vertices are duplicated!
@@ -21,8 +23,6 @@ void CalculateSurfaceNormals (Vertex3D* vertices, U32 vertexCount, U32* indices,
 	for (U32 i = 0; i < vertexCount; i++) {
 		vertices[i].normal.Normalize();
 	}
-
-
 }
 
 //void CreatePlaneMesh (MeshData* meshData, float x, float y, float w, float h, int cellCount, int cellsPerUV, std::function<float(float,float)> heightFunction) {
@@ -80,35 +80,64 @@ void CalculateSurfaceNormals (Vertex3D* vertices, U32 vertexCount, U32* indices,
 //	CalculateSurfaceNormals(vertices, vertexCount, indices, indexCount);
 //}
 
+void GetPlaneMeshMemorySize (U32 meshResolution, U32* vertexCount, U32* indexCount) {
+	auto gridArea = meshResolution * meshResolution;
+	*vertexCount = gridArea * 4;
+	*indexCount = (meshResolution - 1)*(meshResolution - 1) * 6;
+}
 
-void CreatePlaneMesh (MeshData* meshData, float x, float y, float w, float h, int cellCount, int cellsPerUV, std::function<float(float,float)> heightFunction) {
+// TODO tangent vector calculation
+
+void GeneratePlaneMesh (MeshData* meshData, float x, float y, float w, float h, int cellCount, int cellsPerUV, std::function<float(float, float)> heightFunction) {
+	assert(meshData->memblock != nullptr && "Mesh must already be initalized with memory!");
+
+	U32 vertexCount, indexCount;
+	GetPlaneMeshMemorySize(cellCount, &vertexCount, &indexCount);
+	assert(meshData->vertexCount == vertexCount);
+	assert(meshData->indexCount == indexCount);
+
 	auto cellWidth = w / cellCount;
 	auto cellHeight = h / cellCount;
 	auto uvStep = 1.0f / cellsPerUV;
 
-	auto gridArea = cellCount * cellCount;
-	auto vertexCount = gridArea * 4;
-	auto indexCount = (cellCount-1)*(cellCount-1)*6;
-	AllocateMeshData(meshData, vertexCount, indexCount);
+	U32 gridArea = cellCount * cellCount;
 
+	
 	auto vertices = meshData->vertices;
 	auto indices = meshData->indices;
 
 	auto uvScalar = (1.0f / cellsPerUV);
 
-	for (U32 i = 0; i < gridArea; i++) {
-		assert(i < vertexCount);
+	if (heightFunction == nullptr) {
+		for (U32 i = 0; i < gridArea; i++) {
+			assert(i < vertexCount);
 
-		auto cellX = (i % cellCount);
-		auto cellY = i / cellCount; // NOTE this calcuation will fail if not square
-		auto vertexX = x + (cellX * cellWidth);
-		auto vertexY = y + (cellY * cellHeight);
-		auto height = heightFunction(vertexX, vertexY);
+			auto cellX = (i % cellCount);
+			auto cellY = i / cellCount; // NOTE this calcuation will fail if not square
+			auto vertexX = x + (cellX * cellWidth);
+			auto vertexY = y + (cellY * cellHeight);
+			float height = 0.0f;
 
-		auto& vertex = vertices[i];
-		vertex.position = Vector3(vertexX, height, vertexY);
-		vertex.normal = Vector3(0.0f, 0.0f, 0.0f);
-		vertex.texCoord = Vector2(cellX * uvScalar, cellY * uvScalar);
+			auto& vertex = vertices[i];
+			vertex.position = Vector3(vertexX, height, vertexY);
+			vertex.normal = Vector3(0.0f, 0.0f, 0.0f);
+			vertex.texCoord = Vector2(cellX * uvScalar, cellY * uvScalar);
+		}
+	} else {
+		for (U32 i = 0; i < gridArea; i++) {
+			assert(i < vertexCount);
+
+			auto cellX = (i % cellCount);
+			auto cellY = i / cellCount; // NOTE this calcuation will fail if not square
+			auto vertexX = x + (cellX * cellWidth);
+			auto vertexY = y + (cellY * cellHeight);
+			auto height = heightFunction(vertexX, vertexY);
+
+			auto& vertex = vertices[i];
+			vertex.position = Vector3(vertexX, height, vertexY);
+			vertex.normal = Vector3(0.0f, 0.0f, 0.0f);
+			vertex.texCoord = Vector2(cellX * uvScalar, cellY * uvScalar);
+		}
 	}
 
 	U32 currentIndex = 0;
@@ -127,6 +156,15 @@ void CreatePlaneMesh (MeshData* meshData, float x, float y, float w, float h, in
 
 	assert(currentIndex == indexCount);
 	CalculateSurfaceNormals(vertices, vertexCount, indices, indexCount);
+}
+
+
+void CreatePlaneMesh (MeshData* meshData, float x, float y, float w, float h, int cellCount, int cellsPerUV, std::function<float(float,float)> heightFunction) {
+	assert(meshData->memblock == nullptr && "Mesh data must be uninitalized when creating a plane mesh... Use Generate if you already have memory allocated!");
+	U32 vertexCount, indexCount;
+	GetPlaneMeshMemorySize(cellCount, &vertexCount, &indexCount);
+	AllocateMeshData(meshData, vertexCount, indexCount);
+	GeneratePlaneMesh(meshData, x, y, w, h, cellCount, cellsPerUV, heightFunction);
 }
 
 

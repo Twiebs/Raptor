@@ -2,6 +2,12 @@
 
 #include <Graphics/Render3D.hpp>
 
+using namespace Raptor;
+
+void ShowCameraDebugInfo(const Camera& camera);
+void ShowLightDebugInfo(const DirectionalLight& light);
+
+
 namespace Raptor {
 
 class DebugMesh {

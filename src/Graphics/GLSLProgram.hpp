@@ -1,9 +1,26 @@
 #pragma once
 
-#include <GL/glew.h>
-#include <Core/Common.hpp>
+#include <vector>
 
-#define GLSL_LOG_SIZE 512
+#include <Core/config.h>
+#include <Core/types.h>
+
+
+#include <GL/glew.h>
+
+#ifdef GENERATE_SHADER_SOURCE_FILES
+#define BeginShaderBuilder(name) ShaderBuilder _builder (name)
+#define AddShaderSourceFile(type, filename) _builder.addSourceFile(type, filename)
+#define AddShaderConstant(string) _builder.addString(string)
+#define AddShaderString(string) _builder.addString(string)
+#define ReturnBuiltShaderID() _builder.build()
+#else
+#define BeginShaderBuilder(name) ShaderBuilder _builder (name)
+#define AddShaderSourceFile(type, filename)
+#define AddShaderConstant(string)
+#define AddShaderString(string)
+#define ReturnBuiltShaderHandle() _builder.build()
+#endif
 
 enum ShaderType {
 	VERTEX_SHADER,
@@ -13,30 +30,44 @@ enum ShaderType {
 	SHADER_TYPE_COUNT = 4
 };
 
-class GLSLCompiler {
+struct Shader {
+	GLuint id;
+};
+
+struct ShaderBuilderData {
+	std::string name;
+	std::string sourceFilenames[SHADER_TYPE_COUNT];
+	std::vector <std::string> addedStrings;
+};
+
+class ShaderBuilder {
 public:
+	ShaderBuilder(const std::string& shaderName);
+	~ShaderBuilder();
 
-	void addSourceFile (ShaderType type, const std::string& filename);
-	void addDefnition (const std::string& str);
+	void addSourceFile(ShaderType type, const std::string& filename);
+	void addString(const std::string& str);
+	void addConstant(const std::string& str);
 
-	GLuint compile();
+	GLuint build();
+	Shader build_program();
 
-	GLSLCompiler();
-	~GLSLCompiler();
+#ifdef GENERATE_SHADER_SOURCE_FILES
+	ShaderBuilderData data;
+#else
 
 private:
-	std::string shaderSources[SHADER_TYPE_COUNT];
-	std::vector<std::string> defnitions;
 
-	std::vector<const char*> sourcesToCompile;
-	GLuint compile_shader_type(GLenum shadertype);
+	std::string name;
+#endif
 };
+
+GLuint CompileShader(ShaderBuilderData* info);
 
 GLuint CreateShader (const std::string& vertexFilename, const std::string& fragmentFilename);
 GLuint CreateShader (const std::string& vertexFilename, const std::string& fragmentFilename, const std::string& geometryFilename);
 GLuint CreateShaderFromSource(const char* vertexShaderSource, const char* fragmentShaderSource);
 GLuint CreateShaderFromSource(const char* vertexShaderSource, const char* fragmentShaderSource, const char* geometryShaderSource);
-
 GLint GetUniformLocation(GLuint shaderProgramID, const GLchar* name);
 
 

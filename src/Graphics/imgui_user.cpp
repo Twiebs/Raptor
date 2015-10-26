@@ -1,7 +1,7 @@
 #include "imgui.h"
 #include <GL/glew.h>
 
-#include <Core/Common.hpp>
+#include <Core/types.h>
 #include <Core/Platform.h>
 #include <Math/Matrix4.hpp>
 #include <Graphics/GLSLProgram.hpp>
@@ -250,7 +250,7 @@ int ImGui::Init() {
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	uint8* pixels;
+	U8* pixels;
 	int width, height;
 	io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
 

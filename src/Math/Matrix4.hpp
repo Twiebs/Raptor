@@ -2,21 +2,21 @@
 
 #include <assert.h>
 #include <Math/Vector3.hpp>
-#include <Math/MathUtils.hpp>
+#include <Math/Math.hpp>
 
 class Matrix4 {
 public:
 	float m[4][4];
 
 	inline const float* operator[](int i) const {
-		ASSERT(i >= 0);
-		ASSERT(i < 4);
+		assert(i >= 0);
+		assert(i < 4);
 		return (const float*)&m[i];
 	}
 
 	inline float* operator[](int i) {
-		ASSERT(i >= 0);
-		ASSERT(i < 4);
+		assert(i >= 0);
+		assert(i < 4);
 		return (float*)&m[i];
 	}
 
@@ -80,13 +80,13 @@ public:
 	}
 
 	//Shorthand Orthographic projection
-	inline static Matrix4 Ortho(float32 width, float32 height) {
-		float32 x = 2.0f / width;
-		float32 y = 2.0f / height;
-		float32 z = -2.0f / 2.0f;
-		float32 tx = -width / width;
-		float32 ty = -height / height;
-		float32 tz = -2.0f/2.0f;
+	inline static Matrix4 Ortho(float width, float height) {
+		float x = 2.0f / width;
+		float y = 2.0f / height;
+		float z = -2.0f / 2.0f;
+		float tx = -width / width;
+		float ty = -height / height;
+		float tz = -2.0f/2.0f;
 
 
 		Matrix4 r {
@@ -188,9 +188,9 @@ inline Matrix4 Matrix4::Translate(float dx, float dy, float dz) {
 }
 
 inline Matrix4 Matrix4::Rotate(const Vector3& rotation) {
-    const float x = MathUtils::Radians(rotation.x);
-    const float y = MathUtils::Radians(rotation.y);
-    const float z = MathUtils::Radians(rotation.z);
+    const float x = Radians(rotation.x);
+    const float y = Radians(rotation.y);
+    const float z = Radians(rotation.z);
 
     Matrix4 rx, ry, rz;
     rx[0][0] = 1.0f; rx[1][0] = 0.0f;	rx[2][0] = 0.0f;	rx[3][0] = 0.0f;

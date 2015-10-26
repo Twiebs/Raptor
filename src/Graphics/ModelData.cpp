@@ -6,19 +6,15 @@
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
 
+#include <Core/logging.h>
+
 VertexBufferGroup::~VertexBufferGroup() {
 	glDeleteVertexArrays(1, &vertexArrayID);
 	glDeleteBuffers(1, &vertexBufferID);
 	glDeleteBuffers(1, &elementBufferID);
 }
 
-Material::~Material() {
-	glDeleteTextures(1, &diffuseMapID);
-	glDeleteTextures(1, &specularMapID);
-	glDeleteTextures(1, &normalMapID);
-}
-
-void InitVertexBufferForMeshData (VertexBufferGroup* group, const StaticMeshData& mesh) {
+void InitVertexBufferForMeshData (VertexBufferGroup* group, const MeshData& mesh) {
 	glGenVertexArrays(1, &group->vertexArrayID);
 	glBindVertexArray(group->vertexArrayID);
 
@@ -41,7 +37,7 @@ void InitVertexBufferForMeshData (VertexBufferGroup* group, const StaticMeshData
 	glBindVertexArray(0);
 }
 
-static void ImportMeshData (StaticMeshData* data, aiMesh* ai_mesh) {
+static void ImportMeshData (MeshData* data, aiMesh* ai_mesh) {
 	assert(data->memblock == nullptr);
 	data->vertexCount = ai_mesh->mNumVertices;
 	data->indexCount = ai_mesh->mNumFaces * 3;
@@ -55,7 +51,7 @@ static void ImportMeshData (StaticMeshData* data, aiMesh* ai_mesh) {
 		LOG_WARNING("Mesh Does not contain textureCoordiantes!");
 	}
 
-	for (auto i = 0; i < ai_mesh->mNumVertices; i++) {
+	for (U32 i = 0; i < ai_mesh->mNumVertices; i++) {
 		data->vertices[i].position.x = ai_mesh->mVertices[i].x;
 		data->vertices[i].position.y = ai_mesh->mVertices[i].y;
 		data->vertices[i].position.z = ai_mesh->mVertices[i].z;
@@ -68,7 +64,7 @@ static void ImportMeshData (StaticMeshData* data, aiMesh* ai_mesh) {
 		}
 	}
 
-	for (auto index = 0, i = 0; i < ai_mesh->mNumFaces * 3; index++, i += 3) {
+	for (U32 index = 0, i = 0; i < ai_mesh->mNumFaces * 3; index++, i += 3) {
 		data->indices[i + 0] = ai_mesh->mFaces[index].mIndices[0];
 		data->indices[i + 1] = ai_mesh->mFaces[index].mIndices[1];
 		data->indices[i + 2] = ai_mesh->mFaces[index].mIndices[2];
@@ -86,7 +82,7 @@ void DebugModelData::ImportFromFile(const std::string& filename) {
 	meshes.resize(scene->mNumMeshes);
 	meshMaterialIndex.resize(scene->mNumMeshes);
 	meshVertexBuffers.resize(scene->mNumMeshes);
-	for (auto i = 0; i < scene->mNumMeshes; i++) {
+	for (U32 i = 0; i < scene->mNumMeshes; i++) {
 		auto aiMesh = scene->mMeshes[i];
 		meshMaterialIndex[i] = aiMesh->mMaterialIndex;
 		ImportMeshData(&meshes[i], aiMesh);
@@ -96,7 +92,7 @@ void DebugModelData::ImportFromFile(const std::string& filename) {
 	auto directory = filename.substr(0, filename.find_last_of("/") + 1);
 	materials.resize(scene->mNumMaterials);
 
-	for (auto i = 0; i < scene->mNumMaterials; i++) {
+	for (U32 i = 0; i < scene->mNumMaterials; i++) {
 		auto material = scene->mMaterials[i];
 
 		auto diffuseTextureCount = material->GetTextureCount(aiTextureType_DIFFUSE);

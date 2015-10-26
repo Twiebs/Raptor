@@ -1,5 +1,27 @@
 #include "Noise.hpp"
 
+static const F64 STRETCH_CONSTANT_2D = -0.211324865405187;    //(1/Math.sqrt(2+1)-1)/2;
+static const F64 SQUISH_CONSTANT_2D = 0.366025403784439;      //(Math.sqrt(2+1)-1)/2;
+static const F64 STRETCH_CONSTANT_3D = -1.0 / 6;              //(1/Math.sqrt(3+1)-1)/3;
+static const F64 SQUISH_CONSTANT_3D = 1.0 / 3;                //(Math.sqrt(3+1)-1)/3;
+static const F64 STRETCH_CONSTANT_4D = -0.138196601125011;    //(1/Math.sqrt(4+1)-1)/4;
+static const F64 SQUISH_CONSTANT_4D = 0.309016994374947;      //(Math.sqrt(4+1)-1)/4;
+
+static const F64 NORM_CONSTANT_2D = 47;
+static const F64 NORM_CONSTANT_3D = 103;
+static const F64 NORM_CONSTANT_4D = 30;
+
+static const F64 DEFAULT_SEED = 0;
+
+//Gradients for 2D. They approximate the directions to the
+//vertices of an octagon from the center.
+static const S8 gradients2D[16]{
+	5, 2, 2, 5,
+	-5, 2, -2, 5,
+	5, -2, 2, -5,
+	-5, -2, -2, -5,
+};
+
 //Noise
 #pragma region NoiseFunctions
 float Noise::FBM(float x, float y, int octaves, float frequency, float persistance) {
@@ -32,7 +54,7 @@ float Noise::RidgedNoise(float x, float y, int octaves, float frequency, float p
 #pragma endregion
 
 #pragma region ImprovedPerlinNoise
-float ImprovedPerlinNoise::Eval(float x, float y){
+float ImprovedPerlinNoise::Eval(float x, float y) const {
 	int xi = (int)x % 255;
 	int yi = (int)y % 255;
 	int xf = x - (int)x;
@@ -49,17 +71,12 @@ float Fade(float t){
 #pragma endregion
 
 
-const int8 OpenSimplexNoise::gradients2D[16] {
-		5, 2, 2, 5,
-		 -5, 2, -2, 5,
-		 5, -2, 2, -5,
-		 -5, -2, -2, -5,
- };
+
 
 //OpenSimplex
-OpenSimplexNoise::OpenSimplexNoise(uint64 seed) {
-	uint16 source[256];
-	for (uint16 i = 0; i < 256; i++)
+OpenSimplexNoise::OpenSimplexNoise(U64 seed) {
+	U16 source[256];
+	for (U16 i = 0; i < 256; i++)
 		source[i] = i;
 
 	seed = seed * 6364136223846793005 + 1442695040888963407;
@@ -77,17 +94,17 @@ OpenSimplexNoise::OpenSimplexNoise(uint64 seed) {
 	}
 }
 
-float64 OpenSimplexNoise::Extrapolate(int xsb, int ysb, double dx, double dy) {
+F64 OpenSimplexNoise::Extrapolate(int xsb, int ysb, double dx, double dy) const {
 	int index = perm[(perm[xsb & 0xFF] + ysb) & 0xFF] & 0x0E;
 	return gradients2D[index] * dx
 		+ gradients2D[index + 1] * dy;
 
 }
 
-float OpenSimplexNoise::Eval(float x) {
+float OpenSimplexNoise::Eval(float x) const {
 	return 0;
 }
-float OpenSimplexNoise::Eval(float x, float y) {
+float OpenSimplexNoise::Eval(float x, float y) const {
 
 	//Place input coordinates onto grid.
 	double stretchOffset = (x + y) * STRETCH_CONSTANT_2D;
@@ -95,8 +112,8 @@ float OpenSimplexNoise::Eval(float x, float y) {
 	double ys = y + stretchOffset;
 
 	//Floor to get grid coordinates of rhombus (stretched square) super-cell origin.
-	int xsb = MathUtils::FastFloor(xs);
-	int ysb = MathUtils::FastFloor(ys);
+	int xsb = FastFloor(xs);
+	int ysb = FastFloor(ys);
 
 	//Skew out to get actual coordinates of rhombus origin. We'll need these later.
 	double squishOffset = (xsb + ysb) * SQUISH_CONSTANT_2D;
@@ -201,10 +218,10 @@ float OpenSimplexNoise::Eval(float x, float y) {
 	return value / NORM_CONSTANT_2D;
 
 }
-float OpenSimplexNoise::Eval(float x, float y, float z){
+float OpenSimplexNoise::Eval(float x, float y, float z) const {
 	return 0;
 }
-float OpenSimplexNoise::Eval(float x, float y, float z, float w){
+float OpenSimplexNoise::Eval(float x, float y, float z, float w) const {
 	return 0;
 }
 

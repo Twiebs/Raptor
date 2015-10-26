@@ -1,6 +1,7 @@
 #pragma once
 #ifndef __EMSCRIPTEN__
-#include <Core/Common.hpp>
+
+#include <Core/types.h>
 #include <SDL2/SDL_mixer.h>
 
 #define AUDIO_STEREO 2

@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include <cfloat>
-#include <Core/Common.hpp>
+#include <Core/types.h>
 
 #define PI32 3.141592653589793238462643383f
 #define PI64 3.1415926535897932384626433832795028842
@@ -48,7 +48,7 @@ namespace MathUtils {
 		return result;
 	}
 
-	inline static uint32 NextPowerOfTwo(uint32 n) {
+	inline static U32 NextPowerOfTwo(U32 n) {
 		n--;
 		n |= n >> 1;
 		n |= n >> 2;

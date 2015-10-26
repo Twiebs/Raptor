@@ -1,7 +1,9 @@
 #ifndef RAPTOR_PLATFORM_H
 #define RAPTOR_PLATFORM_H
 
-#include <Core/Common.hpp>
+#include <Core/types.h>
+#include <Core/logging.h>
+
 #include <functional>
 
 extern "C" int  PlatformCreate(const char* title, int width = 1280, int height = 720, int flags = 0);
@@ -9,6 +11,9 @@ extern "C" void PlatformRun(void(*mainLoop)(double));
 void PlatformRun(std::function<void(double)>);
 extern "C" void PlatformExit();
 extern "C" double PlatformGetDeltaTime();
+
+U64 PlatformGetPerformanceCounter();
+U64 PlatformGetPerformanceCounterFrequency();
 
 #ifdef PLATFORM_SDL
 #include <SDL2/SDL.h>
@@ -26,7 +31,10 @@ extern "C" double PlatformGetDeltaTime();
 #define PlatformGetKey(keycode) __SDLPlatformGetKey(keycode)
 #define PlatformGetButton(button) (SDL_GetMouseState(NULL, NULL) & SDL_BUTTON(button))
 extern "C" void PlatformGetSize(int* w, int* h);
+
 extern "C" double PlatformGetNow();
+extern "C" float PlatformGetNowFloat();
+
 
 static int __SDLPlatformGetKey(int keycode);
 static int __SDLPlatformGetKey(int keycode) {

@@ -1,6 +1,8 @@
 #include "Platform.h"
 
-#include <Core/Common.hpp>
+#include <Core/types.h>
+#include <Core/logging.h>
+
 global_variable bool global_running = true;
 global_variable double global_deltaTime = 0.0;
 
@@ -10,6 +12,7 @@ extern "C" void PlatformExit() {
 
 #if PLATFORM_SDL
 #include <SDL2/SDL.h>
+
 #define GLEW_STATIC
 #include <GL/glew.h>
 
@@ -47,8 +50,22 @@ void PlatformGetSize(int* w, int* h) {
 	return SDL_GetWindowSize(global_window, w, h);
 }
 
+
+
+U64 PlatformGetPerformanceCounter() {
+	return SDL_GetPerformanceCounter();
+}
+
+U64 PlatformGetPerformanceCounterFrequency() { 
+	return SDL_GetPerformanceFrequency();
+}
+
 double PlatformGetDeltaTime() {
 	return global_deltaTime;
+}
+
+float PlatformGetNowFloat() {
+	return ((float)(SDL_GetPerformanceCounter() * 1000) / (float)SDL_GetPerformanceFrequency());
 }
 
 double PlatformGetNow() {

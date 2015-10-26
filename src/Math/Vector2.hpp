@@ -1,7 +1,9 @@
 #pragma once
 
-#include <Core/Common.hpp>
-#include <Math/MathUtils.hpp>
+#include <Core/types.h>
+#include <Math/Math.hpp>
+
+#include <iostream>
 
 class Vector2 {
 public:

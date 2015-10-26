@@ -1,316 +1,237 @@
-
 #include <Core/Platform.h>
+#include <Core/Tasks.hpp>
 
+#include <Engine/Assets.hpp>
+#include <Engine/Debug.hpp>
 #include <Engine/GFX2D.hpp>
+#include <Engine/GFX3D.hpp>
 #include <Engine/ECSManager.hpp>
+#include <Engine/Terrain.hpp>
 
 #include <Math/Random.hpp>
 #include <Graphics/ModelData.hpp>
-#include <Engine/GFX3D.hpp>
-#include <Graphics/GLSLProgram.hpp>
 
+#include <Graphics/GLSLProgram.hpp>
 
 #include <Graphics/Mesh.hpp>
 #include <Math/Procedural3D.hpp>
 
 #include <Graphics/Render3D.hpp>
 #include <Graphics/imgui.h>
+#include <Graphics/Liquid.hpp>
 #include <Graphics/Lighting.hpp>
 #include <Math/Noise.hpp>
 #include <Graphics/GLRenderer.hpp>
 
 #include <Utils/utils.hpp>
+#include <Utils/Profiler.hpp>
 
 using namespace Raptor;
 
-#include <thread>
-#include <mutex>
-#include <condition_variable>
+#include <Core/config.h>
 
-#ifndef ASSET_DIRECTORY
-#define ASSET_DIRECTORY "../../resources/assets/"
-#endif
+void ShowAssetBrowser () {
+	ImGui::Begin("Asset Browser");
+	static S32 selectedIndex = -1;
+	static int currentAssetType = 0;
 
-#ifndef SHADER_DIRECTORY
-#define SHADER_DIRECTORY "../../resources/shaders/"
-#endif
+	if (ImGui::Button("Materials")) { 
+		currentAssetType = 0; 
+		selectedIndex = -1;
+	}
 
-#define ASSET_FILE(filename) ASSET_DIRECTORY filename
-#define SHADER_FILE(filename) SHADER_DIRECTORY filename
+	ImGui::SameLine();
+	if (ImGui::Button("Shaders")) {
+		currentAssetType = 1; 
+		selectedIndex = -1;
+	}
 
+	auto& manifest = GetGlobalAssetManifest();
+	ImGui::BeginChild("AssetList", ImVec2(200.0f, 0.0f), true);
+	if (currentAssetType == 0) {
+		for (U32 i = 0; i < manifest.materials.size(); i++) {
+			const auto& info = manifest.materialAssetInfos[i];
+			if (ImGui::Button(info.name.c_str(), ImVec2(200.0f, 0.0f))) {
+				selectedIndex = i;
+			}
+		}
+	} else {
+		for (U32 i = 0; i < manifest.shaderPrograms.size(); i++) {
+			const auto& data = manifest.shaderBuilderData[i];
+			if (ImGui::Button(data.name.c_str(), ImVec2(200.0f, 0.0f))) {
+				selectedIndex = i;
+			}
+		}
+	}
 
-void DrawMesh (MeshData* data, MeshVertexBuffer* buffer) {
-	glBindVertexArray(buffer->vertexArrayID);
-	glDrawElements(GL_TRIANGLES, data->indexCount, GL_UNSIGNED_INT, 0);
-}
-
-void ShowCameraDebug (const Camera& camera) {
-	ImGui::Begin("Camera Debug Info");
-	ImGui::Text("Position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
-	ImGui::Text("Yaw: %f", camera.yaw);
-	ImGui::Text("Pitch %f", camera.pitch);
-	ImGui::Text("Viewport: %f, %f", camera.viewportWidth, camera.viewportHeight);
-	ImGui::End();
-}
-
-void ShowLightParamaters (const DirectionalLight& light) {
-	ImGui::Begin("Light Paramaters");
-	ImGui::SliderFloat3("Direction", (float*)&light.direction, -1.0f, 1.0f);
-	ImGui::ColorEdit3("Color", (float*)&light.color.x);
-	ImGui::SliderFloat("Ambient", (float*)&light.ambient, 0.0f, 1.0f);
-	ImGui::End();
-}
-
-void BeginWireframe() {
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-}
-
-void EndWireframe() {
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-}
-
-
-std::vector<Material> g_materials(25);
-const Material& GetMaterial (U32 materialID) {
-	return g_materials[materialID];
-};
-
-U32 LoadMaterial (const std::string& diffuseFilename, const std::string& specularFilename, const std::string& normalFilename) {
-	g_materials.push_back(Material());
-	auto materialID = g_materials.size() - 1;
-	auto& material = g_materials.back();
-	material.diffuseMapID 	= LoadTextureReleaseData(diffuseFilename, GL_REPEAT);
-	material.specularMapID  = LoadTextureReleaseData(specularFilename, GL_REPEAT);
-	material.normalMapID 	= LoadTextureReleaseData(normalFilename, GL_REPEAT);
-	return materialID;
-}
-
-void DrawMesh (const Mesh& mesh) {
-	glBindVertexArray(mesh.vertexArrayID);
-	// auto& material = GetMaterial(mesh.materialID);
-	// BindMaterial(material);
-	glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, 0);
-}
-
-//struct Material {
-//	GLuint textureArrayID;
-//	U32 usedTextureFlags;
-//};
-
-
-struct TerrainManager {
-	std::vector<U32> materials;
-	U32 materialCount;
-
-	std::vector<Mesh> terrainMeshes;
-	U32 terrainCount;
-	std::vector<GLuint> alphaMaps; // materialCount per terrainMesh
-
-	U32 managerMaxWidth;
-	U32 managerMaxLength;
-	U32 managerArea;
-
-	float terrainWidth;
-	float terrainLength;
-	float terrainArea;
-
-	U32 terrainResolution;
-	U32 terrainCellsPerTexcoord;
-
-	GLuint shaderID;
-
-	TerrainManager(U32 materialCount, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrainResolution, U32 cellsPerTexcoord);
-	~TerrainManager();
-
-	void draw();
-};
-
-
-
-struct Work {
-	std::function<void()> execute;
-	std::function<void()> finalize;
-};
-
-struct WorkQueue {
-	std::mutex mutex;
-	std::condition_variable condition_variable;
 	
-	std::vector<Work> workToExecute;
-	std::vector<Work> workToFinalize;
+	ImGui::EndChild();
+
+	ImGui::SameLine();
+	ImGui::BeginChild("AssetInspector", ImVec2(0, 0), true);
+	if (selectedIndex >= 0) {
+		if (currentAssetType == 0) {
+			auto& material = manifest.materials[selectedIndex];
+			ImGui::Image((ImTextureID)material.diffuseMapID, ImVec2(128.0f, 128.0f));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)material.specularMapID, ImVec2(128.0f, 128.0f));
+			ImGui::SameLine();
+			ImGui::Image((ImTextureID)material.normalMapID, ImVec2(128.0f, 128.0f));
+			if (ImGui::Button("Reload Material")) {
+				LOG_WARNING("Material reloading not currently implemented!");
+			}
+
+		} else {
+			if (ImGui::Button("Reload Shader")) {
+				ReloadShader(ShaderHandle{(U32)selectedIndex});
+			}
+		}
+	}
+
+	ImGui::EndChild();
+	
+	ImGui::End();
+}
+
+
+static void CreateTestMaterials() {
+	MaterialData data;
+	data.diffuseTextureFilename = ASSET_FILE("materials/dirt0/diffuse.tga");
+	data.normalTextureFilename  = ASSET_FILE("materials/dirt0/normal.tga");
+	SaveMaterialData(data, "dirt.material");
+
+	data.diffuseTextureFilename = ASSET_FILE("materials/grass0/diffuse.tga");
+	data.normalTextureFilename = ASSET_FILE("materials/grass0/normal.tga");
+	SaveMaterialData(data, "grass.material");
+}
+
+void ShowMaterialEditor() {
+	ImGui::Begin("Material Editor");
+	static bool newMaterialWindowActive = false;
+	if (ImGui::Button("Create New Material")) newMaterialWindowActive = true;
+	if (newMaterialWindowActive) {
+		static char material_name_buffer[MATERIAL_NAME_MAX_SIZE];
+		newMaterialWindowActive = false;
+	}
+	ImGui::End();
+}
+
+//void ShowShaderManifest() {
+//#ifdef GENERATE_SHADER_SOURCE_FILES
+//	auto manifest = GetGlobalShaderManifest();
+//	ImGui::Begin("ShaderManifest");
+//
+//	
+//	static S32 selectedIndex = -1;
+//	ImGui::BeginChild("ShaderList", ImVec2(200.0f, 0.0f), true);
+//	for (U32 i = 0; i < manifest.shaderPrograms.size(); i++) {
+//		const auto& info = manifest.compileInfos[i];
+//		if (ImGui::Button(info.name.c_str(), ImVec2(200.0f, 0.0f))) {
+//			selectedIndex = i;
+//		}
+//	}
+//
+//	ImGui::EndChild();
+//	ImGui::SameLine();
+//	if (selectedIndex >= 0) {
+//		if (ImGui::Button("Reload")) {
+//			RecompileShader(ShaderHandle{(U32)selectedIndex});
+//		}
+//	}
+//	
+//	
+//	ImGui::End();
+//#endif
+//}
+
+struct BasicEntity {
+	Vector3 position;
+	ModelHandle& modelHandle;
 };
 
-struct TaskManager {
-	std::vector<std::thread> threads;
-	WorkQueue workQueue;
+std::vector<BasicEntity> g_Entities;
+
+template <typename TEntity>
+struct EntityManager {
+	std::vector<TEntity> entities;
 };
 
-global_variable TaskManager g_TaskManager;
+void ShowDebugRenderSettings (DebugRenderSettings* settings) {
+	ImGui::Begin("Debug Render Settings");
+	ImGui::Checkbox("Disable Normal Mapping", &settings->disableNormalMaps);
+	ImGui::Checkbox("Enable Wireframe", &settings->enableWireframe);
 
+	//for (auto i = 0; i < manager.materialCount; i++) {
+	//	ImGui::Text("Material: %d", i);
+	//	ImGui::SameLine();
+	//	ImGui::PushID(i);
+	//	if (ImGui::Button("Show Alpha Map")) {
+	//		GLint last_program;
+	//		glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+	//		BindShader(shader);
+	//		glUniform1i(debugAlphaMapIndexLocation, i);
+	//		glUseProgram(last_program);
+	//	}
+	//	ImGui::PopID();
+	//}
 
-static void ThreadProc(WorkQueue* queue) {
-	bool isRunning = true;
-
-	Work work;
-	bool workNeedsDoing = false;
-
-	while (isRunning) {
-		if (workNeedsDoing) {
-			work.execute();
-			workNeedsDoing = false;
-
-			queue->mutex.lock();
-			queue->workToFinalize.push_back(work);
-			queue->mutex.unlock();
-		}
-
-
-		std::unique_lock<std::mutex> lock(queue->mutex);
-		queue->condition_variable.wait(lock);
-
-		if (queue->workToExecute.size() > 0) {
-			work = queue->workToExecute.back();
-			queue->workToExecute.pop_back();
-			workNeedsDoing = true;
-		}
-	}
-}
-
-void InitTaskManager (TaskManager* manager) {
-	auto threadCount = std::thread::hardware_concurrency() - 1;
-	manager->threads.resize(threadCount);
-
-	for (U32 i = 0; i < threadCount; i++) {
-		manager->threads[i] = std::thread(ThreadProc, &manager->workQueue);
-	}
-}
-
-void InitTaskManager() {
-	InitTaskManager(&g_TaskManager);
-}
-
-// DONT SUBMIT NEW WORK IN A FINALIZER!
-void SubmitTask (std::function<void()> execute, std::function<void()> finalize) {
-	WorkQueue* queue = &g_TaskManager.workQueue;
-
-	queue->mutex.lock();
-	queue->workToExecute.push_back({ execute, finalize });
-	queue->condition_variable.notify_one();
-	queue->mutex.unlock();
-}
-
-
-
-void FinializeCompletedTasks() {
-	WorkQueue* queue = &g_TaskManager.workQueue;
-
-	queue->mutex.lock();
-	for (U32 i = 0; i < queue->workToFinalize.size(); i++) {
-		queue->workToFinalize[i].finalize();
-	}
-
-	queue->workToFinalize.clear();
-	queue->mutex.unlock();
-}
-
-TerrainManager::TerrainManager (U32 material_count, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrain_resolution, U32 cellsPerTexcoord) :
-	terrainWidth(terrainWidth),
-	terrainLength(terrainLength),
-	terrainResolution(terrain_resolution),
-	terrainCellsPerTexcoord(cellsPerTexcoord)
-{
-	materialCount = material_count;
-	managerMaxWidth = max_width;
-	managerMaxLength = max_length;
-	managerArea = max_width * max_length;
-
-	materials.resize(materialCount);
-
-	terrainCount = managerArea;
-	alphaMaps.resize(materialCount * terrainCount);
-	terrainMeshes.resize(managerArea);
-
-	GLSLCompiler compiler;
-	compiler.addSourceFile(VERTEX_SHADER,	SHADER_FILE("terrain.vert"));
-	compiler.addSourceFile(FRAGMENT_SHADER, SHADER_FILE("terrain.frag"));
-	compiler.addDefnition("#define MATERIAL_COUNT " + std::to_string(materialCount) + "\n");
-	compiler.addDefnition("#define TERRAIN_WIDTH " + std::to_string(terrainWidth) + "\n");
-	compiler.addDefnition("#define TERRAIN_LENGTH " + std::to_string(terrainLength) + "\n");
-	compiler.addDefnition("#define TERRAIN_CELLS_PER_TEXCOORD " + std::to_string(terrainCellsPerTexcoord) + "\n");
-	shaderID = compiler.compile();
-}
-
-TerrainManager::~TerrainManager() {
-	glDeleteProgram(shaderID);
-}
-
-
-inline void BindTexture2DToUnit (GLuint textureID, U32 unitIndex) {
-	glActiveTexture(GL_TEXTURE0 + unitIndex);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-}
-
-void TerrainManager::draw() {
-
-	auto BindAlphaMaps = [&](U32 terrainChunkIndex) {
-		for (U32 i = 0; i < materialCount; i++) {
-			BindTexture2DToUnit(alphaMaps[(terrainChunkIndex * materialCount) + i], materialCount + i);
-		}
-	};
-
-	for (U32 i = 0; i < materialCount; i++) {
-		auto& material = GetMaterial(materials[i]);
-		BindTexture2DToUnit(material.diffuseMapID, (materialCount * 0) + i);
-	}
-
-	for (U32 i = 0; i < managerArea; i++) {
-		BindAlphaMaps(i);
-		auto& terrainMesh = terrainMeshes[i];
-		glBindVertexArray(terrainMesh.vertexArrayID);
-		glDrawElements(GL_TRIANGLES, terrainMesh.indexCount, GL_UNSIGNED_INT, 0);
-	}
-}
-
-struct TerrainStreamer {
-    TerrainManager terrainManager;
-    std::vector<U8*> maskDatas;
-    std::vector<MeshData> meshDatas;
-
-    TerrainStreamer(U32 materialCount, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrainResolution, U32 cellsPerTexcoord);
-};
-
-TerrainStreamer::TerrainStreamer(U32 materialCount, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrainResolution, U32 cellsPerTexcoord) :
-    terrainManager(materialCount, max_width, max_length, terrainWidth, terrainLength, terrainResolution, cellsPerTexcoord) {
-}
-
-
-void ShowTerrainProperties (const TerrainManager& manager) {
-	static GLint debugAlphaMapIndexLocation = GetUniformLocation(manager.shaderID, "debugAlphaMapIndex");
-
-	ImGui::Begin("Terrain Manager Properties");
-	for (auto i = 0; i < manager.materialCount; i++) {
-		ImGui::Text("Material: %d", i);
-		ImGui::SameLine();
-		ImGui::PushID(i);
-		if (ImGui::Button("Show Alpha Map")) {
-			GLint last_program;
-			glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-			glUseProgram(manager.shaderID);
-			glUniform1i(debugAlphaMapIndexLocation, i);
-			glUseProgram(last_program);
-		}
-		ImGui::PopID();
-	}
-
-	if (ImGui::Button("Clear Alpha Map")) {
-		GLint last_program;
-		glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-		glUseProgram(manager.shaderID);
-		glUniform1i(debugAlphaMapIndexLocation, -1);
-		glUseProgram(last_program);
-	}
+	//if (ImGui::Button("Clear Alpha Map")) {
+	//	GLint last_program;
+	//	glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+	//	BindShader(manager.shaderID);
+	//	glUniform1i(debugAlphaMapIndexLocation, -1);
+	//	glUseProgram(last_program);
+	//}
 
 	ImGui::End();
+}
+
+struct AtmoshpericFog {
+	float density;
+	float gradient;
+};
+
+
+static void ShowProfilerGUI (Profiler* profiler) {
+	ImGui::Begin("Profiler");
+	ImGui::BeginChild("PersistantEntries", ImVec2(400.0f, 0.0f), true);
+	for (U32 i = 0; i < profiler->activePersistantEntries.size(); i++) {
+		auto entryIndex = profiler->activePersistantEntries[i];
+		auto entry = &profiler->persistantEntries[entryIndex];
+		if (ImGui::CollapsingHeader(entry->name.c_str())) {
+			auto timeIndex = entry->writeIndex - 1;
+			if (timeIndex < 0) timeIndex = PROFILER_PERSISTANT_SAMPLE_COUNT;
+			ImGui::Text("Elapsed Time: %f ms", entry->elapsedTimes[timeIndex]);
+			ImGui::Text("Elapsed Cycles: %d", entry->elapsedCycles[timeIndex]);
+			ImGui::PushID(i);
+			ImGui::PlotLines("", entry->elapsedTimes, PROFILER_PERSISTANT_SAMPLE_COUNT, timeIndex);
+			ImGui::PopID();
+		}
+	}
+	ImGui::EndChild();
+	ImGui::SameLine();
+	ImGui::BeginChild("InstantaneousEntries", ImVec2(250.0f, 0.0f), true);
+	for (U32 i = 0; i < profiler->newEntryIndex; i++) {
+		auto& entry = profiler->entires[i];
+		ImGui::BeginChildFrame(i, ImVec2(235.0f, 50.0f));
+		ImGui::Text(entry.name.c_str());
+		ImGui::Text("Elapsed Time: %f ms", entry.elapsedTime);
+		ImGui::Text("Elapsed Cycles: %d", entry.elapsedCycles);
+		ImGui::EndChildFrame();
+	}
+	
+	ImGui::EndChild();
+	ImGui::End();
+}
+
+void ShowErrorMessageBox() {
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.9f));
+	ImGui::SetNextWindowSize(ImVec2(300.0f, 60.0f));
+	ImGui::SetNextWindowPos(ImVec2(8.0f, 8.0f));
+	ImGui::Begin("ErrorMessage", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+	ImGui::TextColored(ImVec4(1.0, 0.0, 0.0, 1.0), "[ERROR] This is an error!");
+	ImGui::End();
+	ImGui::PopStyleColor();
 }
 
 
@@ -320,40 +241,42 @@ void RunBasicGLTest() {
 
 	InitTaskManager();
 
-	Camera camera(Vector3(20.0f, 5.0f, 200.0f), 1280.0f, 720.0f);
-	camera.farClip = 10000.0f;
+	// CreateTestMaterials();
+
+	ProfilerBeginEntry("Load Models");
+	auto rockModelHandle  = LoadModel(ASSET_FILE("models/rock0/Rock1.obj"));
+	auto plantModelHandle = LoadModel(ASSET_FILE("models/palm_plant/palm_plant.obj"));
+	ProfilerEndEntry("Load Models");
+
+	ProfilerBeginEntry("Load Materials");
+	auto dirtMaterialHandle	 = LoadMaterial("dirt.material");
+	auto grassMaterialHandle = LoadMaterial("grass.material");
+	ProfilerEndEntry("Load Materials");
 
 	DirectionalLight directionalLight;
+	AddLight(directionalLight);
+
 	// UniformDirectionalLight(shaderID, 0, directionalLight);
 
 	// TODO action bar style terrain placer thingy
 
-	SubmitTask([&directionalLight]() {
-		std::cout << "Started A Task\n";
-		directionalLight.color = Vector3(1.0f, 0.0f, 0.0f);
-	}, 
-
-	[]() {
-		std::cout << "Finished a task\n";
-	});
-
-	static const int WORLD_WIDTH = 2;
-	static const int WORLD_HEIGHT = 2;
+	static const int WORLD_WIDTH = 9;
+	static const int WORLD_HEIGHT = 9;
 	static const int WORLD_AREA = WORLD_WIDTH * WORLD_HEIGHT;
 	static const float TERRAIN_WIDTH = 128.0f;
 	static const float TERRAIN_HEIGHT = 128.0f;
 	static const int TERRAIN_RESOLUTION = 128;
 	static const int TERRAIN_MATERIAL_COUNT = 2;
 
-	TerrainManager terrain_manager(TERRAIN_MATERIAL_COUNT, WORLD_WIDTH, WORLD_HEIGHT, TERRAIN_WIDTH, TERRAIN_HEIGHT, TERRAIN_RESOLUTION, 4);
+	Camera camera(Vector3(WORLD_WIDTH * 0.5f * TERRAIN_WIDTH, 80.0f, WORLD_HEIGHT * TERRAIN_HEIGHT * 0.5f), 1280.0f, 720.0f);
+	camera.farClip = 10000.0f;
+
+	TerrainStreamer terrainStreamer(TERRAIN_MATERIAL_COUNT, WORLD_WIDTH, WORLD_HEIGHT, TERRAIN_WIDTH, TERRAIN_HEIGHT, TERRAIN_RESOLUTION, 4);
+	auto& terrain_manager = terrainStreamer.terrainManager;
 
 	U8* alphaData = (U8*)malloc(TERRAIN_RESOLUTION * TERRAIN_RESOLUTION);
 	memset(alphaData, 255, TERRAIN_RESOLUTION * TERRAIN_RESOLUTION);
 	terrain_manager.alphaMaps[0] = CreateAlphaMap(TERRAIN_RESOLUTION, TERRAIN_RESOLUTION, alphaData);
-//
-//	for (U32 i = 0; i < terrain_manager.terrainCount; i++) {
-//		terrain_manager.alphaMaps[i * terrain_manager.materialCount] = CreateAlphaMap(terrain_manager.terrainResolution, terrain_manager.terrainResolution, alphaData);
-//	}
 
 	OpenSimplexNoise materialNoise(567657);
 	auto MaterialMaskGenerationProc = [&materialNoise](float x, float y, U32 materialIndex) -> U8 {
@@ -364,85 +287,138 @@ void RunBasicGLTest() {
 		return (U8)(value * 255);
 	};
 
-
+	ProfilerBeginEntry("Generate Alpha Maps");
 	for (U32 i = 0; i < terrain_manager.terrainCount; i++) {
 		U32 terrainXIndex = i % terrain_manager.managerMaxWidth;
 		U32 terrainZIndex = i / terrain_manager.managerMaxWidth;
-		float terrainWorldX = terrainXIndex * (terrain_manager.terrainWidth - 1);
-		float terrainWorldZ = terrainZIndex * (terrain_manager.terrainLength - 1);
+		float terrainWorldX = terrainXIndex * (terrain_manager.chunkWidth - 1);
+		float terrainWorldZ = terrainZIndex * (terrain_manager.chunkLength - 1);
 		for (U32 n = 0; n < terrain_manager.materialCount; n++) {
-			for (U32 z = 0; z < terrain_manager.terrainResolution; z++) {
-				for (U32 x = 0; x < terrain_manager.terrainResolution; x++) {
-					U32 alphaIndex = (z * terrain_manager.terrainResolution) + x;
+			for (U32 z = 0; z < terrain_manager.chunkResolution; z++) {
+				for (U32 x = 0; x < terrain_manager.chunkResolution; x++) {
+					U32 alphaIndex = (z * terrain_manager.chunkResolution) + x;
 					auto xCoord = x + terrainWorldX;
 					auto zCoord = z + terrainWorldZ;
 					alphaData[alphaIndex] = MaterialMaskGenerationProc(xCoord, zCoord, n);
 				}
 			}
-			terrain_manager.alphaMaps[(i * terrain_manager.materialCount) + n] = CreateAlphaMap(terrain_manager.terrainResolution, terrain_manager.terrainResolution, alphaData);
+			terrain_manager.alphaMaps[(i * terrain_manager.materialCount) + n] = CreateAlphaMap(terrain_manager.chunkResolution, terrain_manager.chunkResolution, alphaData);
 		}
 	}
+	ProfilerEndEntry("Generate Alpha Maps");
 
 	free(alphaData);
 
-	MeshData terrainDatas[WORLD_AREA];
-	for (U32 i = 0; i < WORLD_AREA; i++) {
-		auto& terrainMesh = terrain_manager.terrainMeshes[i];
-		auto& terrainData = terrainDatas[i];
-		auto terrainX = (i % WORLD_WIDTH) * (TERRAIN_WIDTH - 1);
-		auto terrainY = (i / WORLD_WIDTH) * (TERRAIN_HEIGHT - 1);
+	terrain_manager.materials[0] = dirtMaterialHandle;
+	terrain_manager.materials[1] = grassMaterialHandle;
 
-		OpenSimplexNoise simplexNoise0(234324);
-		OpenSimplexNoise simplexNoise1(4564564);
-		CreatePlaneMesh(&terrainData, terrainX, terrainY, TERRAIN_WIDTH, TERRAIN_HEIGHT, TERRAIN_RESOLUTION, 4, [&simplexNoise0, &simplexNoise1](float x, float y) {
-			auto noise0 = simplexNoise0.FBM(x, y, 6, 0.005f, 0.5f);
-			auto noise1 = simplexNoise1.RidgedNoise(x, y, 6, 0.0009, 0.25);
-			return (noise0 + noise1) * 80;
-		});
-
-		InitMesh(&terrainMesh, &terrainData);
-	}
-
-	terrain_manager.materials[0] = LoadMaterial(ASSET_FILE("materials/dirt0/diffuse.tga"),  ASSET_FILE("materials/toon_stone0/diffuse.tga"), ASSET_FILE("materials/smooth_stone/diffuse.tga"));
-	terrain_manager.materials[1] = LoadMaterial(ASSET_FILE("materials/grass0/diffuse.tga"), ASSET_FILE("materials/toon_stone0/diffuse.tga"), ASSET_FILE("materials/smooth_stone/diffuse.tga"));
-	//terrain_manager.materials[2] = LoadMaterial("assets/materials/smooth_stone/diffuse.tga", "assets/materials/toon_stone0/diffuse.tga", "assets/materials/smooth_stone/diffuse.tga");
-
+	Mesh water_mesh;
+	MeshData water_plane;
+	CreatePlaneMesh(&water_plane, 0.0f, 0.0f, 64.0f, 64.0f, 512, 8);
+	InitMesh(&water_mesh, &water_plane);
 
 	ImGui::Init();
 
-	GLCheckErrors();
-	PlatformRun([&](double deltaTime) -> void {
-		glEnable(GL_DEPTH_TEST);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glUseProgram(terrain_manager.shaderID);
+	FrameParameters params;
+	params.clearColor = Vector3(0.53, 0.77, 0.92);
 
+	Random rng;
+
+	Rectangle terrainRect = terrain_manager.GetBoundingRectangle();
+	for (U32 i = 0; i < 512; i++) {	
+		Vector2 planeCoord = rng.PointInRectangle(terrainRect);
+		g_Entities.emplace_back(BasicEntity { Vector3(planeCoord.x, 100.0f, planeCoord.y),  rockModelHandle });
+	}
+
+	Vector2 terrainCenter = GetCenter(terrainRect);
+
+	ProfilerBeginEntry("CreateLiquidShader");
+	BeginShaderBuilder("water_shader");
+	AddShaderSourceFile(VERTEX_SHADER, SHADER_FILE("liquid.vert"));
+	AddShaderSourceFile(FRAGMENT_SHADER, SHADER_FILE("liquid.frag"));
+	auto liquidShaderHandle = LoadShaderFromBuilder();
+	ProfilerEndEntry("CreateLiquidShader");
+
+	auto normalVisualizerShaderHandle = CreateNormalDebugShader();
+
+
+	auto& liquidShader = GetShader(liquidShaderHandle);
+	GLint waveTimeLocation = Uniform::GetLocation(liquidShader.id, "wave_time");
+
+	Random liquidParamRNG;
+	LiquidRenderParameters liquidParams = { };
+	for (U32 i = 0; i < LIQUID_PARAMETER_COMPONENT_COUNT; i++) {
+		liquidParams.amplitudes[i] = liquidParamRNG.Range(0.1f, 0.2f);
+		liquidParams.wavelength[i] = liquidParamRNG.Range(3.0f, 9.0f);
+		liquidParams.speeds[i] = liquidParamRNG.Range(0.4f, 0.7f);
+		liquidParams.directions[i] = Vector2(liquidParamRNG.Range(0.0f, 1.0f), liquidParamRNG.Range(0.0f, 1.0f));
+	}
+	
+	PlatformRun([&](double deltaTime) -> void {
 		if (PlatformGetButton(MOUSE_BUTTON_RIGHT)) FPSCameraControlUpdate(&camera);
 
+		terrainStreamer.update(camera.position);
 
-		UniformDirectionalLight(terrain_manager.shaderID, 0, directionalLight);
-
-		UpdateCamera(&camera);
-		SetCameraUniforms(camera);
-		SetMatrix4Uniform(MODEL_MATRIX_LOCATION, Matrix4::Translate(0.0f, 0.0f, -1.0f));
-		SetMatrix4Uniform(VIEW_MATRIX_LOCATION, camera.view);
-		SetMatrix4Uniform(PROJECTION_MATRIX_LOCATION, camera.projection);
-
-		glEnable(GL_BLEND);
-		// glBlendFunc()
-
-
-		// BeginWireframe();
+		ProfilerBeginPersistantEntry("Render");
+		GFX3D::BeginFrame(camera, &params);
+		ProfilerBeginPersistantEntry("Draw Terrain");
 		terrain_manager.draw();
-		// EndWireframe();
+		ProfilerEndPersistantEntry("Draw Terrain");
+
+
+		auto& liquidShader = GetShader(liquidShaderHandle);
+		
+		ProfilerBeginPersistantEntry("Draw Liquid");
+		GFX3D::Begin(liquidShader);
+		SetLiquidRenderSettingsUniforms(&liquidParams);
+		static float waveTime = 0.0f;
+		Uniform::SetFloat(waveTimeLocation, waveTime);
+		waveTime += deltaTime;
+		GFX3D::DrawMesh(water_mesh, Vector3(terrainCenter.x, 50.0f, terrainCenter.y));
+		GFX3D::End();
+		ProfilerEndPersistantEntry("Draw Liquid");
+		ProfilerEndPersistantEntry("Render");
+
+
+		//auto& normalShader = GetShader(normalVisualizerShaderHandle);
+		//GFX3D::Begin(normalShader);
+		//SetLiquidRenderSettingsUniforms(&liquidParams);
+		//Uniform::SetFloat(waveTimeLocation, waveTime);
+		//GFX3D::DrawMesh(water_mesh, Vector3(terrainCenter.x, 50.0f, terrainCenter.y));
+		//GFX3D::End();
+
+		auto& shader = GetShader(terrain_manager.shaderHandle);
+		GFX3D::Begin(shader);
+
+		for (auto& entity : g_Entities) {
+			auto& model = GetModel(entity.modelHandle);
+			GFX3D::DrawModel(model, entity.position);
+		}
+		GFX3D::End();
+
+
+		GFX3D::EndFrame();
 
 		ImGui::BeginFrame();
-		ShowCameraDebug(camera);
-		ShowLightParamaters(directionalLight);
-		ShowTerrainProperties(terrain_manager);
+		ShowCameraDebugInfo(camera);
+		ShowLightDebugInfo(directionalLight);
+		ShowDebugRenderSettings(GetDebugRenderSettings());
+		// ShowTerrainProperties(terrain_manager);
+		// ShowShaderManifest();
+		// ShowMaterialEditor();
+		ShowAssetBrowser();
+		ShowErrorMessageBox();
+
+		auto profiler = GetGlobalProfiler();
+		ShowProfilerGUI(profiler);
+
 		ImGui::EndFrame();
 
+		ProfilerReset();
 		FinializeCompletedTasks();
 	});
+
+	TerminateTaskManager();
 }
 
 int main() {

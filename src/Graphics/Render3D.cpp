@@ -2,6 +2,8 @@
 #include <Math/Random.hpp>
 #include <Core/Platform.h>
 
+#include <Core/logging.h>
+
 namespace Raptor {
 
 	Transform3D::Transform3D() {
@@ -28,7 +30,7 @@ namespace Raptor {
 	}
 
 	void Draw(DebugModelData& model) {
-		for (auto i = 0; i < model.meshVertexBuffers.size(); i++) {
+		for (U32 i = 0; i < model.meshVertexBuffers.size(); i++) {
 			auto& material = model.materials[model.meshMaterialIndex[i]];
 			auto& buffer = model.meshVertexBuffers[i];
 			auto& mesh = model.meshes[i];
@@ -61,27 +63,6 @@ namespace Raptor {
 		camera->projection = Matrix4::Perspective(45.0f, camera->viewportWidth / camera->viewportHeight, camera->nearClip, camera->farClip);
 	}
 
-	void CalculateNormals(Vertex3D* vertices, U32 vertexCount, U32* indices, U32 indexCount) {
-		for (U32 i = 0; i < vertexCount; i++)
-			vertices[i].normal = Vector3(0.0f, 0.0f, 0.0f);
-
-		for (uint32 i = 0; i < indexCount; i += 3) {
-			uint32 index0 = indices[i + 0];
-			uint32 index1 = indices[i + 1];
-			uint32 index2 = indices[i + 2];
-			Vector3 vert1 = vertices[index1].position - vertices[index0].position;
-			Vector3 vert2 = vertices[index2].position - vertices[index0].position;
-
-			Vector3 normal = vert1.Cross(vert2);
-			normal.Normalize();
-			vertices[index0].normal += normal;
-			vertices[index1].normal += normal;
-			vertices[index2].normal += normal;
-		}
-		for (uint32 i = 0; i < vertexCount; i++) {
-			vertices[i].normal.Normalize();
-		}
-	}
 
 	void FPSCameraControlUpdate(Camera* camera) {
 		int dx, dy;
@@ -101,10 +82,8 @@ namespace Raptor {
 		if (PlatformGetKey(KEY_D)) camera->position += camera->front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize()  * speed;
 		if (PlatformGetKey(KEY_SPACE)) camera->position.y += speed;
 		if (PlatformGetKey(KEY_LCTRL)) camera->position.y -= speed;
-		camera->pitch = MathUtils::Clamp(camera->pitch, -89.0f, 89.0f);
+		camera->pitch = Clamp(camera->pitch, -89.0f, 89.0f);
 	}
-
-
 
 	void PushLight(const PointLight& light, U32 index, GLuint shader) {
 		glUniform3fv(glGetUniformLocation(shader, ("pointLights[" + std::to_string(index) + "].position").c_str()), 1, &light.position.x);
@@ -200,7 +179,8 @@ namespace Raptor {
 	}
 
 	void BeginFowardShadingPass(FowardShader* shader, DepthShader* depthShader, Camera* camera) {
-		glViewport(0, 0, camera->viewportWidth, camera->viewportHeight);
+		// NOTE this is stupid but its dead code anyway!
+		glViewport(0, 0, (int)camera->viewportWidth, (int)camera->viewportHeight);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glUseProgram(shader->program);
 		glUniformMatrix4fv(2, 1, GL_FALSE, &camera->projection[0][0]);
@@ -278,7 +258,43 @@ namespace Raptor {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
+	void InitGBuffer (GBuffer* buffer, U32 screenWidth, U32 screenHeight) {
+		glGenFramebuffers(1, &buffer->frameBuffer);
+		glBindFramebuffer(GL_FRAMEBUFFER, buffer->frameBuffer);
 
+		glGenTextures(1, &buffer->positionBuffer);
+		glBindTexture(GL_TEXTURE_2D, buffer->positionBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, buffer->positionBuffer, 0);
+
+		glGenTextures(1, &buffer->normalBuffer);
+		glBindTexture(GL_TEXTURE_2D, buffer->normalBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, buffer->normalBuffer, 0);
+
+		glGenTextures(1, &buffer->colorBuffer);
+		glBindTexture(GL_TEXTURE_2D, buffer->colorBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, buffer->colorBuffer, 0);
+
+		GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+		glDrawBuffers(3, attachments);
+
+		glGenRenderbuffers(1, &buffer->renderBuffer);
+		glBindRenderbuffer(GL_RENDERBUFFER, buffer->renderBuffer);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screenWidth, screenHeight);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer->renderBuffer);
+
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			LOG_ERROR("Framebuffer not complete!");
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
 
 #if 1
 	void InitDeferredShader(DeferredShader* shader, U32 screenWidth, U32 screenHeight) {
@@ -492,3 +508,15 @@ namespace Raptor {
 
 
 };
+
+//Mesh CreateCubeMesh() {
+//	static const Vector3 vertices[]{
+//		{-0.5f, -0.5f, -0.5f },
+//		{ 0.5f, -0.5f, -0.5f },
+//		{ 0.5f, 0.5f, -0.5f },
+//		{ -0.5f, 0.5f, -0.5f },
+//
+//
+//
+//	}
+//

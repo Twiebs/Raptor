@@ -6,6 +6,7 @@
 
 #include <Graphics/GLSLProgram.hpp>
 #include <Graphics/Texture.hpp>
+#include <Graphics/Mesh.hpp>
 #include <Graphics/ModelData.hpp>
 #include <Graphics/Lighting.hpp>
 
@@ -25,7 +26,6 @@ namespace Raptor {
 	Matrix4 TransformToMatrix(const Transform3D& transform);
 
 	void BindMaterial(const Material& material);
-	void CalculateNormals(Vertex3D* vertices, U32 vertexCount, U32* indices, U32 indexCount);
 
 	void Draw(DebugModelData& model);
 
@@ -100,6 +100,17 @@ namespace Raptor {
 	// =======================================
 	//			Deferred Shading
 	// =======================================
+
+	struct GBuffer {
+		GLuint frameBuffer;
+		GLuint renderBuffer;
+		GLuint positionBuffer;
+		GLuint normalBuffer;
+		GLuint colorBuffer;
+	};
+
+	void InitGBuffer(GBuffer* buffer, U32 screenWidth, U32 screenHeight);
+	void ReleaseGBuffer(GBuffer* buffer);
 
 	struct DeferredShader {
 		GLuint gBuffer, renderBuffer;

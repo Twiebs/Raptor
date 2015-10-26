@@ -1,6 +1,8 @@
 #include "utils.hpp"
 
-#include <Core/Common.hpp>
+#include <Core/types.h>
+#include <Core/logging.h>
+
 #include <fstream>
 
 std::string ReadEntireFile (const std::string& filename) {

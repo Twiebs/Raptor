@@ -1,5 +1,7 @@
 #include "Editor.hpp"
 
+#include <Core/logging.h>
+
 #include <Graphics/imgui.h>
 #include <Core/Platform.h>
 

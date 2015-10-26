@@ -1,5 +1,32 @@
 #include "Debug.hpp"
 
+#include <Graphics/imgui.h>
+
+using namespace Raptor;
+
+#include <Graphics/Mesh.hpp>
+#include <Graphics/Model.hpp>
+#include <Graphics/ModelData.hpp>
+
+void ShowCameraDebugInfo (const Camera& camera) {
+	ImGui::Begin("Camera Debug Info");
+	ImGui::Text("Position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
+	ImGui::Text("Yaw: %f", camera.yaw);
+	ImGui::Text("Pitch %f", camera.pitch);
+	ImGui::Text("Viewport: %f, %f", camera.viewportWidth, camera.viewportHeight);
+	ImGui::End();
+}
+
+
+void ShowLightDebugInfo(const DirectionalLight& light) {
+	ImGui::Begin("Light Paramaters");
+	ImGui::SliderFloat3("Direction", (float*)&light.direction, -1.0f, 1.0f);
+	ImGui::ColorEdit3("Color", (float*)&light.color.x);
+	ImGui::SliderFloat("Ambient", (float*)&light.ambient, 0.0f, 1.0f);
+	ImGui::End();
+}
+
+
 namespace Raptor {
 void DebugMesh::InitGPU() {
 	glGenVertexArrays(1, &vertexArrayID);

@@ -1,5 +1,5 @@
 #pragma once
-#include <Core/Common.hpp>
+#include <Core/types.h>
 
 #define BlendOverlayf(base, blend) 	(base < 0.5 ? (2.0 * base * blend) : (1.0 - 2.0 * (1.0 - base) * (1.0 - blend)))
 #define Blend(base, blend, funcf) 		Color(funcf(base.r, blend.r), funcf(base.g, blend.g), funcf(base.b, blend.b), funcf(base.a, blend.a))
@@ -29,7 +29,7 @@ struct Color {
 		return result;
 	}
 
-	friend Color operator*(const Color& left, const float32 scalar) {
+	friend Color operator*(const Color& left, const float scalar) {
 		Color result;
 		result.r = left.r * scalar;
 		result.g = left.g * scalar;

@@ -1,9 +1,38 @@
 #ifndef RAPTOR_GFX3D_HPP
 #define RAPTOR_GFX3D_HPP
 
+#include <Engine/GFXCommon.hpp>
+#include <Engine/Assets.hpp>
 
 #include <Math/Matrix4.hpp>
+
 #include <Graphics/Render3D.hpp>
+
+#include <Graphics/Mesh.hpp>
+#include <Graphics/Model.hpp>
+
+struct FrameParameters {
+	Vector3 clearColor;
+};
+
+struct DebugRenderSettings {
+	bool disableNormalMaps = false;
+	bool enableWireframe   = false;
+
+	ShaderHandle normalVisualizer;
+};
+
+ShaderHandle CreateNormalDebugShader();
+
+struct SceneLighting {
+	std::vector<DirectionalLight*> directionalLight;
+	std::vector<PointLight> pointLights;
+};
+
+void AddLight(const DirectionalLight& light);
+void AddLight(const PointLight& light);
+
+
 using namespace Raptor;
 
 #define MODEL_MATRIX_LOCATION 0
@@ -34,16 +63,27 @@ enum GFX3D_RENDER_MODE {
 	GFX3D_DEFERED,
 };
 
+DebugRenderSettings* GetDebugRenderSettings();
+
 namespace GFX3D {
 
 void Init();
 void Terminate();
 
-void Begin();
+void BeginFrame(Camera& camera, FrameParameters* params);
+void Begin (const Shader& shader);
+
+void DrawMesh(const Mesh& mesh);
+void DrawMesh(const Mesh& mesh, const Vector3& position);
+
+void DrawModel(const Model& model);
+void DrawModel(const Model& model, const Vector3& position);
+
+void BindShader(const Shader& shader);
 void End();
+void EndFrame();
 
 void SetProjectionMatrix (const Matrix4& matrix);
-
 
 };
 

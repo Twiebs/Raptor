@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Core/Common.hpp>
+#include <Core/types.h>
 #include <Math/Vector2.hpp>
 
 struct Circle {
@@ -12,6 +12,11 @@ struct Rectangle {
 	float x, y;
 	float width, height;
 };
+
+inline Vector2 GetCenter(const Rectangle& rectangle);
+inline Vector2 GetCenter(const Rectangle& r) {
+	return Vector2((r.x + r.width)*0.5f, (r.y + r.height)*0.5f);
+}
 
 inline bool IsPointInRect(float x, float y, const Rectangle& rect);
 inline bool IsPointInRect(float x, float y, const float rectX, const float rectY, const float rectWidth, const float rectHeight);

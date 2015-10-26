@@ -22,8 +22,11 @@ int Random::Range(int min, int max){
 	return dist(rng);
 }
 
-
-
+Vector2 Random::PointInRectangle(const Rectangle& rectangle) {
+	std::uniform_real_distribution<float> distX(rectangle.x, rectangle.x + rectangle.width);
+	std::uniform_real_distribution<float> distY(rectangle.y, rectangle.y + rectangle.height);
+	return Vector2(distX(rng), distY(rng));
+}
 
 
 //void Random::Seed(int seed) {

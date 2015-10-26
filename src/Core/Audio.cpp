@@ -1,6 +1,8 @@
 #include "Audio.hpp"
 #ifndef __EMSCRIPTEN__
 
+#include <Core/logging.h>
+
 void Audio::Init () {
 	int mixFlags = MIX_INIT_OGG | MIX_INIT_FLAC | MIX_INIT_MP3;
 	int mixInitialized = Mix_Init(mixFlags);

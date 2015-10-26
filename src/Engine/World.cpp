@@ -59,7 +59,7 @@ void DrawEntities(World& world, GLuint shader) {
 
 	Transform3D* transforms = (Transform3D*)world.components[COMPONENT_TRANSFORM];
 	U32* modelIDs = (U32*)world.components[COMPONENT_MODELID];
-	for (auto i = 0; i < world.entityCount; i++) {
+	for (U32 i = 0; i < world.entityCount; i++) {
 		modelMatrix = TransformToMatrix(transforms[i]);
 		glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
 		// Draw(global_assetTable.models[modelIDs[i]]);
@@ -68,7 +68,7 @@ void DrawEntities(World& world, GLuint shader) {
 
 void DrawLights(World& world, GLuint shader) {
 	PointLight* pointLights = (PointLight*)world.components[COMPONENT_POINTLIGHT];
-	for (auto i = 0; i < world.pointLightCount; i++) {
+	for (U32 i = 0; i < world.pointLightCount; i++) {
 		PushLight(pointLights[i], i, shader);
 	}
 }

@@ -1,20 +1,8 @@
 #include "Geometry3D.hpp"
 
-Vector3 PointToQuadrilateralizedSphere(const Vector3& point) {
-	float x2 = point.x * point.x;
-	float y2 = point.y * point.y;
-	float z2 = point.z * point.z;
-
-	float dx = point.x * sqrtf((1.0f) - (y2 / 2.0f) - (z2 / 2.0f) + ((y2 * z2) / 3.0f));
-	float dy = point.y * sqrtf((1.0f) - (z2 / 2.0f) - (x2 / 2.0f) + ((z2 * x2) / 3.0f));
-	float dz = point.z * sqrtf((1.0f) - (x2 / 2.0f) - (y2 / 2.0f) + ((x2 * y2) / 3.0f));
-
-	return Vector3(dx, dy, dz);
-}
-
-const static float GOLDEN_RATIO = 1.61803398875f;
-const static int NUM_ICOSOHEDRON_VERTICES = 12;
-const static Vector3 ICOSOHEDRON_VERTICES[12] = {
+static const float GOLDEN_RATIO = 1.61803398875f;
+static const int ICOSOHEDRON_VERTEX_COUNT = 12;
+static const Vector3 ICOSOHEDRON_VERTICES[ICOSOHEDRON_VERTEX_COUNT] = {
 	Vector3(-1.0f, GOLDEN_RATIO, 0.0f),
 	Vector3(1.0f, GOLDEN_RATIO, 0.0f),
 	Vector3(-1.0f, -GOLDEN_RATIO, 0.0f),
@@ -30,6 +18,43 @@ const static Vector3 ICOSOHEDRON_VERTICES[12] = {
 	Vector3(-GOLDEN_RATIO, 0.0f, -1.0f),
 	Vector3(-GOLDEN_RATIO, 0.0, 1.0f)
 };
+
+static const int ICOSOHEDRON_INDEX_COUNT = 60;
+static const U32 ICOSOHEDRON_INDICES[ICOSOHEDRON_INDEX_COUNT] = {
+	0, 11, 5,
+	0, 5, 1,
+	0, 1, 7,
+	0, 7, 10,
+	0, 10, 11,
+
+	1, 5, 9,
+	5, 11, 4,
+	11, 10, 2,
+	10, 7, 6,
+	7, 1, 8,
+
+	3, 9, 4,
+	3, 4, 2,
+	3, 2, 6,
+	3, 6, 8,
+	3, 8, 9,
+
+	4, 9, 5,
+	2, 4, 11,
+	6, 2, 10,
+	8, 6, 7,
+	9, 8, 1
+};
+
+
+
+
+void GenerateIcosphere() {
+
+}
+
+
+
 
 void BuildCube(int subdivisionLevel, Vector3* positions, U32* indices) {
 	U32 postionIndex = 0, indiceIndex = 0;

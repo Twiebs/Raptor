@@ -1,5 +1,7 @@
 #include "Lighting.hpp"
 #include "GLSLProgram.hpp"
+
+#include <string>
 #include <cmath>
 
 #include <GL/glew.h>

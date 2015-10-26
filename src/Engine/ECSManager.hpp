@@ -1,6 +1,9 @@
 #ifndef RAPTOR_ECSMANAGER_HPP
 #define RAPTOR_ECSMANAGER_HPP
-#include <Core/Common.hpp>
+
+#include <Core/logging.h>
+#include <Core/types.h>
+
 #include <cstring>
 #include <functional>
 #include <Utils/Metafuck.hpp>

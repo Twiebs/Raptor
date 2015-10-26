@@ -4,7 +4,7 @@
 #include <string>
 
 #include <GL/glew.h>
-#include <Core/Common.hpp>
+#include <Core/types.h>
 #include <Math/Vector2.hpp>
 
 enum class ImageFormat {
@@ -18,6 +18,10 @@ struct ImageData {
 
     ImageData(const std::string& filename);
     ~ImageData();
+};
+
+struct Texture {
+	GLuint gl_textureID;
 };
 
 struct TextureRegion {
@@ -55,8 +59,6 @@ GLuint CreateAlphaMap(U32 width, U32 height, U8* data);
 
 GLuint LoadTextureReleaseData (const std::string& filename, GLenum wrap_mode = GL_CLAMP_TO_EDGE);
 GLuint CreateRGBATexture (U32 width, U32 height, U8* data, GLenum wrap_mode = GL_CLAMP_TO_EDGE);
-
-
 
 Vector2 GetTexelCoords(U32 x, U32 y, U32 width, U32 height);
 void WritePixelsHack(U8* dest, U16 destX, U16 destY, U16 destWidth, U16 destHeight, U8* src, U16 srcWidth, U16 srcHeight);

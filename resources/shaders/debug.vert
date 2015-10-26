@@ -1,4 +1,9 @@
-#version 450 core
+#ifndef GL_ES
+#define VERTEX_ATTRIBUTE(locationIndex) layout (location = locationIndex) in
+#else
+#define VERTEX_ATTRIBUTE(locationIndex) attribute
+#endif
+
 layout (location = 0) in vec3 position;
 
 layout (location = 0) uniform mat4 model;
