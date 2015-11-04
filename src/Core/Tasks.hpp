@@ -16,12 +16,6 @@ struct ITask {
 	int executorWorkerID = -1;
 };
 
-struct Work {
-	std::function<void(U32 workerID)> execute;
-	std::function<void(U32 workerID)> finalize;
-	S32 workerWhoCompletedMe = -1;
-};
-
 struct WorkQueue {
 	std::mutex mutex;
 	std::condition_variable condition_variable;
@@ -49,7 +43,7 @@ template <typename TTask, typename... TArgs>
 void ScheduleTask(WorkQueue* queue, TArgs... args) {
 	static_assert(std::is_base_of<ITask, TTask>::value, "Scheduled Tasks Must Inherit from the ITask Interface!");
 	assert_called_by_main_thread();
-
+	
 	TTask task(args...);
 	task.execute(0);
 	task.finalize(0);
@@ -69,4 +63,3 @@ void ScheduleTask (WorkQueue* queue, TArgs... args) {
 	queue->condition_variable.notify_one();
 }
 #endif
-

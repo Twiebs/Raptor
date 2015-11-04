@@ -6,14 +6,6 @@
 #include <Core/types.h>
 #include <Core/Platform.h>
 
-// We dont realy want these staticly allocated globals
-// in the framework...
-global_variable Profiler* g_Profiler = new Profiler();
-
-// Have a seperate engine file called the global_profiler.h
-// which gives you access to a global profiler
-// this would just be the framework!
-
 void Profiler::BeginEntry (const char* name) {
 	auto& entry = entires[newEntryIndex];
 	entry.tempTime = PlatformGetPerformanceCounter();
@@ -37,7 +29,7 @@ void Profiler::EndEntry (const char* name) {
 static void InternalProfilerBeginBlock (Profiler* profiler, const char* name) {
 	ProfilerPersistantEntry* entry;
 	U32 entryIndex = profiler->persistantEntryNameMap[name];
-	
+
 	if (entryIndex == 0) {
 		profiler->persistantEntries.push_back(ProfilerPersistantEntry());
 		entry = &profiler->persistantEntries.back();
@@ -72,30 +64,4 @@ static void InternalProfilerEndBlock (Profiler* profiler, const char* name) {
 	if (entry->writeIndex > PROFILER_PERSISTANT_SAMPLE_COUNT) {
 		entry->writeIndex = 0;
 	}
-}
-
-void __ProfilerBeginEntry(const char* name) {
-	g_Profiler->BeginEntry(name);
-}
-
-void __ProfilerEndEntry(const char* name) {
-	g_Profiler->EndEntry(name);
-}
-
-void __ProfilerBeginPersistantEntry(const char* name) {
-	assert_called_by_main_thread();
-	InternalProfilerBeginBlock(g_Profiler, name);
-}
-
-void __ProfilerEndPersistantEntry(const char* name) {
-	assert_called_by_main_thread();
-	InternalProfilerEndBlock(g_Profiler, name);
-}
-
-void __ProfilerReset() {
-	g_Profiler->activePersistantEntries.clear();
-}
-
-Profiler* GetGlobalProfiler() {
-	return g_Profiler;
 }
