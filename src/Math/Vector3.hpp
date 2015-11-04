@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 
+
 struct Vector4 {
 	float x, y, z, w;
 	Vector4(float x, float y, float z, float w);
@@ -15,7 +16,7 @@ struct Vector3 {
 	Vector3(float x, float y, float z);
 	//Initalizes a new vector with each component being the given value.
 	Vector3(float value);
-	~Vector3();
+
 
 	void Set(float x, float y, float z);
 	void Set(const Vector3* vector);
@@ -47,6 +48,13 @@ struct Vector3 {
 		return *this;
 	}
 
+	Vector3& operator*=(float r) {
+		x *= r;
+		y *= r;
+		z *= r;
+		return *this;
+	}
+
 	friend Vector3 operator+(const Vector3& left, const Vector3& right) {
 		Vector3 vector (
 			left.x + right.x,
@@ -65,14 +73,6 @@ struct Vector3 {
 //		return vector;
 //	}
 
-	friend Vector3 operator*(const Vector3& vector, float scalar) {
-		Vector3 returnVector(
-			vector.x * scalar,
-			vector.y * scalar,
-			vector.z * scalar
-			);
-		return returnVector;
-	}
 
 	friend Vector3 operator/(const Vector3& vector, float divisor) {
 		Vector3 returnVector(
@@ -93,6 +93,9 @@ struct Vector3 {
 	}
 
 };
+
+typedef Vector3 V3;
+typedef Vector4 V4;
 
 float Vector3::Dot(const Vector3& v) const {
 	return (x*v.x) + (y*v.y) + (z*v.z);
@@ -125,18 +128,26 @@ inline Vector3 operator- (const Vector3& a, const Vector3& b) {
 	return result;
 }
 
+inline V3 operator-(const V3& a) {
+	return V3(-a.x, -a.y, -a.z);
+}
 
-inline Vector3&& cross (const Vector3& a, const Vector3& b);
+inline V3 operator*(const V3& a, float s) {
+	return V3(a.x * s, a.y * s, a.z * s);
+}
+
+
+inline Vector3 cross (const Vector3& a, const Vector3& b);
 inline float dot (const Vector3& a, const Vector3& b);
 inline float magnitude (const Vector3& a);
 inline float distance (const Vector3& a, const Vector3& b);
 inline float distance_squared (const Vector3& a, const Vector3& b);
 
-inline Vector3&& cross (const Vector3& a, const Vector3& b) {
+inline Vector3 cross (const Vector3& a, const Vector3& b) {
     const float x = (a.y * b.z) - (a.z * b.y);
     const float y = (a.z * b.x) - (a.x * b.z);
     const float z = (a.x * b.y) - (a.y * b.x);
-    return std::move<Vector3>(Vector3(x, y, z));
+    return Vector3(x, y, z);
 }
 
 inline float dot (const Vector3& a, const Vector3& b) {

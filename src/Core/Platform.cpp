@@ -3,6 +3,10 @@
 #include <Core/types.h>
 #include <Core/logging.h>
 
+#ifdef __WINDOWS__
+#define PLATFORM_WINDOWS
+#endif
+
 global_variable bool global_running = true;
 global_variable double global_deltaTime = 0.0;
 
@@ -18,8 +22,7 @@ extern "C" void PlatformExit() {
 
 global_variable SDL_Window* global_window;
 global_variable SDL_GLContext global_context;
-
-int PlatformCreate(const char* title, int width, int height, int flags) {
+int PlatformCreate (const char* title, int width, int height, int flags) {
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		LOG_ERROR("Unable to initialize SDL:" << SDL_GetError());
 		return -1;
@@ -29,7 +32,6 @@ int PlatformCreate(const char* title, int width, int height, int flags) {
 	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
 	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
-	SDL_Surface* screen;
 	//TODO fullscreen does nothing...
 	global_window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
 	if (!global_window)
@@ -72,53 +74,53 @@ double PlatformGetNow() {
 	return ((double)(SDL_GetPerformanceCounter()*1000) / (double)SDL_GetPerformanceFrequency());
 }
 
-void PlatformRun(void(*mainLoop)(double)) {
-	while (global_running) {
-		static U32 lastTime = SDL_GetTicks();
-		U32 currentTime = SDL_GetTicks();
-		global_deltaTime = ((double)(currentTime - lastTime)) / 1000.0f;
-        lastTime = currentTime;
+global_variable int keysPressedThisFrame[8];
+global_variable int keysPressedThisFrameCount;
 
-		SDL_Event event;
-		SDL_GetRelativeMouseState(nullptr, nullptr);
-		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-			case SDL_QUIT: {
-				global_running = false;
-			} break;
-			case SDL_TEXTINPUT: {
-			} break;
+static void ResetInputEvents() { 
+	keysPressedThisFrameCount = 0;
+}
 
-			}
+static void PushKeypress (int keycode) {
+	keysPressedThisFrame[keysPressedThisFrameCount++] = keycode;
+}
+
+int PlatformPopKeypress() {
+	return keysPressedThisFrame[--keysPressedThisFrameCount];
+}
+
+static void ProcessSDLEvents() {
+	SDL_Event event;
+	SDL_GetRelativeMouseState(nullptr, nullptr);
+	while (SDL_PollEvent(&event)) {
+		switch (event.type) {
+		case SDL_KEYDOWN: {
+			PushKeypress(event.key.keysym.scancode);
+		} break;
+
+		case SDL_QUIT:
+		{
+			global_running = false;
+		} break;
+		case SDL_TEXTINPUT:
+		{
+		} break;
+
 		}
-
-		mainLoop(global_deltaTime);
-		SDL_GL_SwapWindow(global_window);
-
 	}
 }
 
-void PlatformRun(std::function<void(double)> mainLoop) {
+void PlatformRun (const std::function<void(double)>& mainLoop) {
 	while (global_running) {
 		static U32 lastTime = SDL_GetTicks();
 		U32 currentTime = SDL_GetTicks();
 		global_deltaTime = ((double)(currentTime - lastTime)) / 1000.0f;
 		lastTime = currentTime;
 
-		SDL_Event event;
-		SDL_GetRelativeMouseState(nullptr, nullptr);
-		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-				case SDL_QUIT: {
-					global_running = false;
-				} break;
-				case SDL_TEXTINPUT: {
-				} break;
-
-			}
-		}
+		ProcessSDLEvents();
 
 		mainLoop(global_deltaTime);
+		ResetInputEvents();
 		SDL_GL_SwapWindow(global_window);
 	}
 }

@@ -1,5 +1,7 @@
 #include "Liquid.hpp"
 
+#include <Graphics/Uniform.hpp>
+
 void SetLiquidRenderSettingsUniforms (LiquidRenderParameters* settings) {
 	Uniform::SetFloats(LIQUID_PARAMETER_LOCATION + 1, settings->amplitudes, LIQUID_PARAMETER_COMPONENT_COUNT);
 	Uniform::SetFloats((LIQUID_PARAMETER_LOCATION + 1) + (LIQUID_PARAMETER_COMPONENT_COUNT * 0),

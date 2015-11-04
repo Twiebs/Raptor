@@ -53,9 +53,3 @@ Vector3 Vector3::Cross (const Vector3& vector) const {
 	const float _z = (x * vector.y) - (y * vector.x);
 	return Vector3(_x, _y, _z);
 }
-
-
-
-
-Vector3::~Vector3() {
-}

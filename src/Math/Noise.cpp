@@ -23,8 +23,7 @@ static const S8 gradients2D[16]{
 };
 
 //Noise
-#pragma region NoiseFunctions
-float Noise::FBM(float x, float y, int octaves, float frequency, float persistance) {
+float Noise::FBM (float x, float y, int octaves, float frequency, float persistance) {
 	float total = 0.0f;
 	float amplitude = 1.0f;
 	float maxAmp = 0.0f;
@@ -43,7 +42,7 @@ float Noise::RidgedNoise(float x, float y, int octaves, float frequency, float p
 	float amplitude = 1.0f;
 	float maxAmp = 0.0f;
 	for (int i = 0; i < octaves; i++) {
-		total += ((1.0f - std::abs(Eval(x*frequency, y*frequency))) * 2.0 - 1.0) * amplitude;
+		total += ((1.0f - std::abs(Eval(x*frequency, y*frequency))) * 2.0f - 1.0f) * amplitude;
 		frequency *= 2.0f;
 		maxAmp += amplitude;
 		amplitude *= persistance;
@@ -51,26 +50,15 @@ float Noise::RidgedNoise(float x, float y, int octaves, float frequency, float p
 	return total / maxAmp;
 }
 
-#pragma endregion
 
-#pragma region ImprovedPerlinNoise
+
 float ImprovedPerlinNoise::Eval(float x, float y) const {
-	int xi = (int)x % 255;
-	int yi = (int)y % 255;
-	int xf = x - (int)x;
-	int yf = y - (int)y;
-
-	//float u = Fade(xf);
-	//float v = Fade(yf);
 	return 0;
 }
 
 float Fade(float t){
 	return t * t * t * (t * 6 - 15) + 10;
 }
-#pragma endregion
-
-
 
 
 //OpenSimplex
@@ -104,7 +92,8 @@ F64 OpenSimplexNoise::Extrapolate(int xsb, int ysb, double dx, double dy) const 
 float OpenSimplexNoise::Eval(float x) const {
 	return 0;
 }
-float OpenSimplexNoise::Eval(float x, float y) const {
+
+float OpenSimplexNoise::Eval (float x, float y) const {
 
 	//Place input coordinates onto grid.
 	double stretchOffset = (x + y) * STRETCH_CONSTANT_2D;
@@ -215,7 +204,7 @@ float OpenSimplexNoise::Eval(float x, float y) const {
 		value += attn_ext * attn_ext * Extrapolate(xsv_ext, ysv_ext, dx_ext, dy_ext);
 	}
 
-	return value / NORM_CONSTANT_2D;
+	return (float)(value / NORM_CONSTANT_2D);
 
 }
 float OpenSimplexNoise::Eval(float x, float y, float z) const {

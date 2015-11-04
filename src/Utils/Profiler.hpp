@@ -33,7 +33,7 @@ struct ProfilerPersistantEntry {
 	U32 writeIndex = 0;
 	U64 tempTime;
 	float elapsedTimes[PROFILER_PERSISTANT_SAMPLE_COUNT];
-	U32 elapsedCycles[PROFILER_PERSISTANT_SAMPLE_COUNT];
+	U64 elapsedCycles[PROFILER_PERSISTANT_SAMPLE_COUNT];
 };
 
 struct ProfilerEntry {

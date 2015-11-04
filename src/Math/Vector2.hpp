@@ -10,7 +10,6 @@ public:
 	F32 x, y;
 	Vector2() { x = 0; y = 0; }
 	Vector2(float x, float y) : x(x), y(y) { }
-	~Vector2() { }
 
 	friend std::ostream& operator<<(std::ostream& os, const Vector2& vector) {
 		os << "[" << vector.x << ", " << vector.y << "]";
@@ -53,3 +52,6 @@ public:
 	F32 Magnitude();
 	void Normalize();
 };
+
+
+typedef Vector2 V2;

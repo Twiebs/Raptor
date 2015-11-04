@@ -108,6 +108,14 @@ void WriteTextureAtlasToFile(TextureAtlas* atlas, std::string filename) {
 }
 #endif
 
+U8* LoadPixelsFromFile (const std::string& filename) {
+	int width, height;
+	U8* pixels = stbi_load(filename.c_str(), &width, &height, nullptr, 4);
+	if (pixels == nullptr)
+		LOG_ERROR("Could not load pixels from file: " << filename);
+	return pixels;
+}
+
 GLuint CreateTextureFromFile(const std::string& filename) {
 	int width, height;
 	U8* pixels = stbi_load(filename.c_str(), &width, &height, nullptr, 4);
@@ -152,23 +160,6 @@ GLuint CreateArrayTexture2D (U32 width, U32 height, std::vector<std::string>& fi
 }
 #endif
 
-GLuint CreateTextureFromPixels(U32 width, U32 height, U8* pixels) {
-	assert(pixels != nullptr);
-	assert(width > 0 && height > 0);
-	GLuint textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	return textureID;
-}
-
-
 static inline void SetTextureParameters (GLenum wrap_mode, GLenum filter_mode) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_mode);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_mode);
@@ -176,6 +167,22 @@ static inline void SetTextureParameters (GLenum wrap_mode, GLenum filter_mode) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter_mode);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter_mode);
 }
+
+GLuint CreateTextureFromPixels (U32 width, U32 height, U8* pixels, GLenum wrapMode) {
+	assert(pixels != nullptr);
+	assert(width > 0 && height > 0);
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	SetTextureParameters(wrapMode, GL_LINEAR_MIPMAP_LINEAR);
+	return textureID;
+}
+
+
+
 
 GLuint LoadTextureReleaseData (const std::string& filename, GLenum wrap_mode) {
 	int width, height;
@@ -221,6 +228,27 @@ Vector2 GetTexelCoords (U32 x, U32 y, U32 width, U32 height) {
 	F32 u = (F32)(x) / (F32)width;
 	F32 v = (F32)(y) / (F32)height;
 	return Vector2(u, v);
+}
+
+// TODO vary the texture components if they are unessecary
+TextureData LoadTextureData (const std::string& filename) {
+	int width, height, components;
+	U8* pixels = stbi_load(filename.c_str(), &width, &height, &components, 4);
+	if (pixels == nullptr) {
+		LOG_ERROR("Could not read file when loading texture data for :" << filename);
+		return TextureData { };
+	}
+
+	// Even though the alpha chanel is added the compontents 
+	// still returns the right value
+	// assert(components == 4 && "This should not happen!");
+
+	TextureData result = { };
+	result.width = (U32)width;
+	result.height = (U32)height;
+	result.format = ImageFormat::RGBA8;
+	result.pixels = pixels;
+	return result;
 }
 
 //TODO benchmark this...

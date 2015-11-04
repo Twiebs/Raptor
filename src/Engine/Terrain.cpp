@@ -1,4 +1,4 @@
-
+#include <Engine/Engine.hpp>
 #include <Engine/Assets.hpp>
 #include <Engine/Terrain.hpp>
 #include <Engine/GFX3D.hpp>
@@ -43,6 +43,11 @@ TerrainManager::~TerrainManager() {
 	// TODO NOTE shaders and other various assets are no longer deleted properly!
 }
 
+struct TerrainDrawCommand {
+	
+	Mesh* terrainMesh;
+};
+
 void TerrainManager::draw() {
 	auto& shader = GetShader(shaderHandle);
 	GFX3D::Begin(shader);
@@ -63,15 +68,16 @@ void TerrainManager::draw() {
 	for (U32 i = 0; i < managerArea; i++) {
 		BindAlphaMaps(i);
 		auto& terrainMesh = terrainMeshes[i];
-		glBindVertexArray(terrainMesh.vertexArrayID);
-		glDrawElements(GL_TRIANGLES, terrainMesh.indexCount, GL_UNSIGNED_INT, 0);
+		// GFX3D::DrawImmediately(terrainMesh);
+		//glBindVertexArray(terrainMesh.vertexArrayID);
+		//glDrawElements(GL_TRIANGLES, terrainMesh.indexCount, GL_UNSIGNED_INT, 0);
 	}
 
-	GFX3D::End();
+	GFX3D::End(shader);
 }
 
 Rectangle TerrainManager::GetBoundingRectangle() {
-	return Rectangle { 0.0f, 0.0f, chunkWidth * managerMaxWidth, chunkLength * managerMaxLength };
+	return Rectangle(0.0f, 0.0f, chunkWidth * managerMaxWidth, chunkLength * managerMaxLength);
 }
 
 struct TerrainGenerationTask : public ITask {
@@ -90,6 +96,7 @@ TerrainGenerationTask::TerrainGenerationTask(TerrainStreamer* terrainStreamer, f
 	: terrainStreamer(terrainStreamer), x(x), y(y), terrainIndex(terrainIndex) { }
 
 // XXX remove simplexNoise and put it in the terrainStreamer
+#include <Utils/Profiler.hpp>
 void TerrainGenerationTask::execute(U32 workerID) {
 	auto terrainData = &terrainStreamer->meshDatas[workerID];
 	auto& terrainManager = terrainStreamer->terrainManager;
@@ -101,10 +108,11 @@ void TerrainGenerationTask::execute(U32 workerID) {
 		static const float freq0 = (1.0f / terrainManager.chunkWidth) * roughness;
 		static const float freq1 = (1.0f / terrainManager.chunkWidth) * roughness;
 
-		auto influence = simplexNoise0.FBM(x, y, 6, 0.001, 0.5f);
+		// TODO fixnoise
+		auto influence = (float)simplexNoise0.FBM(x, y, 6, 0.001, 0.5f);
 		auto noise0 = simplexNoise0.FBM(x, y, 6, freq0, 0.5f);
 		auto noise1 = (simplexNoise1.RidgedNoise(x, y, 6, freq1, 0.5) * influence) * 3.0f;
-		return (noise0 + noise1) * 80;
+		return (float)0;
 	});
 }
 
@@ -127,7 +135,7 @@ TerrainStreamer::TerrainStreamer (U32 materialCount, U32 max_width, U32 max_leng
 	for (U32 i = 0; i < terrainManager.managerArea; i++) {
 		auto terrainX = (i % terrainManager.managerMaxWidth) * (terrainManager.chunkWidth - 1);
 		auto terrainY = (i / terrainManager.managerMaxWidth) * (terrainManager.chunkLength - 1);
-		chunksToStream.emplace_back(terrainX, terrainY, i);
+		chunksToStream.emplace_back(terrainX, terrainY, (float)i); // TODO replace chunks to stream!
 	}
 
 	//for (U32 i = 0; i < terrainManager.terrainCount; i++) {
@@ -202,6 +210,6 @@ void TerrainStreamer::update(const Vector3& position) {
 		if (chunksToStream.size() == 0) return;
 		auto chunk_info = chunksToStream.back();
 		chunksToStream.pop_back();
-		ScheduleTask<TerrainGenerationTask>(this, chunk_info.x, chunk_info.y, (U32)chunk_info.z);
+		Engine::ScheduleTask<TerrainGenerationTask>(this, chunk_info.x, chunk_info.y, (U32)chunk_info.z);
 	}
 }

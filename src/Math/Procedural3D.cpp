@@ -2,9 +2,6 @@
 
 #include <Core/logging.h>
 
-
-// This is compleatly wrong... the vertex normals will not be summed together properly
-// because the vertices are duplicated!
 void CalculateSurfaceNormals (Vertex3D* vertices, U32 vertexCount, U32* indices, U32 indexCount) {
 	for (U32 i = 0; i < indexCount; i+=3) {
 		auto index0 = indices[i + 0];
@@ -13,7 +10,7 @@ void CalculateSurfaceNormals (Vertex3D* vertices, U32 vertexCount, U32* indices,
 
 		auto edge0 = vertices[index1].position - vertices[index0].position;
 		auto edge1 = vertices[index2].position - vertices[index0].position;
-		auto normal = cross(edge0, edge1);
+		auto normal = cross(edge1, edge0);
 
 		vertices[index0].normal += normal;
 		vertices[index1].normal += normal;
@@ -25,70 +22,14 @@ void CalculateSurfaceNormals (Vertex3D* vertices, U32 vertexCount, U32* indices,
 	}
 }
 
-//void CreatePlaneMesh (MeshData* meshData, float x, float y, float w, float h, int cellCount, int cellsPerUV, std::function<float(float,float)> heightFunction) {
-//	auto cellWidth = w / cellCount;
-//	auto cellHeight = h / cellCount;
-//	auto uvStep = 1.0f / cellsPerUV;
-//
-//	auto gridArea = cellCount * cellCount;
-//	auto vertexCount = gridArea * 4;
-//	auto indexCount = gridArea * 6;
-//	AllocateMeshData(meshData, vertexCount, indexCount);
-//
-//	auto vertices = meshData->vertices;
-//	auto indices = meshData->indices;
-//
-//	U32 vertexIndex = 0;
-//	for (U32 i = 0; i < gridArea; i++) {
-//		assert(vertexIndex < vertexCount);
-//		auto cellX = (i % cellCount);
-//		auto cellY = i / cellCount;
-//		auto vertexX = x + (cellX * cellWidth);
-//		auto vertexY = y + (cellY * cellHeight);
-//
-//		auto uvXScalar = (cellX) % (cellsPerUV);
-//		auto uvYScalar = (cellY) % (cellsPerUV);
-//		auto setVertex = [&](Vertex3D* vertex, int xoffset, int yoffset) {
-//			auto texCoordX = (uvXScalar * uvStep) + (uvStep * xoffset);
-//			auto texCoordY = (uvYScalar * uvStep) + (uvStep * yoffset);
-//			auto height = heightFunction == nullptr ? 0 : heightFunction(vertexX + (xoffset * cellWidth), vertexY + (yoffset * cellHeight));
-//			vertex->position = Vector3(vertexX + (xoffset * cellWidth), height, vertexY + (yoffset * cellHeight));
-//			vertex->normal = Vector3(0.0f, 0.0f, 0.0f);	// @INCOMPLETE Vertex normal not calculated
-//			// vertex->normal = Vector3(0.0f, 1.0f, 0.0f);	// @INCOMPLETE Vertex normal not calculated
-//			vertex->texCoord = Vector2(texCoordX, texCoordY);
-//		};
-//
-//		setVertex(&vertices[vertexIndex++], 0, 0);
-//		setVertex(&vertices[vertexIndex++], 1, 0);
-//		setVertex(&vertices[vertexIndex++], 1, 1);
-//		setVertex(&vertices[vertexIndex++], 0, 1);
-//	}
-//
-//	vertexIndex = 0;
-//	for (U32 i = 0; i < indexCount; i+=6) {
-//		assert(vertexIndex < vertexCount);
-//		indices[i + 0] = vertexIndex + 0;
-//		indices[i + 1] = vertexIndex + 1;
-//		indices[i + 2] = vertexIndex + 2;
-//		indices[i + 3] = vertexIndex + 2;
-//		indices[i + 4] = vertexIndex + 3;
-//		indices[i + 5] = vertexIndex + 0;
-//		vertexIndex += 4;
-//	}
-//
-//
-//	CalculateSurfaceNormals(vertices, vertexCount, indices, indexCount);
-//}
-
 void GetPlaneMeshMemorySize (U32 meshResolution, U32* vertexCount, U32* indexCount) {
 	auto gridArea = meshResolution * meshResolution;
-	*vertexCount = gridArea * 4;
-	*indexCount = (meshResolution - 1)*(meshResolution - 1) * 6;
+	*vertexCount = (meshResolution + 1) * (meshResolution + 1);
+	*indexCount = gridArea * 6;
 }
 
 // TODO tangent vector calculation
-
-void GeneratePlaneMesh (MeshData* meshData, float x, float y, float w, float h, int cellCount, int cellsPerUV, std::function<float(float, float)> heightFunction) {
+void GeneratePlaneMesh (MeshData* meshData, float x, float y, float w, float h, U32 cellCount, float cellsPerUV, std::function<float(float, float)> heightFunction) {
 	assert(meshData->memblock != nullptr && "Mesh must already be initalized with memory!");
 
 	U32 vertexCount, indexCount;
@@ -98,7 +39,6 @@ void GeneratePlaneMesh (MeshData* meshData, float x, float y, float w, float h, 
 
 	auto cellWidth = w / cellCount;
 	auto cellHeight = h / cellCount;
-	auto uvStep = 1.0f / cellsPerUV;
 
 	U32 gridArea = cellCount * cellCount;
 
@@ -107,13 +47,15 @@ void GeneratePlaneMesh (MeshData* meshData, float x, float y, float w, float h, 
 	auto indices = meshData->indices;
 
 	auto uvScalar = (1.0f / cellsPerUV);
-
 	if (heightFunction == nullptr) {
-		for (U32 i = 0; i < gridArea; i++) {
+		for (U32 i = 0; i < vertexCount; i++) {
 			assert(i < vertexCount);
 
-			auto cellX = (i % cellCount);
-			auto cellY = i / cellCount; // NOTE this calcuation will fail if not square
+			// Changing this to looping over x and y is probably faster
+			// because no modulus is invloved.  The index can just be incremented
+			// seperatly each iteration through the loop
+			auto cellX = (i % (cellCount + 1));
+			auto cellY = (i / (cellCount + 1)); // NOTE this calcuation will fail if not square
 			auto vertexX = x + (cellX * cellWidth);
 			auto vertexY = y + (cellY * cellHeight);
 			float height = 0.0f;
@@ -140,6 +82,19 @@ void GeneratePlaneMesh (MeshData* meshData, float x, float y, float w, float h, 
 		}
 	}
 
+	U32 index = 0;
+	for (U32 y = 0; y < cellCount; y++) {
+		for (U32 x = 0; x < cellCount; x++) {
+			indices[index++] = ((y + 0) * (cellCount + 1)) + (x + 0);
+			indices[index++] = ((y + 0) * (cellCount + 1)) + (x + 1);
+			indices[index++] = ((y + 1) * (cellCount + 1)) + (x + 1);
+			indices[index++] = ((y + 0) * (cellCount + 1)) + (x + 0);
+			indices[index++] = ((y + 1) * (cellCount + 1)) + (x + 1);
+			indices[index++] = ((y + 1) * (cellCount + 1)) + (x + 0);
+		}
+	}
+
+#if 0
 	U32 currentIndex = 0;
 	for (U32 i = 0; i < ((cellCount - 1) * (cellCount - 1)); i++) {
 		auto cellX = (i % (cellCount - 1));
@@ -154,12 +109,14 @@ void GeneratePlaneMesh (MeshData* meshData, float x, float y, float w, float h, 
 		currentIndex += 6;
 	}
 
-	assert(currentIndex == indexCount);
+#endif
+
+	assert(index == indexCount);
 	CalculateSurfaceNormals(vertices, vertexCount, indices, indexCount);
 }
 
 
-void CreatePlaneMesh (MeshData* meshData, float x, float y, float w, float h, int cellCount, int cellsPerUV, std::function<float(float,float)> heightFunction) {
+void CreatePlaneMesh (MeshData* meshData, float x, float y, float w, float h, U32 cellCount, float cellsPerUV, std::function<float(float,float)> heightFunction) {
 	assert(meshData->memblock == nullptr && "Mesh data must be uninitalized when creating a plane mesh... Use Generate if you already have memory allocated!");
 	U32 vertexCount, indexCount;
 	GetPlaneMeshMemorySize(cellCount, &vertexCount, &indexCount);

@@ -1,9 +1,8 @@
 #include "Tasks.hpp"
 #include <type_traits>
 
-#include <Core/logging.h>
+CREATE_LOG_CATEGORY(TaskManager, LOGLEVEL_DISABLED);
 
-global_variable TaskManager g_TaskManager;
 global_variable std::thread::id g_MainThreadID;
 
 struct LambdaTask : public ITask {
@@ -32,14 +31,16 @@ static void ThreadProc(WorkQueue* queue, U32 workerID) {
 			task->executorWorkerID = workerID;
 			taskNeedsExecution = false;
 
-			queue->mutex.lock();
+			std::lock_guard<std::mutex> lock(queue->mutex);
 			queue->tasksToFinialize.push_back(task);
-			queue->mutex.unlock();
 		}
 
 
 		std::unique_lock<std::mutex> lock(queue->mutex);
+		LOGERROR(TaskManager, "workerID is waiting for work!");
+		LOG_VERBOSE("Worker " << workerID << " waiting for work...");
 		queue->condition_variable.wait(lock);
+		LOG_VERBOSE("Worker " << workerID << " executing work...");
 
 		if (queue->tasksToExecute.size() > 0) {
 			task = queue->tasksToExecute.back();
@@ -53,7 +54,8 @@ static void ThreadProc(WorkQueue* queue, U32 workerID) {
 	}
 }
 
-void InitTaskManager(TaskManager* manager) {
+void InitTaskManager (TaskManager* manager) {
+	g_MainThreadID = std::this_thread::get_id();
 	auto threadCount = GetTaskWorkerCount();
 	manager->threads.resize(threadCount);
 
@@ -62,26 +64,15 @@ void InitTaskManager(TaskManager* manager) {
 	}
 }
 
-void InitTaskManager() {
-	g_MainThreadID = std::this_thread::get_id();
-	InitTaskManager(&g_TaskManager);
-}
-
-void __AssetCalledByMainThread() {
-	assert(std::this_thread::get_id() == g_MainThreadID);
-}
 
 void TerminateTaskManager (TaskManager* manager) {
 	static auto flushWorkQueue = [](WorkQueue* queue) {
-		queue->mutex.lock();
-
+		std::lock_guard<std::mutex> lock(queue->mutex);
 		for (auto task : queue->tasksToExecute) delete task;
 		for (auto task : queue->tasksToFinialize) delete task;
 		queue->tasksToExecute.clear();
 		queue->tasksToFinialize.clear();
-
 		queue->condition_variable.notify_all();
-		queue->mutex.unlock();
 	};
 
 	flushWorkQueue(&manager->workQueue);
@@ -92,36 +83,22 @@ void TerminateTaskManager (TaskManager* manager) {
 	manager->threads.clear();
 }
 
-void TerminateTaskManager() {
-	TerminateTaskManager(&g_TaskManager);
-}
+void FinializeCompletedTasks (WorkQueue* queue) {
 
-// DONT SUBMIT NEW WORK IN A FINALIZER!
-//void SubmitTask(std::function<void(U32 workerID)> execute, std::function<void(U32 workerID)> finalize) {
-//	WorkQueue* queue = &g_TaskManager.workQueue;
-//
-//	queue->mutex.lock();
-//	Work work = {};
-//	work.execute = execute;
-//	work.finalize = finalize;
-//	work.workerWhoCompletedMe = -1;
-//	queue->workToExecute.push_back(work);
-//	queue->condition_variable.notify_one();
-//	queue->mutex.unlock();
-//}
-
-void FinializeCompletedTasks() {
-	WorkQueue* queue = &g_TaskManager.workQueue;
-
-	queue->mutex.lock();
-	for (U32 i = 0; i < queue->tasksToFinialize.size(); i++) {
-		ITask* task = queue->tasksToFinialize[i];
-		task->finalize(task->executorWorkerID);
-		delete task;
+	std::vector<ITask*> tasksToFinalize;
+	{ 
+		std::lock_guard<std::mutex> lock(queue->mutex);
+		if (queue->tasksToFinialize.size() > 0) { LOG_VERBOSE("Main thread is gathering compleated tasks"); }
+		for (U32 i = 0; i < queue->tasksToFinialize.size(); i++) {
+			tasksToFinalize.emplace_back(queue->tasksToFinialize.back());
+			queue->tasksToFinialize.pop_back();
+		}
 	}
 
-	queue->tasksToFinialize.clear();
-	queue->mutex.unlock();
+	for (auto task : tasksToFinalize) {
+		LOG_VERBOSE("Main thread is finalizing a task!");
+		task->finalize(0);
+	}
 }
 
 U32 GetTaskWorkerCount() {
@@ -129,6 +106,7 @@ U32 GetTaskWorkerCount() {
 	return result;
 }
 
-TaskManager* __InternalGetTaskManager() {
-	return &g_TaskManager;
+void __assertCalledByMainThread() {
+	assert(std::this_thread::get_id() == g_MainThreadID &&
+		"This function must be called from the main thread!");
 }

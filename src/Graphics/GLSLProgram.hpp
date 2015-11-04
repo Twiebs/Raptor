@@ -8,7 +8,7 @@
 
 #include <GL/glew.h>
 
-#ifdef GENERATE_SHADER_SOURCE_FILES
+#ifdef COMPILE_SHADERS_AT_RUNTIME
 #define BeginShaderBuilder(name) ShaderBuilder _builder (name)
 #define AddShaderSourceFile(type, filename) _builder.addSourceFile(type, filename)
 #define AddShaderConstant(string) _builder.addString(string)
@@ -30,6 +30,15 @@ enum ShaderType {
 	SHADER_TYPE_COUNT = 4
 };
 
+enum ShaderFlags {
+	SHADERFLAG_VERTEXSHADER		= 1 << 0,
+	SHADERFLAG_FRAGMENTSHADER	= 1 << 1,
+	SHADERFLAG_GEOMETRYSHASDER	= 1 << 2,
+	SHADERFLAG_COMPUTESHADER	= 1 << 3,
+};
+
+U64 GetShaderTypeFlag(ShaderType type);
+
 struct Shader {
 	GLuint id;
 };
@@ -38,6 +47,8 @@ struct ShaderBuilderData {
 	std::string name;
 	std::string sourceFilenames[SHADER_TYPE_COUNT];
 	std::vector <std::string> addedStrings;
+	U64 flags = 0;
+	bool hotreloadEnabled = false;
 };
 
 class ShaderBuilder {
@@ -52,18 +63,12 @@ public:
 	GLuint build();
 	Shader build_program();
 
-#ifdef GENERATE_SHADER_SOURCE_FILES
 	ShaderBuilderData data;
-#else
-
-private:
-
-	std::string name;
-#endif
 };
 
 GLuint CompileShader(ShaderBuilderData* info);
 
+Shader CreateShaderObject (const std::string& vertexFilename, const std::string& fragmentFilename);
 GLuint CreateShader (const std::string& vertexFilename, const std::string& fragmentFilename);
 GLuint CreateShader (const std::string& vertexFilename, const std::string& fragmentFilename, const std::string& geometryFilename);
 GLuint CreateShaderFromSource(const char* vertexShaderSource, const char* fragmentShaderSource);

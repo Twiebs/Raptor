@@ -2,7 +2,9 @@
 #include <Math/Random.hpp>
 #include <Core/Platform.h>
 
+
 #include <Core/logging.h>
+
 
 namespace Raptor {
 
@@ -29,29 +31,15 @@ namespace Raptor {
 		glBindTexture(GL_TEXTURE_2D, material.normalMapID);
 	}
 
-	void Draw(DebugModelData& model) {
-		for (U32 i = 0; i < model.meshVertexBuffers.size(); i++) {
-			auto& material = model.materials[model.meshMaterialIndex[i]];
-			auto& buffer = model.meshVertexBuffers[i];
-			auto& mesh = model.meshes[i];
-			BindMaterial(material);
-			glBindVertexArray(buffer.vertexArrayID);
-			glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, 0);
-		}
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
 
-
-
-	Camera::Camera() { }
-
-	Camera::Camera(const Vector3& position, float viewportWidth, float viewportHeight) {
-		this->position = position;
-		this->viewportWidth = viewportWidth;
-		this->viewportHeight = viewportHeight;
+	Camera::Camera (float viewportWidth, float viewportHeight, float fov, float nearClip, float farClip) 
+		: viewportWidth(viewportWidth),
+		viewportHeight(viewportHeight),
+		fov(fov),
+		nearClip(nearClip),
+		farClip(farClip) 
+	{ 
+		aspectRatio = viewportWidth / viewportHeight;
 	}
 
 	void UpdateCamera (Camera* camera) {
@@ -60,41 +48,31 @@ namespace Raptor {
 		camera->front.z = sin(RADIANS(camera->yaw)) * cos(RADIANS(camera->pitch));
 		camera->front.Normalize();
 		camera->view = Matrix4::LookAt(camera->position, camera->position + camera->front, Vector3(0.0f, 1.0f, 0.0f));
-		camera->projection = Matrix4::Perspective(45.0f, camera->viewportWidth / camera->viewportHeight, camera->nearClip, camera->farClip);
+		camera->projection = Matrix4::Perspective(camera->fov, camera->aspectRatio, camera->nearClip, camera->farClip);
 	}
 
 
 	void FPSCameraControlUpdate(Camera* camera) {
+		float deltaTime = PlatformGetDeltaTime();
+
 		int dx, dy;
 		PlatformGetCursorDelta(&dx, &dy);
 
 		camera->yaw += dx;
 		camera->pitch -= dy;
 
-		static const float MOVEMENT_SPEED = 0.3f;
+		static const float MOVEMENT_SPEED = 1.788f;
 		static const float SPRINT_MULTIPLIER = 3.0f;
 		float speed = MOVEMENT_SPEED;
 
 		if (PlatformGetKey(KEY_LSHIFT)) speed *= SPRINT_MULTIPLIER;
-		if (PlatformGetKey(KEY_W)) camera->position += speed * camera->front;
-		if (PlatformGetKey(KEY_S)) camera->position -= speed * camera->front;
-		if (PlatformGetKey(KEY_A)) camera->position -= camera->front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize() * speed;
-		if (PlatformGetKey(KEY_D)) camera->position += camera->front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize()  * speed;
-		if (PlatformGetKey(KEY_SPACE)) camera->position.y += speed;
-		if (PlatformGetKey(KEY_LCTRL)) camera->position.y -= speed;
+		if (PlatformGetKey(KEY_W)) camera->position += speed * deltaTime * camera->front;
+		if (PlatformGetKey(KEY_S)) camera->position -= speed * deltaTime * camera->front;
+		if (PlatformGetKey(KEY_A)) camera->position -= camera->front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize() * speed * deltaTime;
+		if (PlatformGetKey(KEY_D)) camera->position += camera->front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize()  * speed * deltaTime;
+		if (PlatformGetKey(KEY_SPACE)) camera->position.y += speed * deltaTime;
+		if (PlatformGetKey(KEY_LCTRL)) camera->position.y -= speed * deltaTime;
 		camera->pitch = Clamp(camera->pitch, -89.0f, 89.0f);
-	}
-
-	void PushLight(const PointLight& light, U32 index, GLuint shader) {
-		glUniform3fv(glGetUniformLocation(shader, ("pointLights[" + std::to_string(index) + "].position").c_str()), 1, &light.position.x);
-		glUniform3fv(glGetUniformLocation(shader, ("pointLights[" + std::to_string(index) + "].color").c_str()), 1, &light.color.x);
-		glUniform1f(glGetUniformLocation(shader, ("pointLights[" + std::to_string(index) + "].linear").c_str()), light.linear);
-		glUniform1f(glGetUniformLocation(shader, ("pointLights[" + std::to_string(index) + "].quadratic").c_str()), light.quadratic);
-		glUniform1f(glGetUniformLocation(shader, ("pointLights[" + std::to_string(index) + "].radius").c_str()), light.radius);
-	}
-
-	void PushLights(const PointLight* lights, U32 count, GLuint shader) {
-		GLint lightsLoc = GetUniformLocation(shader, "pointLights[0].position");
 	}
 
 	void InitDepthShader(DepthShader* shader, U32 mapWidth, U32 mapHeight) {
@@ -109,6 +87,8 @@ namespace Raptor {
 	}
 
 	GLuint CreateDepthFramebuffer(GLuint depthCubemap) {
+		assert(depthCubemap != 0);
+
 		GLuint framebufferID;
 		glGenFramebuffers(1, &framebufferID);
 		glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
@@ -129,15 +109,15 @@ namespace Raptor {
 		glGenTextures(1, &textureID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
+		for (GLint i = 0; i < 6; i++)
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT24,
+				textureWidth, textureHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
+
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-		for (GLint i = 0; i < 6; i++)
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT24,
-				textureWidth, textureHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
 
 		return textureID;
 	}
@@ -196,233 +176,98 @@ namespace Raptor {
 
 	}
 
+void InitGBuffer (GBuffer* buffer, U32 screenWidth, U32 screenHeight) {
+	glGenFramebuffers(1, &buffer->frameBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, buffer->frameBuffer);
 
-	struct SSAOShader {
-		GLuint program;
-		GLuint noiseTexture;
-		GLuint framebuffer;
-		GLuint colorbuffer;
-	};
+	glGenTextures(1, &buffer->positionBuffer);
+	glBindTexture(GL_TEXTURE_2D, buffer->positionBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, buffer->positionBuffer, 0);
 
-	//TODO we should proabably move screenWidth / height params into some
-	//RenderContext that the renderer will use to obtain those values...
-	//THis is where we can also store the RenderConfig etc...
-	void InitSSAO(SSAOShader* shader, U32 screenWidth, U32 screenHeight) {
-		shader->program = CreateShader("shaders/SSAO.vert", "shaders/SSAO.frag");
+	glGenTextures(1, &buffer->normalBuffer);
+	glBindTexture(GL_TEXTURE_2D, buffer->normalBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, buffer->normalBuffer, 0);
 
-		glGenFramebuffers(1, &shader->framebuffer);
-		glBindFramebuffer(GL_FRAMEBUFFER, shader->framebuffer);
+	glGenTextures(1, &buffer->colorBuffer);
+	glBindTexture(GL_TEXTURE_2D, buffer->colorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, buffer->colorBuffer, 0);
 
-		glGenTextures(1, &shader->colorbuffer);
-		glBindTexture(GL_TEXTURE_2D, shader->colorbuffer);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, shader->colorbuffer, 0);
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-			LOG_ERROR("SSAO Frambuffer not complete!");
+	GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+	glDrawBuffers(3, attachments);
 
-		//Create the Noise Texture
-		Random rng(0);
-		Vector3 noise[16];
-		for (auto i = 0; i < 16; i++)
-			noise[i] = Vector3(rng.Range(-1.0f, 1.0f), rng.Range(-1.0f, 1.0f), 0.0f);
-		glGenTextures(1, &shader->noiseTexture);
-		glBindTexture(GL_TEXTURE_2D, shader->noiseTexture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 4, 4, 0, GL_RGB, GL_FLOAT, noise);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glGenRenderbuffers(1, &buffer->renderBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, buffer->renderBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screenWidth, screenHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer->renderBuffer);
 
-		//Really stupid wierd lerp thing!
-		auto lerp = [](float a, float b, float f) -> float{
-			auto result = a + f * (b - a);
-			return result;
-		};
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		LOG_ERROR("OpenGL: Framebuffer not complete when initalizing GBuffer!");
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
-		//The Kernel is a hemishpere aligned in tangent to the normal vector
-		// The x and y components are varied from -1.0 to 1.0
-		//The Z compoent is only from 0 to 1
-		glUseProgram(shader->program);
-		for (auto i = 0; i < 64; i++) {
-			Vector3 sample = Vector3(rng.Range(-1.0f, 1.0f), rng.Range(-1.0f, 1.0f), rng.Range(0.0f, 1.0f));
-			sample.Normalize();
-			float scale = (float)i / 64.0f;
-			scale = lerp(0.1f, 1.0f, scale * scale);
-			glUniform3f(GetUniformLocation(shader->program, ("samples[" + std::to_string(i) + "]").c_str()),
-				sample.x, sample.y, sample.z);
-		}
+void FreeGBuffer (GBuffer* gbuffer) { 
+	glDeleteFramebuffers(1, &gbuffer->frameBuffer);
+	glDeleteTextures(1, &gbuffer->positionBuffer);
+	glDeleteTextures(1, &gbuffer->normalBuffer);
+	glDeleteTextures(1, &gbuffer->colorBuffer);
+}
 
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
 
-	void InitGBuffer (GBuffer* buffer, U32 screenWidth, U32 screenHeight) {
-		glGenFramebuffers(1, &buffer->frameBuffer);
-		glBindFramebuffer(GL_FRAMEBUFFER, buffer->frameBuffer);
+void BeginDeferredShadingLightingPass(DeferredShader* shader, Camera* camera) {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUseProgram(shader->lightingPassProgram);
 
-		glGenTextures(1, &buffer->positionBuffer);
-		glBindTexture(GL_TEXTURE_2D, buffer->positionBuffer);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, buffer->positionBuffer, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, shader->gPosition);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, shader->gNormal);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, shader->gColor);
 
-		glGenTextures(1, &buffer->normalBuffer);
-		glBindTexture(GL_TEXTURE_2D, buffer->normalBuffer);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, buffer->normalBuffer, 0);
+	glUniform3fv(3, 1, &camera->position.x);	//viewPos
+}
 
-		glGenTextures(1, &buffer->colorBuffer);
-		glBindTexture(GL_TEXTURE_2D, buffer->colorBuffer);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, buffer->colorBuffer, 0);
-
-		GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(3, attachments);
-
-		glGenRenderbuffers(1, &buffer->renderBuffer);
-		glBindRenderbuffer(GL_RENDERBUFFER, buffer->renderBuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screenWidth, screenHeight);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, buffer->renderBuffer);
-
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-			LOG_ERROR("Framebuffer not complete!");
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
-
-#if 1
-	void InitDeferredShader(DeferredShader* shader, U32 screenWidth, U32 screenHeight) {
-		glGenFramebuffers(1, &shader->gBuffer);
-		glBindFramebuffer(GL_FRAMEBUFFER, shader->gBuffer);
-
-		glGenTextures(1, &shader->gPosition);
-		glBindTexture(GL_TEXTURE_2D, shader->gPosition);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, shader->gPosition, 0);
-
-		glGenTextures(1, &shader->gNormal);
-		glBindTexture(GL_TEXTURE_2D, shader->gNormal);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, screenWidth, screenHeight, 0, GL_RGB, GL_FLOAT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, shader->gNormal, 0);
-
-		glGenTextures(1, &shader->gColor);
-		glBindTexture(GL_TEXTURE_2D, shader->gColor);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, screenWidth, screenHeight, 0, GL_RGBA, GL_FLOAT, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, shader->gColor, 0);
-
-		GLuint attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-		glDrawBuffers(3, attachments);
-
-		glGenRenderbuffers(1, &shader->renderBuffer);
-		glBindRenderbuffer(GL_RENDERBUFFER, shader->renderBuffer);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, screenWidth, screenHeight);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, shader->renderBuffer);
-
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-			LOG_ERROR("Framebuffer not complete!");
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-
-		shader->geometeryPassProgram = CreateShader("shaders/GBuffer.vert", "shaders/GBuffer.frag");
-		shader->lightingPassProgram = CreateShader("shaders/DeferredShading.vert", "shaders/DeferredShading.frag");
-
-		glGenVertexArrays(1, &shader->quadVertexArray);
-	}
-#endif
-
-#if 0
-	void InitDeferredShader(DeferredShader* shader, U32 screenWidth, U32 screenHeight) {
-		glGenFramebuffers(1, &shader->gBuffer);
-		glBindFramebuffer(GL_FRAMEBUFFER, shader->gBuffer);
-
-		glGenTextures(3, shader->textures);
-		glBindTexture(GL_TEXTURE_2D, shader->textures[0]);
-		glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32UI, screenWidth, screenHeight);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-		glGenTextures(1, &shader->gNormal);
-		glBindTexture(GL_TEXTURE_2D, shader->)
-
-	}
-#endif
-
-	void RemoveDeferredShader(DeferredShader* shader) {
-		glDeleteFramebuffers(1, &shader->gBuffer);
-		glDeleteTextures(1, &shader->gPosition);
-		glDeleteTextures(1, &shader->gNormal);
-		glDeleteTextures(1, &shader->gColor);
-
-		glDeleteProgram(shader->geometeryPassProgram);
-		glDeleteProgram(shader->lightingPassProgram);
-	};
-
-	void BeginDeferredShadingGeometryPass(DeferredShader* shader, Camera* camera) {
-		glBindFramebuffer(GL_FRAMEBUFFER, shader->gBuffer);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glUseProgram(shader->geometeryPassProgram);
-
-		glUniformMatrix4fv(1, 1, GL_FALSE, &camera->view[0][0]);
-		glUniformMatrix4fv(2, 1, GL_FALSE, &camera->projection[0][0]);
-	}
-
-	void EndDeferredShadingGeometeryPass() {
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
-
-	void BeginDeferredShadingLightingPass(DeferredShader* shader, Camera* camera) {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glUseProgram(shader->lightingPassProgram);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, shader->gPosition);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, shader->gNormal);
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, shader->gColor);
-
-		glUniform3fv(3, 1, &camera->position.x);	//viewPos
-	}
-
-	void RenderScreenQuad() {
-		static GLuint vertexArrayID;
-		static GLuint vertexBufferID;
-		if (vertexArrayID == 0) {
-			GLfloat quadVertices[] = {
-				// Positions        // Texture Coords
-				-1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-				-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-				1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-				1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-			};
-			// Setup plane VAO
-			glGenVertexArrays(1, &vertexArrayID);
-			glBindVertexArray(vertexArrayID);
-			glGenBuffers(1, &vertexBufferID);
-			glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-		}
-		glBindVertexArray(vertexArrayID);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-		glBindVertexArray(0);
-	}
+	//void RenderScreenQuad() {
+	//	static GLuint vertexArrayID;
+	//	static GLuint vertexBufferID;
+	//	if (vertexArrayID == 0) {
+	//		GLfloat quadVertices[] = {
+	//			// Positions        // Texture Coords
+	//			-1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+	//			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+	//			1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+	//			1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+	//		};
+	//		// Setup plane VAO
+	//		glGenVertexArrays(1, &vertexArrayID);
+	//		glBindVertexArray(vertexArrayID);
+	//		glGenBuffers(1, &vertexBufferID);
+	//		glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID);
+	//		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	//		glEnableVertexAttribArray(0);
+	//		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+	//		glEnableVertexAttribArray(1);
+	//		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	//	}
+	//	glBindVertexArray(vertexArrayID);
+	//	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	//	glBindVertexArray(0);
+	//}
 
 	//TODO we need some type of RenderContext inorder to store screen stuff.. etc
 	//Or a better way to expose the functionalyity in the application layer

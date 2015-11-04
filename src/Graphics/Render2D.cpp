@@ -7,7 +7,7 @@
 
 Camera2D::Camera2D(float viewportWidth, float viewportHeight)
     : viewportWidth(viewportWidth), viewportHeight(viewportHeight) {
-    projection = Matrix4::Ortho(0.0f, viewportWidth, 0.0f, viewportHeight, 0.1, 100.0f, 1.0);
+    projection = Matrix4::Ortho(0.0f, viewportWidth, 0.0f, viewportHeight, 0.1f, 100.0f, 1.0f);
 }
 
 void Camera2D::update() {

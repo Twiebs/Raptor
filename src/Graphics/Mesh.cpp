@@ -26,7 +26,7 @@ void InitMesh (Mesh* mesh, MeshData* meshData) {
 	glBindVertexArray(0);
 }
 
-MeshData* CreateMeshData (U32 vertexCount, U32 indexCount) {
+MeshData* AllocateMeshData (U32 vertexCount, U32 indexCount) {
 	size_t vertexMemorySize = sizeof(Vertex3D) * vertexCount;
 	size_t indexMemorySize = sizeof(U32) * indexCount;
 	MeshData* data = (MeshData*)malloc(vertexMemorySize + indexMemorySize + sizeof(MeshData));

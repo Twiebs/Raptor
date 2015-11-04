@@ -11,6 +11,15 @@
 #define GLSL_ERROR_LOG_SIZE 512
 #define GLSL_VERSION_STRING "#version 450 core\n"
 
+static inline const char* GetGLShaderTypeString (GLenum shaderType) {
+	if (shaderType == GL_VERTEX_SHADER) 	return "Vertex Shader";
+	if (shaderType == GL_FRAGMENT_SHADER) 	return "Fragment Shader";
+	if (shaderType == GL_GEOMETRY_SHADER) 	return "Geometry Shader";
+	if (shaderType == GL_COMPUTE_SHADER) 	return "Compute Shader";
+	assert (false && "Unknown Shader Type");
+	return "UNKNOWN SHADER TYPE";
+}
+
 static inline GLenum GetGLShaderType (ShaderType type) {
 	if (type == VERTEX_SHADER)	 return GL_VERTEX_SHADER;
 	if (type == FRAGMENT_SHADER) return GL_FRAGMENT_SHADER;
@@ -20,11 +29,11 @@ static inline GLenum GetGLShaderType (ShaderType type) {
 	return 0;
 }
 
-static inline const char* GetShaderTypeString (GLenum shaderType) {
-	if (shaderType == GL_VERTEX_SHADER) 	return "Vertex Shader";
-	if (shaderType == GL_FRAGMENT_SHADER) 	return "Fragment Shader";
-	if (shaderType == GL_GEOMETRY_SHADER) 	return "Geometry Shader";
-	if (shaderType == GL_COMPUTE_SHADER) 	return "Compute Shader";
+static inline const char* GetShaderTypeString (ShaderType shaderType) {
+	if (shaderType == VERTEX_SHADER) 	return "Vertex Shader";
+	if (shaderType == FRAGMENT_SHADER) 	return "Fragment Shader";
+	if (shaderType == GEOMETRY_SHADER) 	return "Geometry Shader";
+	if (shaderType == COMPUTE_SHADER) 	return "Compute Shader";
 	assert (false && "Unknown Shader Type");
 	return "UNKNOWN SHADER TYPE";
 }
@@ -38,6 +47,16 @@ static inline const std::string GetGLShaderExtentionString (ShaderType type) {
 	return "INVALID_SHADER_EXENTION";
 }
 
+U64 GetShaderTypeFlag(ShaderType type) {
+	switch (type) {
+	case VERTEX_SHADER: return SHADERFLAG_VERTEXSHADER;
+	case FRAGMENT_SHADER: return SHADERFLAG_FRAGMENTSHADER;
+	case GEOMETRY_SHADER: return SHADERFLAG_GEOMETRYSHASDER;
+	case COMPUTE_SHADER: return SHADERFLAG_COMPUTESHADER;
+	}
+	return 0;
+}
+
 static GLuint CheckShaderErrors (GLuint shaderID, GLenum errorType, GLenum shaderType) {
 	GLint success;
 	GLchar infoLog[GLSL_ERROR_LOG_SIZE];
@@ -46,7 +65,7 @@ static GLuint CheckShaderErrors (GLuint shaderID, GLenum errorType, GLenum shade
 
 	glGetShaderInfoLog(shaderID, GLSL_ERROR_LOG_SIZE, NULL, infoLog);
 	if (errorType == GL_COMPILE_STATUS) {
-		LOG_ERROR(GetShaderTypeString(shaderType) << " compilation failed! \n" << infoLog);
+		LOG_ERROR(GetGLShaderTypeString(shaderType) << " compilation failed! \n" << infoLog);
 	} else {
 		LOG_ERROR("SHADER PROGRAM LINK FAILED: " << infoLog);
 	}
@@ -75,6 +94,12 @@ static GLuint LinkShaders (GLuint vertexShaderID, GLuint fragmentShaderID) {
 	return programID;
 }
 
+Shader CreateShaderObject (const std::string& vertexFilename, const std::string& fragmentFilename) {
+	auto vertexSource = ReadEntireFile(vertexFilename);
+	auto fragmentSource = ReadEntireFile(fragmentFilename);
+	auto result = Shader { CreateShaderFromSource(vertexSource.c_str(), fragmentSource.c_str()) };
+	return result;
+}
 
 GLuint CreateShader (const std::string& vertexFilename, const std::string& fragmentFilename) {
 	auto vertexSource = ReadEntireFile(vertexFilename);
@@ -110,7 +135,7 @@ static GLuint CompileShader (const char* source, GLenum shaderType) {
 	glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
 	if (!success) {
 		glGetShaderInfoLog(shaderID, GLSL_ERROR_LOG_SIZE, NULL, infoLog);
-		LOG_ERROR(GetShaderTypeString(shaderType) << " compilation failed! \n" << infoLog);
+		LOG_ERROR(GetGLShaderTypeString(shaderType) << " compilation failed! \n" << infoLog);
 		printf("Shader Source: %s", source);
 		return 0;
 	}
@@ -181,6 +206,8 @@ static GLuint CompileShader(ShaderType type, const std::vector<const char*>& sou
 
 struct ShaderParser {
 	char* currentChar;
+	char* currentLine;
+	U32 currentLineLength;
 };
 
 //static bool ExpectStringAndEatIfTrue (ShaderParser* parser, const char* string) {
@@ -191,32 +218,69 @@ struct ShaderParser {
 //
 //}
 
-static std::string ParseGLSLShaderFile (const std::string& filename) {
-	ShaderParser parser;
+static bool ExpectAndEat (ShaderParser* parser, const char* text) {
+	size_t text_length = strlen(text);
+	char* currentTextChar = (char*)text;
 
-	auto source = ReadEntireFile(filename);
-	parser.currentChar = &source.front();
-
-
-
-	bool isParsing = false;
-	while (isParsing) {
-	switch (*parser.currentChar) {
-	case '#':
-	{
-
-	} break;
-
-
-	case EOF:
-	{
-		isParsing = false;
-		break;
-	} break;
-
+	while (*parser->currentChar == *text) {
+		parser->currentChar++;
 	}
-	parser.currentChar++;
+
+
+}
+
+static U32 length_to_newline (const char* line) {
+	U32 count = 0;
+	char* pos = (char*)line;
+	while (*pos != '\n') {
+		count++;
+		pos++;
 	}
+
+	count++; // Make sure the new line is included
+	return count;
+}
+
+static bool matches_text (const char* source, const char* text) {
+	size_t text_length = strlen(text);
+	for (size_t i = 0; i < text_length; i++) {
+		if (source[i] != text[i]) return false;
+	}
+	return true;
+}
+
+
+// This is so bad...
+bool ParseGLSLShader (const std::string& filename, std::string& outFile) {
+	auto input = filename;
+	std::ifstream fileStream(filename);
+	if (!fileStream.is_open()) {
+		LOG_ERROR("Failed to open shader file: " << filename);
+		return false;
+	}
+	std::string line;
+	while (getline(fileStream, line)) {
+		//Check if the file has a include directive
+		if (line.find("#") != std::string::npos) {
+			if (line.find("include") != std::string::npos) {
+				size_t begin = line.find("<") + 1;
+				size_t end = line.find(">") - begin;
+				std::string includeFilename = line.substr(begin, end);
+				std::string includeFile;
+				auto baseFilepath = filename.substr(0, filename.find_last_of('/'));
+				baseFilepath.append("/");
+				baseFilepath.append(includeFilename);
+				ParseGLSLShader(baseFilepath, includeFile);
+				outFile.append(includeFile);
+				continue;	//Dont add the include line...
+			}
+		}
+		outFile.append(line);
+		outFile.append("\n");
+	}
+
+	fileStream.close();
+	return true;
 }
 
 static void GenerateAndWriteShaderSourceFile(ShaderType type, const std::string& name, const std::string& source, const std::vector<std::string>& stringsToInclude) {
@@ -258,7 +322,7 @@ static inline GLuint CheckShaderErrors(GLuint shaderID, GLenum errorType, GLenum
 
 ShaderBuilder::~ShaderBuilder() { }
 
-#ifndef GENERATE_SHADER_SOURCE_FILES
+#ifndef COMPILE_SHADERS_AT_RUNTIME
 ShaderBuilder::ShaderBuilder(const std::string& name) : name(name) { }
 void ShaderBuilder::addString(const std::string& string) { }
 void ShaderBuilder::addSourceFile(ShaderType type, const std::string& filename) { }
@@ -277,7 +341,18 @@ ShaderBuilder::ShaderBuilder (const std::string& name) {
 }
 
 void ShaderBuilder::addSourceFile(ShaderType type, const std::string& filename) {
+	auto CheckIfValidExtention = [](ShaderType type, const std::string& filename) {
+		auto lastDot = filename.find_last_of('.');
+		auto extention = filename.substr(lastDot, filename.size() - lastDot);
+		auto correctExtention = GetGLShaderExtentionString(type);
+		if (extention != correctExtention) {
+			LOG_WARNING(filename << "is not the correct file extention for a " << GetShaderTypeString(type));
+		}
+	};
+
+	CheckIfValidExtention(type, filename);
 	data.sourceFilenames[type] = filename;
+	data.flags |= GetShaderTypeFlag(type);
 }
 
 void ShaderBuilder::addString(const std::string& str) {
@@ -296,16 +371,34 @@ Shader ShaderBuilder::build_program() {
 	return Shader{ CompileShader(&data) };
 }
 
-GLuint CompileShader(ShaderBuilderData* info) {
+GLuint CompileShader (ShaderBuilderData* info) {
 	std::vector<const char*> sourcesToCompile;
 	for (auto& str : info->addedStrings)
 		sourcesToCompile.push_back(str.c_str());
+
+	auto CompileShader = [&info](ShaderType type, const std::vector<const char*>& sources) -> GLuint {
+		GLenum glShaderType = GetGLShaderType(type);
+		GLuint shaderID = glCreateShader(glShaderType);
+		glShaderSource(shaderID, sources.size(), &sources.front(), NULL);
+		glCompileShader(shaderID);
+
+		GLint success;
+		GLchar infoLog[GLSL_ERROR_LOG_SIZE];
+		glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
+		if (success) return shaderID;
+
+		glGetShaderInfoLog(shaderID, GLSL_ERROR_LOG_SIZE, NULL, infoLog);
+		LOG_ERROR("ShaderBuilder failed to compile " << info->name);
+		LOG_ERROR(GetShaderTypeString(type) << " compilation failed! \n" << infoLog);
+		return 0;
+	};
+
 
 	GLuint shaders[SHADER_TYPE_COUNT];
 	std::string sources[SHADER_TYPE_COUNT];
 	for (U32 i = 0; i < SHADER_TYPE_COUNT; i++) {
 		if (info->sourceFilenames[i].size() > 0) {
-			sources[i] = ReadEntireFile(info->sourceFilenames[i]);
+			ParseGLSLShader(info->sourceFilenames[i], sources[i]);
 			sourcesToCompile.push_back(sources[i].c_str());
 			shaders[i] = CompileShader((ShaderType)i, sourcesToCompile);
 			sourcesToCompile.pop_back();
@@ -328,14 +421,14 @@ GLuint CompileShader(ShaderBuilderData* info) {
 		}
 	}
 
+#ifdef GENERATE_SHADER_SOURCE_FILES
 	for (U32 i = 0; i < SHADER_TYPE_COUNT; i++) {
 		if (sources[i].size() == 0) break;
 		GenerateAndWriteShaderSourceFile((ShaderType)i, info->name, sources[i], info->addedStrings);
 	}
+#endif
 
-	auto result = CheckShaderErrors(programID, GL_LINK_STATUS, 0);
-	if (result != 0) LOG_VERBOSE("ShaderProgram " << info->name << " was linked sucuessfuly!");
-	return result;
+	return programID;
 }
 
 #endif

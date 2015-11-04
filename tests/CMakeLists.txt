@@ -1,6 +1,7 @@
 include_directories(../src)
 
 function(add_test name sources)
+	add_definitions(-DPROJECT_SOURCE_DIRECTORY="${CMAKE_SOURCE_DIR}")
 	add_executable(${name} ${sources})
 	target_link_libraries(${name} RaptorEngine ${LIBS})
 endfunction(add_test)
@@ -15,5 +16,9 @@ target_link_libraries(SpriteTest RaptorEngine ${LIBS})
 target_link_libraries(WorldTest RaptorEngine ${LIBS})
 target_link_libraries(ECSTest RaptorEngine ${LIBS})
 
+add_test(CubemapTest cubemap.cpp)
 add_test(LiquidTest liquid.cpp)
 add_test(PlatformerTest PlatformerTest.cpp)
+add_test(SSAO ssao/main.cpp)
+
+add_library(editor SHARED hotcode/editor.cpp)

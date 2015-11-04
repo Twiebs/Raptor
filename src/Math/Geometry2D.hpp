@@ -9,13 +9,28 @@ struct Circle {
 };
 
 struct Rectangle {
-	float x, y;
-	float width, height;
+	union {
+		V2 position;
+		struct { float x, y; };
+	};
+
+	union {
+		V2 size;
+		struct { float w, h; };
+	};
+
+	Rectangle(float x, float y, float w, float h)
+		: x(x), y(y), w(w), h(h) { }
+
+	//Rectangle(const Rectangle& r) { 
+	//	this->position = r.position; 
+	//	this->size = r.size;
+	//}
 };
 
 inline Vector2 GetCenter(const Rectangle& rectangle);
 inline Vector2 GetCenter(const Rectangle& r) {
-	return Vector2((r.x + r.width)*0.5f, (r.y + r.height)*0.5f);
+	return Vector2((r.x + r.w)*0.5f, (r.y + r.h)*0.5f);
 }
 
 inline bool IsPointInRect(float x, float y, const Rectangle& rect);
@@ -29,7 +44,7 @@ inline bool IsPointInRect(float x, float y, const float rectX, const float rectY
 }
 
 inline bool IsPointInRect(float x, float y, const Rectangle& rect) {
-	auto result = (x >= rect.x && x <= (rect.x + rect.width) && y >= rect.y && y <= (rect.y + rect.height));
+	auto result = (x >= rect.x && x <= (rect.x + rect.w) && y >= rect.y && y <= (rect.y + rect.h));
 	return result;
 }
 

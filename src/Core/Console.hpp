@@ -4,12 +4,12 @@
 #include <string>
 #include <sstream>
 
-enum class LogLevel {
-	ERROR,
-	WARNING,
-	INFO,
-	DEBUG
-};
+#include <Core/types.h>
+#include <Core/logging.h>
+
+
+
+
 
 struct Console {
 public:

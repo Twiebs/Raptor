@@ -6,11 +6,18 @@
 
 #include <GL/glew.h>
 
-PointLight::PointLight(const Vector3& color) : color(color) {
+PointLight::PointLight() {
 	linear = 0.027f;
 	quadratic = 0.0028f;
 	float lightMax = std::fmaxf(std::fmaxf(color.x, color.y), color.z);
-	radius = (-linear + sqrtf(linear * linear - 4 * quadratic * (1.0 - (256.0 / 5.0) * lightMax))) / (2 * quadratic);
+	radius = (-linear + sqrtf(linear * linear - 4 * quadratic * (1.0f - (256.0f / 5.0f) * lightMax))) / (2 * quadratic);
+}
+
+
+void PointLight::SetRadius (float radius) {
+	this->radius = radius;
+	linear = (2.0f / radius);
+	quadratic = (1.0f / (radius*radius));
 }
 
 inline void UniformVector3(GLint location, const Vector3& vector) {

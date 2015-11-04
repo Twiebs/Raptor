@@ -18,14 +18,28 @@ float Random::Range(float min, float max) {
 }
 
 int Random::Range(int min, int max){
-	std::uniform_int_distribution<S64> dist(min, max);
+	std::uniform_int_distribution<S32> dist(min, max);
 	return dist(rng);
 }
 
 Vector2 Random::PointInRectangle(const Rectangle& rectangle) {
-	std::uniform_real_distribution<float> distX(rectangle.x, rectangle.x + rectangle.width);
-	std::uniform_real_distribution<float> distY(rectangle.y, rectangle.y + rectangle.height);
+	std::uniform_real_distribution<float> distX(rectangle.x, rectangle.x + rectangle.w);
+	std::uniform_real_distribution<float> distY(rectangle.y, rectangle.y + rectangle.h);
 	return Vector2(distX(rng), distY(rng));
+}
+
+V3 Random::PointInCuboid (const Cuboid& cube) {
+	std::uniform_real_distribution<float> distX(cube.x, cube.x + cube.w);
+	std::uniform_real_distribution<float> distY(cube.y, cube.y + cube.h);
+	std::uniform_real_distribution<float> distZ(cube.z, cube.z + cube.l);
+	V3 result = V3(distX(rng), distY(rng), distZ(rng));
+	return result;
+}
+
+V3 Random::vector3() {
+	std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+	V3 result = V3(dist(rng), dist(rng), dist(rng));
+	return result;
 }
 
 

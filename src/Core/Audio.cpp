@@ -6,7 +6,7 @@
 void Audio::Init () {
 	int mixFlags = MIX_INIT_OGG | MIX_INIT_FLAC | MIX_INIT_MP3;
 	int mixInitialized = Mix_Init(mixFlags);
-	if (mixInitialized & mixFlags != mixFlags) {
+	if ((mixInitialized & mixFlags) != mixFlags) {
 		LOG_ERROR("AUDIO: Failed to init required audio library support");
 		LOG_ERROR("AUDIO: " << Mix_GetError());
 		return;

@@ -26,7 +26,7 @@ static_assert(false, "Must define shader directory!");
 
 #define AssetTypeHandleName(assetTypeName) assetTypeName##Handle
 
-#define __GenerateAssetHandleStruct(handleName) struct handleName { U32 arrayIndex; }
+#define __GenerateAssetHandleStruct(handleName) struct handleName { U32 arrayIndex; handleName(U32 arrayIndex) : arrayIndex(arrayIndex) { } handleName() { } }
 #define __GenerateAssetLoadFunction(assetName, handleName) handleName Load##assetName (const std::string& filename);
 #define __GenerateAssetReloadFunction(assetName, handleName) void Reload##assetName (const handleName & handle)
 #define __GenerateAssetGetFunction(assetName, handleName) const assetName & Get##assetName(const handleName & handle);
@@ -36,12 +36,19 @@ static_assert(false, "Must define shader directory!");
 	__GenerateAssetLoadFunction(assetName, AssetTypeHandleName(assetName)); \
 	__GenerateAssetGetFunction(assetName, AssetTypeHandleName(assetName))
 
-__GenerateAsset(Texture);
 __GenerateAsset(Material);
+__GenerateAsset(Texture);
 __GenerateAsset(Shader);
 __GenerateAsset(Model);
 __GenerateAsset(Sound);
 __GenerateAsset(Music);
+
+enum AssetType {
+	ASSET_MATERIAL = 0,
+	ASSET_SHADER = 1,
+	ASSET_MODEL = 2,
+};
+
 
 struct AssetInfo {
 	std::string name;
@@ -51,12 +58,13 @@ struct AssetInfo {
 struct AssetManifest {
 	
 	std::vector<ShaderBuilderData> shaderBuilderData;
-	std::vector<AssetInfo> materialAssetInfos;
+	std::vector<MaterialAssetInfo> materialAssetInfos;
+	std::vector<AssetInfo> modelInfo;
 	
 	std::vector<Shader> shaderPrograms;
 	std::vector<Material> materials;
 	std::vector<Texture> textures;
-	std::vector<Model*> models;
+	std::vector<Model> models;
 };
 
 const AssetManifest& GetGlobalAssetManifest();
@@ -65,6 +73,7 @@ const Texture& GetTexture(const TextureHandle& handle);
 TextureHandle LoadTexture(const std::string& filename);
 
 const Material& GetMaterial(const MaterialHandle& handle);
+MaterialHandle LoadMaterial(const MaterialAssetInfo& data);
 MaterialHandle LoadMaterial(const std::string& filename);
 // MaterialHandle LoadMaterial(const std::string& diffuseFilename, const std::string& specularFilename, const std::string& normalFilename);
 

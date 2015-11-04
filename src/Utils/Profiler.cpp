@@ -2,12 +2,17 @@
 
 #include <vector>
 
+#include <Core/Tasks.hpp>
 #include <Core/types.h>
 #include <Core/Platform.h>
 
 // We dont realy want these staticly allocated globals
 // in the framework...
 global_variable Profiler* g_Profiler = new Profiler();
+
+// Have a seperate engine file called the global_profiler.h
+// which gives you access to a global profiler
+// this would just be the framework!
 
 void Profiler::BeginEntry (const char* name) {
 	auto& entry = entires[newEntryIndex];
@@ -18,14 +23,14 @@ void Profiler::BeginEntry (const char* name) {
 	newEntryIndex++;
 }
 
-void Profiler::EndEntry(const char* name) {
+void Profiler::EndEntry (const char* name) {
 	auto index = entryIndexStack.back();
 	auto& entry = entires[index];
 
 	auto time = PlatformGetPerformanceCounter() - entry.tempTime;
 	entry.elapsedTime = (double)(time * 1000) / PlatformGetPerformanceCounterFrequency();
 	entry.elapsedCycles = __rdtsc() - entry.elapsedCycles;
-	assert(entry.name == name);
+	assert(entry.name == name && "You called EndEntry with a different name then you called BeginEntry with!");
 	entryIndexStack.pop_back();
 }
 
@@ -78,10 +83,12 @@ void __ProfilerEndEntry(const char* name) {
 }
 
 void __ProfilerBeginPersistantEntry(const char* name) {
+	assert_called_by_main_thread();
 	InternalProfilerBeginBlock(g_Profiler, name);
 }
 
 void __ProfilerEndPersistantEntry(const char* name) {
+	assert_called_by_main_thread();
 	InternalProfilerEndBlock(g_Profiler, name);
 }
 

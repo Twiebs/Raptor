@@ -8,6 +8,7 @@
 #include <Graphics/Texture.hpp>
 #include <Graphics/Mesh.hpp>
 #include <Graphics/ModelData.hpp>
+#include <Graphics/Model.hpp>
 #include <Graphics/Lighting.hpp>
 
 #define MODEL_LOCATION 0
@@ -23,6 +24,8 @@ namespace Raptor {
 		Transform3D();
 	};
 
+
+
 	Matrix4 TransformToMatrix(const Transform3D& transform);
 
 	void BindMaterial(const Material& material);
@@ -30,16 +33,17 @@ namespace Raptor {
 	void Draw(DebugModelData& model);
 
 	struct Camera {
-		float viewportWidth = 1280, viewportHeight = 720;
+		float viewportWidth, viewportHeight;
+		float aspectRatio;
 		float yaw= -90, pitch = 0;
-		float nearClip = 0.1f, farClip = 100.0f;
+		float nearClip = 0.1f, farClip = 50.0f;
+		float fov;
 
 		Vector3 position;
 		Vector3 front;
 		Matrix4 view;
 		Matrix4 projection;
-		Camera();
-		Camera(const Vector3& position, float viewportWidth, float viewportHeight);
+		Camera(float viewportWidth, float viewportHeight, float fov = 45.0f, float nearClip = 0.1f, float farClip = 50.0f);
 	};
 
 	void UpdateCamera(Camera* camera);
@@ -108,6 +112,7 @@ namespace Raptor {
 		GLuint normalBuffer;
 		GLuint colorBuffer;
 	};
+
 
 	void InitGBuffer(GBuffer* buffer, U32 screenWidth, U32 screenHeight);
 	void ReleaseGBuffer(GBuffer* buffer);

@@ -32,7 +32,7 @@ struct Mesh {
 	GLuint elementBufferID = 0;
 };
 
-MeshData* CreateMeshData(U32 vertexCount, U32 indexCount);
+MeshData* AllocateMeshData (U32 vertexCount, U32 indexCount);
 
 void AllocateMeshData (MeshData* meshData, U32 vertexCount, U32 indexCount);
 void FreeMeshData (MeshData* meshData);

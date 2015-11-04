@@ -200,8 +200,8 @@ int ImGui::Init() {
 	int viewportWidth, viewportHeight;
 	PlatformGetSize(&viewportWidth, &viewportHeight);
 	ImGuiIO& io = ImGui::GetIO();
-	io.DisplaySize.x = viewportWidth;
-	io.DisplaySize.y = viewportHeight;
+	io.DisplaySize.x = (float)viewportWidth;
+	io.DisplaySize.y = (float)viewportHeight;
 	io.DeltaTime = 1.0f / 60.0f;
 	io.IniFilename = "imgui.ini";
 	io.KeyMap[ImGuiKey_Tab] = KEY_TAB;
@@ -276,7 +276,7 @@ int ImGui::Init() {
 
 void ImGui::BeginFrame() {
 	ImGuiIO& io = ImGui::GetIO();
-	io.DeltaTime = PlatformGetDeltaTime();
+	io.DeltaTime = (float)PlatformGetDeltaTime();
 	int x, y; PlatformGetCursorPos(&x, &y);
 	io.MousePos = ImVec2((F32)x, (F32)y);
 	//io.MouseWheel = app->GetMouseWheel();

@@ -131,7 +131,10 @@ Matrix4 Matrix4::Zero() {
 }
 
 Matrix4 Matrix4::Perspective(F32 fieldOfView, F32 aspectRatio, F32 zNear, F32 zFar) {
-	const F32 tanHalfFOV = tan(fieldOfView * 0.5f);
+	assert(aspectRatio != 0.0);
+	assert(zNear != zFar);
+	
+	const F32 tanHalfFOV = tan(Radians(fieldOfView) * 0.5f);
 
 	Matrix4 r = Matrix4::Zero();
 	r[0][0] = 1.0f / (aspectRatio * tanHalfFOV);

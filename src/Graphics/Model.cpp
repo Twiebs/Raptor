@@ -16,34 +16,47 @@
 
 #include <Engine/Assets.hpp>
 
-static Model* AllocateModel (U32 meshCount) {
+//static Model* AllocateModel (U32 meshCount) {
+//	size_t materialHandleSize = sizeof(MaterialHandle) * meshCount;
+//	size_t indexCountForMeshSize = sizeof(U32) * meshCount;
+//	Model* model = (Model*)malloc(sizeof(Model) + materialHandleSize + indexCountForMeshSize);
+//	model->meshMaterialHandles = (MaterialHandle*)(model + 1);
+//	model->meshIndexCounts = (U32*)model->meshMaterialHandles + meshCount;
+//	model->meshCount = meshCount;
+//	return model;
+//}
+
+static Model CreateModel (U32 meshCount) {
 	size_t materialHandleSize = sizeof(MaterialHandle) * meshCount;
 	size_t indexCountForMeshSize = sizeof(U32) * meshCount;
-	Model* model = (Model*)malloc(sizeof(Model) + materialHandleSize + indexCountForMeshSize);
-	model->meshMaterialHandles = (MaterialHandle*)(model + 1);
-	model->meshIndexCounts = (U32*)model->meshMaterialHandles + meshCount;
-	model->meshCount = meshCount;
+	
+	Model model;
+	model.meshCount = meshCount;
+	model.meshMaterialHandles = (MaterialHandle*)malloc(materialHandleSize + indexCountForMeshSize);
+	model.meshIndexCounts = (U32*)(model.meshMaterialHandles + meshCount);
 	return model;
 }
+
 
 static void ImportMeshData (MeshData* data, aiMesh* ai_mesh, U32 vertexOffset, U32 indexOffset) {
 	assert(data->vertices != nullptr && data->vertexCount != 0);
 	assert(data->indices != nullptr && data->indexCount != 0);
-	assert(data->vertexCount >= vertexOffset, +(ai_mesh->mNumVertices));
+	assert(data->vertexCount >= (vertexOffset + ai_mesh->mNumVertices));
 	assert(data->indexCount >= indexOffset + (ai_mesh->mNumFaces * 3));
 
-	for (U32 i = vertexOffset; i < (ai_mesh->mNumVertices + vertexOffset); i++) {
-		data->vertices[i].position.x = ai_mesh->mVertices[i].x;
-		data->vertices[i].position.y = ai_mesh->mVertices[i].y;
-		data->vertices[i].position.z = ai_mesh->mVertices[i].z;
-		data->vertices[i].normal.x = ai_mesh->mNormals[i].x;
-		data->vertices[i].normal.y = ai_mesh->mNormals[i].y;
-		data->vertices[i].normal.z = ai_mesh->mNormals[i].z;
-		data->vertices[i].tangent.x = ai_mesh->mTangents[i].x;
-		data->vertices[i].tangent.y = ai_mesh->mTangents[i].y;
-		data->vertices[i].tangent.z = ai_mesh->mTangents[i].z;
-		data->vertices[i].texCoord.x = ai_mesh->mTextureCoords[0][i].x;
-		data->vertices[i].texCoord.y = ai_mesh->mTextureCoords[0][i].y;
+	for (U32 i = 0; i < ai_mesh->mNumVertices; i++) {
+		auto index = vertexOffset + i;
+		data->vertices[index].position.x = ai_mesh->mVertices[i].x;
+		data->vertices[index].position.y = ai_mesh->mVertices[i].y;
+		data->vertices[index].position.z = ai_mesh->mVertices[i].z;
+		data->vertices[index].normal.x = ai_mesh->mNormals[i].x;
+		data->vertices[index].normal.y = ai_mesh->mNormals[i].y;
+		data->vertices[index].normal.z = ai_mesh->mNormals[i].z;
+		data->vertices[index].tangent.x = ai_mesh->mTangents[i].x;
+		data->vertices[index].tangent.y = ai_mesh->mTangents[i].y;
+		data->vertices[index].tangent.z = ai_mesh->mTangents[i].z;
+		data->vertices[index].texCoord.x = ai_mesh->mTextureCoords[0][i].x;
+		data->vertices[index].texCoord.y = ai_mesh->mTextureCoords[0][i].y;
 	}
 
 	for (U32 ai_index = 0, i = indexOffset; i < (ai_mesh->mNumFaces * 3) + indexOffset; ai_index++, i += 3) {
@@ -53,15 +66,18 @@ static void ImportMeshData (MeshData* data, aiMesh* ai_mesh, U32 vertexOffset, U
 	}
 }
 
-Model* ImportModel (const std::string& filename) {
+
+void ImportModelData (ModelData* data, const std::string& filename) {
 	Assimp::Importer importer;
 	auto scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
 	if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		LOG_ERROR("Assimp failed to load file (" << filename << ") " << importer.GetErrorString());
-		return false;
+		return;
 	}
 
-	Model* model = AllocateModel(scene->mNumMeshes);
+	data->meshIndexCounts.reserve(scene->mNumMeshes);
+	data->materialInfos.reserve(scene->mNumMaterials);
+	data->meshCount = scene->mNumMeshes;
 
 	U32 vertexCount = 0;
 	U32 indexCount = 0;
@@ -70,24 +86,149 @@ Model* ImportModel (const std::string& filename) {
 		vertexCount += aiMesh->mNumVertices;
 		indexCount += aiMesh->mNumFaces * 3;
 
-		model->meshIndexCounts[i] = aiMesh->mNumFaces * 3;
+		data->meshIndexCounts.push_back (aiMesh->mNumFaces * 3);
 	}
 
-	auto meshData = CreateMeshData(vertexCount, indexCount);
+	data->meshData = AllocateMeshData(vertexCount, indexCount);
+
+	auto GetMaterialAssetInfo = [&filename](aiMaterial* material, U32 materialIndex) -> MaterialAssetInfo{
+		auto lastSlashInFilepath = filename.find_last_of("/");
+		auto lastDotInFilepath = filename.find_last_of('.');
+		auto directory = filename.substr(0, lastSlashInFilepath + 1);
+		auto name = filename.substr(lastSlashInFilepath + 1, lastDotInFilepath - (lastSlashInFilepath + 1));
+
+		static auto getTextureFilename = [&directory](aiMaterial* material, aiTextureType type) -> std::string {
+			auto textureCount = material->GetTextureCount(type);
+			assert(textureCount <= 1 && "Two maps of the same kind are not currently suported!");
+			if (textureCount == 0) return "";
+
+			aiString textureFilename;
+			material->GetTexture(type, 0, &textureFilename);
+			return std::string(textureFilename.C_Str());
+		};
+
+		MaterialAssetInfo materialInfo;
+		materialInfo.diffuseTextureFilename = getTextureFilename(material, aiTextureType_DIFFUSE);
+		materialInfo.normalTextureFilename = getTextureFilename(material, aiTextureType_NORMALS);
+		materialInfo.specularTextureFilename = getTextureFilename(material, aiTextureType_SPECULAR);
+		materialInfo.name = name + ".material." + std::to_string(materialIndex);
+		materialInfo.directory = directory;
+		return materialInfo;
+	};
 
 	vertexCount = 0;
 	indexCount = 0;
+
+	std::vector<U32> importedMaterials;
+	importedMaterials.reserve(scene->mNumMaterials);
 	for (U32 i = 0; i < scene->mNumMeshes; i++) {
 		auto aiMesh = scene->mMeshes[i];
-		ImportMeshData(meshData, aiMesh, vertexCount, indexCount);
+		ImportMeshData(data->meshData, aiMesh, vertexCount, indexCount);
+
+		bool importMaterial = true;
+		for (U32 n = 0; n < importedMaterials.size(); n++) {
+			if (importedMaterials[n] == aiMesh->mMaterialIndex) importMaterial = false;
+		}
+
+		if (importMaterial) {
+			data->materialInfos.emplace_back(GetMaterialAssetInfo(scene->mMaterials[aiMesh->mMaterialIndex], aiMesh->mMaterialIndex));
+			importedMaterials.push_back(aiMesh->mMaterialIndex);
+		}
+
+
 		vertexCount += aiMesh->mNumVertices;
 		indexCount += aiMesh->mNumFaces * 3;
 	}
+}
 
-	InitIndexedVertexBuffer(&model->indexedVertexBuffer, meshData);
-	free(meshData);
+Model CreateModel (ModelData* data) {
+	assert(data->meshCount > 0 && "Invalid Model Data provided!");
+	auto model = CreateModel(data->meshCount);
+	memcpy(model.meshIndexCounts, &data->meshIndexCounts[0], data->meshIndexCounts.size() * sizeof(U32));
+	InitIndexedVertexBuffer(&model.indexedVertexBuffer, data->meshData);
 	return model;
 }
+
+
+//Model* ImportModel (const std::string& filename) {
+//	Assimp::Importer importer;
+//	auto scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
+//	if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+//		LOG_ERROR("Assimp failed to load file (" << filename << ") " << importer.GetErrorString());
+//		return false;
+//	}
+//
+//	Model* model = AllocateModel(scene->mNumMeshes);
+//
+//	U32 vertexCount = 0;
+//	U32 indexCount = 0;
+//	for (U32 i = 0; i < scene->mNumMeshes; i++) {
+//		auto aiMesh = scene->mMeshes[i];
+//		vertexCount += aiMesh->mNumVertices;
+//		indexCount += aiMesh->mNumFaces * 3;
+//
+//		model->meshIndexCounts[i] = aiMesh->mNumFaces * 3;
+//	}
+//
+//	auto meshData = CreateMeshData(vertexCount, indexCount);
+//
+//
+//	auto ImportMaterial = [&filename](aiMaterial* material, U32 materialIndex) -> MaterialHandle {
+//		auto lastSlashInFilepath = filename.find_last_of("/");
+//		auto lastDotInFilepath = filename.find_last_of('.');
+//		auto directory = filename.substr(0, lastSlashInFilepath + 1);
+//		auto name = filename.substr(lastSlashInFilepath + 1, lastDotInFilepath - (lastSlashInFilepath + 1));
+//
+//		static auto getTextureFilename = [&directory](aiMaterial* material, aiTextureType type) -> std::string {
+//			auto textureCount = material->GetTextureCount(type);
+//			assert(textureCount <= 1 && "Two maps of the same kind are not currently suported!");
+//			if (textureCount == 0) return "";
+//
+//			aiString textureFilename;
+//			material->GetTexture(type, 0, &textureFilename);
+//			return std::string(textureFilename.C_Str());
+//		};
+//
+//		MaterialAssetInfo materialInfo;
+//		materialInfo.diffuseTextureFilename = getTextureFilename(material, aiTextureType_DIFFUSE);
+//		materialInfo.normalTextureFilename = getTextureFilename(material, aiTextureType_NORMALS);
+//		materialInfo.specularTextureFilename = getTextureFilename(material, aiTextureType_SPECULAR);
+//		materialInfo.name = name + ".material." + std::to_string(materialIndex);
+//		materialInfo.directory = directory;
+//
+//		auto materialHandle = LoadMaterial(materialInfo);
+//		return materialHandle;
+//	};
+//
+//	vertexCount = 0;
+//	indexCount = 0;
+//
+//	std::vector<U32> importedMaterials;
+//	for (U32 i = 0; i < scene->mNumMeshes; i++) {
+//		auto aiMesh = scene->mMeshes[i];
+//		ImportMeshData(meshData, aiMesh, vertexCount, indexCount);
+//
+//		bool importMaterial = true;
+//		for (U32 n = 0; n < importedMaterials.size(); n++) {
+//			if (importedMaterials[n] == aiMesh->mMaterialIndex) importMaterial = false;
+//		}
+//
+//		if (importMaterial) {
+//			auto materialHandle = ImportMaterial(scene->mMaterials[aiMesh->mMaterialIndex], aiMesh->mMaterialIndex);
+//			model->meshMaterialHandles[i] = materialHandle;
+//			importedMaterials.push_back(aiMesh->mMaterialIndex);
+//		}
+//
+//
+//		vertexCount += aiMesh->mNumVertices;
+//		indexCount += aiMesh->mNumFaces * 3;
+//	}
+//
+//
+//	InitIndexedVertexBuffer(&model->indexedVertexBuffer, meshData);
+//	free(meshData);
+//	return model;
+//}
 
 
 //

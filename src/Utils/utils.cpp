@@ -17,7 +17,7 @@ std::string ReadEntireFile (const std::string& filename) {
 	file.seekg(0, std::ios::beg);
 
 	std::string buffer;
-	buffer.resize(size);
+	buffer.resize((size_t)size);
 	file.read(&buffer[0], size);
 	return buffer;
 }

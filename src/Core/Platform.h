@@ -6,9 +6,27 @@
 
 #include <functional>
 
+
+struct CodeModule;
+CodeModule LoadModule(const std::string& filename);
+#include "platform_windows.h"
+
+
+
+
+struct FileWriteTime {
+	U64 lowDateTime;
+	U64 highDateTime;
+};
+
+bool operator==(const FileWriteTime& a, const FileWriteTime& b);
+bool operator!=(const FileWriteTime& a, const FileWriteTime& b);
+FileWriteTime GetLastModifedTime (const std::string& filename);
+
+int PlatformPopKeypress();
+
 extern "C" int  PlatformCreate(const char* title, int width = 1280, int height = 720, int flags = 0);
-extern "C" void PlatformRun(void(*mainLoop)(double));
-void PlatformRun(std::function<void(double)>);
+void PlatformRun(const std::function<void(double)>&);
 extern "C" void PlatformExit();
 extern "C" double PlatformGetDeltaTime();
 
@@ -168,7 +186,7 @@ static int __SDLPlatformGetKey(int keycode) {
 #define KEY_F22   113
 #define KEY_F23   114
 #define KEY_F24   115
-#define KEY_EXECUTE   116
+#define KEY_EXECUTE_NOT_USED   116
 #define KEY_HELP   117
 #define KEY_MENU   118
 #define KEY_SELECT   119

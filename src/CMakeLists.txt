@@ -9,10 +9,14 @@ set(CORE_SRCS
   #Core/Network.cpp
   Core/Audio.cpp
   Core/Audio.hpp
-  Core/Platform.cpp
-  Core/Platform.h
+  
   Core/Tasks.hpp
   Core/Tasks.cpp
+
+  Core/Platform.h
+  Core/Platform.cpp
+  Core/platform_windows.cpp
+  Core/platform_windows.h
 
     Utils/utils.cpp
     Utils/utils.hpp
@@ -51,12 +55,20 @@ set(GRAPHICS_SRCS
     Graphics/Color.cpp
 	Graphics/Color.hpp
 
+	Graphics/SSAO.cpp
+	Graphics/SSAO.hpp
+
     Graphics/GLRenderer.cpp
     Graphics/GLRenderer.hpp
+	Graphics/Uniform.cpp
+	Graphics/Uniform.hpp
+
 	Graphics/Render3D.hpp
 	Graphics/Render3D.cpp
     Graphics/Render2D.hpp
     Graphics/Render2D.cpp
+	Graphics/Skybox.cpp
+	Graphics/Skybox.hpp
 
 	Graphics/ModelData.cpp
 	Graphics/ModelData.hpp
@@ -87,8 +99,9 @@ set(GRAPHICS_SRCS
 source_group(Graphics FILES ${GRAPHICS_SRCS})
 
 SET(ENGINE_SRCS
-    Engine/Assets.cpp
-    Engine/Assets.hpp
+	Engine/Engine.cpp
+	Engine/Engine.hpp
+
     Engine/World.cpp
     Engine/World.hpp
     Engine/Physics2D.cpp
@@ -114,6 +127,8 @@ SET(ENGINE_SRCS
     Engine/Editor.cpp
     Engine/Editor.hpp
 
+	Engine/Assets.cpp
+    Engine/Assets.hpp
 	Resources/Music.hpp
 	Resources/Sound.hpp
 )

@@ -4,7 +4,21 @@
 #include <Math/Vector3.hpp>
 #include <Math/Vector2.hpp>
 
-Vector3 PointToQuadrilateralizedSphere(const Vector3& point);
+struct Cuboid {
+	union 
+	{
+		V3 position;
+		struct { float x, y, z; };
+	};
+
+	union  
+	{
+		V3 size;
+		struct { float w, h, l;};
+	};
+	
+	Cuboid() { }
+};
 
 U32 GetVertexCountForQuad(int subdivisionLevel);
 U32 GetIndexCountForQuad(int subdivisionLevel);

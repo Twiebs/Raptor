@@ -3,11 +3,16 @@ set(BUILD_TARGET "BuildTarget" CACHE STRING "Build target chosen by user at conf
 set_property(CACHE BUILD_TARGET PROPERTY STRINGS HTML Windows Linux Mac Android IOS)
 
 project(Raptor)
+if (NOT MSVS)
+    set(CMAKE_CXX_COMPILER clang++)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+endif(NOT MSVS)
 
-set(CMAKE_CXX_COMPILER clang++)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMake/Modules/")
+
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 if(NOT EMSCRIPTEN)
     add_definitions(-DPLATFORM_SDL)
@@ -45,7 +50,7 @@ if(MSVC)
     SDL2_image.lib
     SDL2_mixer.lib
     SDL2_net.lib
-    assimpd.lib
+    assimp.lib
     BulletCollision.lib
     BulletDynamics.lib
     LinearMath.lib
