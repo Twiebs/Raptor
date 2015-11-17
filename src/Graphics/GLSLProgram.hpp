@@ -41,6 +41,7 @@ U64 GetShaderTypeFlag(ShaderType type);
 
 struct Shader {
 	GLuint id;
+	std::string shaderName;
 };
 
 struct ShaderBuilderData {

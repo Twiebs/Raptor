@@ -100,7 +100,7 @@ MaterialHandle LoadMaterial (const std::string& filename) {
 ShaderHandle LoadShader (ShaderBuilder& builder) {
 	auto& manifest = GetGlobalAssetManifestInternal();
 	manifest.shaderBuilderData.push_back(builder.data);
-	manifest.shaderPrograms.emplace_back(Shader{ builder.build() });
+	manifest.shaderPrograms.emplace_back(builder.build_program());
 	auto handleArrayIndex = manifest.shaderPrograms.size() - 1;
 	return ShaderHandle{ handleArrayIndex };
 }

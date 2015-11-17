@@ -15,17 +15,38 @@
 
 #include <GL/glew.h>
 
-inline void BindTexture2DToUnit (GLuint textureID, U32 unitIndex);
+class GLDebugHelper {
+public:
+	GLDebugHelper(const char* functionName);
+	~GLDebugHelper();
+
+	static const char* GetCurrentFunctionName();
+private:
+	static const char* currentFunctionName;
+	static const char* lastFunctionName;
+};
+
+#define GLDebugHere() GLDebugHelper generatedGLDebugHelper(__FUNCTION__)
 
 
-inline void BindTexture2DToUnit (GLuint textureID, U32 unitIndex) {
-	glActiveTexture(GL_TEXTURE0 + unitIndex);
-	glBindTexture(GL_TEXTURE_2D, textureID);
-}
+void BindTexture2DToUnit(U32 textureUnit, U32 textureID);
 
 
+//
+//inline void BindTexture2DToUnit (GLuint textureID, U32 unitIndex);
+//
+//
+//inline void BindTexture2DToUnit (GLuint textureID, U32 unitIndex) {
+//	glActiveTexture(GL_TEXTURE0 + unitIndex);
+//	glBindTexture(GL_TEXTURE_2D, textureID);
+//}
+//
+//void EnableGLDebugMode();
+//
 
 
+void DEBUGRenderQuad();
+void DEBUGRenderCube();
 void GLBasicTriangleTest();
 void GLBasicQuadTest();
 void GLIndexedQuadTest();

@@ -44,10 +44,6 @@ struct Log {
 	std::vector<U32> addedEntryEventStack;
 	const char* loggerName;
 
-	inline bool IsErrorEnabled()	{ return logLevel >= LOGLEVEL_ERROR; } 
-	inline bool IsWarningEnabled()	{ return logLevel >= LOGLEVEL_WARNING; }
-	inline bool IsInfoEnabled()		{ return logLevel >= LOGLEVEL_INFO; }
-	inline bool IsVerboseEnabled()	{ return logLevel >= LOGLEVEL_VERBOSE; }
 	inline void AddEntry (LogLevel level) {
 		auto message = stream.str();
 		entries.emplace_back(level, message);
@@ -56,6 +52,12 @@ struct Log {
 			std::cout << "[" << ToString(level) << "::" << loggerName << "] " << message << "\n";
 		}
 	}
+
+	inline void AddError() { if (logLevel >= LOGLEVEL_ERROR) AddEntry(LOGLEVEL_ERROR); }
+	inline void AddWarning() { if (logLevel >= LOGLEVEL_WARNING) AddEntry(LOGLEVEL_WARNING); }
+	inline void AddInfo() { if (logLevel >= LOGLEVEL_INFO) AddEntry(LOGLEVEL_INFO); }
+	inline void AddVerbose() { if (logLevel >= LOGLEVEL_VERBOSE) AddEntry(LOGLEVEL_VERBOSE); }
+
 
 	Log(const char* loggerName) : loggerName(loggerName) { }
 };
@@ -95,7 +97,7 @@ struct Log {
 
 #define CREATE_LOG_CATEGORY(categoryName, loglevel) global_variable Log<loglevel, true> GENERATEDLOG_##categoryName (#categoryName);
 
-#define LOGERROR(categoryName, msg) if (GENERATEDLOG_##categoryName.IsErrorEnabled()) { GENERATEDLOG_##categoryName.stream << msg; GENERATEDLOG_##categoryName.AddEntry(LOGLEVEL_ERROR); }
+#define LOGERROR(categoryName, msg) GENERATEDLOG_##categoryName.stream << msg; GENERATEDLOG_##categoryName.AddError()
 
 
 // #define LOG_ERROR(categoryName, msg) std::cerr << "[ERROR]" << msg << "\n"

@@ -19,10 +19,10 @@ Profiler* GetGlobalProfiler();
 #ifdef IMPLEMENT_GLOBAL_PROFILER
 #undef IMPLEMENT_GLOBAL_PROFILER
 global_variable Profiler g_Profiler;
-void GetGlobalProfiler() { return & g_Profiler; }
-void __ProfilerBeginEntry(const char* name) { g_Profiler->BeginEntry(name); }
-void __ProfilerEndEntry(const char* name) { g_Profiler->EndEntry(name); }
-void __ProfilerBeginPersistantEntry(const char* name) { assert_called_by_main_thread(); InternalProfilerBeginBlock(g_Profiler, name); }
-void __ProfilerEndPersistantEntry(const char* name) { assert_called_by_main_thread(); InternalProfilerEndBlock(g_Profiler, name); }
-void __ProfilerReset() { g_Profiler->activePersistantEntries.clear(); }
+Profiler* GetGlobalProfiler() { return & g_Profiler; }
+void __ProfilerBeginEntry(const char* name) { g_Profiler.BeginEntry(name); }
+void __ProfilerEndEntry(const char* name) { g_Profiler.EndEntry(name); }
+void __ProfilerBeginPersistantEntry(const char* name) { g_Profiler.BeginPersistantEntry(name); }
+void __ProfilerEndPersistantEntry(const char* name) { g_Profiler.EndPersistantEntry(name); }
+void __ProfilerReset() { g_Profiler.activePersistantEntries.clear(); }
 #endif // IMPLEMENT_GLOBAL_PROFILER

@@ -9,23 +9,29 @@
 #include <Engine/ECSManager.hpp>
 #include <Engine/Terrain.hpp>
 
-#include <Math/Random.hpp>
+
 #include <Graphics/ModelData.hpp>
 
 #include <Graphics/GLSLProgram.hpp>
 
 #include <Graphics/Mesh.hpp>
+
+#include <Math/Random.hpp>
 #include <Math/Procedural3D.hpp>
+#include <Math/Vector3.hpp>
+#include <Math/Noise.hpp>
 
 #include <Graphics/Render3D.hpp>
 #include <Graphics/imgui.h>
 #include <Graphics/Liquid.hpp>
 #include <Graphics/Lighting.hpp>
-#include <Math/Noise.hpp>
+
 #include <Graphics/GLRenderer.hpp>
 
 #include <Utils/utils.hpp>
 #include <Utils/Profiler.hpp>
+#define IMPLEMENT_GLOBAL_PROFILER
+#include <Utils/global_profiler.h>
 
 using namespace Raptor;
 
@@ -90,6 +96,10 @@ void ShowErrorMessageBox() {
 
 void RunBasicGLTest() {
 	PlatformCreate("Basic GLTest", 1538, 864);
+	int width, height;
+	PlatformGetSize(&width, &height);
+
+
 	Engine::Init();
 	// auto shaderID = CreateShader("shaders/terrain.vert", "shaders/terrain.frag");
 
@@ -124,7 +134,8 @@ void RunBasicGLTest() {
 	static const int TERRAIN_RESOLUTION = 128;
 	static const int TERRAIN_MATERIAL_COUNT = 2;
 
-	Camera camera(Vector3(WORLD_WIDTH * 0.5f * TERRAIN_WIDTH, 80.0f, WORLD_HEIGHT * TERRAIN_HEIGHT * 0.5f), 1280.0f, 720.0f);
+	Camera camera((float)width, (float)height);
+	camera.position = V3(WORLD_WIDTH * 0.5f * TERRAIN_WIDTH, 80.0f, WORLD_HEIGHT * TERRAIN_HEIGHT * 0.5f);
 	camera.farClip = 10000.0f;
 
 	TerrainStreamer terrainStreamer(TERRAIN_MATERIAL_COUNT, WORLD_WIDTH, WORLD_HEIGHT, TERRAIN_WIDTH, TERRAIN_HEIGHT, TERRAIN_RESOLUTION, 4);
@@ -200,25 +211,25 @@ void RunBasicGLTest() {
 
 	Vector2 terrainCenter = GetCenter(terrainRect);
 
-	ProfilerBeginEntry("CreateLiquidShader");
-	BeginShaderBuilder("water_shader");
-	AddShaderSourceFile(VERTEX_SHADER, SHADER_FILE("liquid.vert"));
-	AddShaderSourceFile(FRAGMENT_SHADER, SHADER_FILE("liquid.frag"));
-	auto liquidShaderHandle = LoadShaderFromBuilder();
-	ProfilerEndEntry("CreateLiquidShader");
+	//ProfilerBeginEntry("CreateLiquidShader");
+	//BeginShaderBuilder("water_shader");
+	//AddShaderSourceFile(VERTEX_SHADER, SHADER_FILE("liquid.vert"));
+	//AddShaderSourceFile(FRAGMENT_SHADER, SHADER_FILE("liquid.frag"));
+	//auto liquidShaderHandle = LoadShaderFromBuilder();
+	//ProfilerEndEntry("CreateLiquidShader");
 
 	
 	ShaderHandle modelShaderHandle; 
 	{
 		BeginShaderBuilder("DefaultModel");
-		AddShaderSourceFile(VERTEX_SHADER, SHADER_FILE("GBuffer.vert"));
-		AddShaderSourceFile(FRAGMENT_SHADER, SHADER_FILE("GBuffer.frag"));
+		AddShaderSourceFile(VERTEX_SHADER, SHADER_FILE("DeferredGenericMaterial.vert"));
+		AddShaderSourceFile(FRAGMENT_SHADER, SHADER_FILE("DeferredGenericMaterial.frag"));
 		modelShaderHandle = LoadShaderFromBuilder();
 	}
 
 
-	auto& liquidShader = GetShader(liquidShaderHandle);
-	GLint waveTimeLocation = Uniform::GetLocation(liquidShader.id, "wave_time");
+	// auto& liquidShader = GetShader(liquidShaderHandle);
+//	GLint waveTimeLocation = Uniform::GetLocation(liquidShader.id, "wave_time");
 
 	Random liquidParamRNG;
 	LiquidRenderParameters liquidParams = { };
@@ -238,17 +249,16 @@ void RunBasicGLTest() {
 		GFX3D::BeginFrame(&params, &camera);
 
 		ProfilerBeginPersistantEntry("Draw Terrain");
-		terrain_manager.draw();
+		TerrainManager* terrain = &terrain_manager;
+		GFX3D::DrawTerrain(terrain);
 		ProfilerEndPersistantEntry("Draw Terrain");
 
-
-		auto& modelShader = GetShader(modelShaderHandle);
-		GFX3D::Begin(modelShader);
+		auto modelShader = GetShader(modelShaderHandle);
+		GFX3D::SetMaterialShader(modelShader);
 		for (auto& entity : g_Entities) {
 			auto& model = GetModel(entity.modelHandle);
-			GFX3D::DrawModel(model, entity.position);
+			GFX3D::AddModel(model, entity.position);
 		}
-		GFX3D::End(modelShader);
 
 
 		//auto& liquidShader = GetShader(liquidShaderHandle);

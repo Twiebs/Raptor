@@ -4,6 +4,7 @@
 
 #include <Graphics/imgui.h>
 #include <Core/Platform.h>
+#include <Utils/global_profiler.h>
 
 static void ShowAssetBrowser (AssetBrowser* assetBrowser);
 

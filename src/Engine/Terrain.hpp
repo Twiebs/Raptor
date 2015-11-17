@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Core/types.h>
 
 #include <Graphics/Mesh.hpp>
@@ -33,7 +35,7 @@ struct TerrainManager {
 	U32 GetTerrainIndex(U32 xcoord, U32 ycoord);
 	Rectangle GetBoundingRectangle();
 
-	void draw();
+	/*void draw();*/
 };
 
 struct TerrainStreamer {

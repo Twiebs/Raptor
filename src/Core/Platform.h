@@ -6,6 +6,11 @@
 
 #include <functional>
 
+#ifdef __WINDOWS__
+#define PLATFORM_WINDOWS
+#endif
+
+
 
 struct CodeModule;
 CodeModule LoadModule(const std::string& filename);

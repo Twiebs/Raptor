@@ -89,7 +89,8 @@ void ImportModelData (ModelData* data, const std::string& filename) {
 		data->meshIndexCounts.push_back (aiMesh->mNumFaces * 3);
 	}
 
-	data->meshData = AllocateMeshData(vertexCount, indexCount);
+	// data->meshData = AllocateMeshData(vertexCount, indexCount);
+	AllocateMeshData(&data->meshData, vertexCount, indexCount);
 
 	auto GetMaterialAssetInfo = [&filename](aiMaterial* material, U32 materialIndex) -> MaterialAssetInfo{
 		auto lastSlashInFilepath = filename.find_last_of("/");
@@ -123,7 +124,7 @@ void ImportModelData (ModelData* data, const std::string& filename) {
 	importedMaterials.reserve(scene->mNumMaterials);
 	for (U32 i = 0; i < scene->mNumMeshes; i++) {
 		auto aiMesh = scene->mMeshes[i];
-		ImportMeshData(data->meshData, aiMesh, vertexCount, indexCount);
+		ImportMeshData(&data->meshData, aiMesh, vertexCount, indexCount);
 
 		bool importMaterial = true;
 		for (U32 n = 0; n < importedMaterials.size(); n++) {
@@ -145,7 +146,7 @@ Model CreateModel (ModelData* data) {
 	assert(data->meshCount > 0 && "Invalid Model Data provided!");
 	auto model = CreateModel(data->meshCount);
 	memcpy(model.meshIndexCounts, &data->meshIndexCounts[0], data->meshIndexCounts.size() * sizeof(U32));
-	InitIndexedVertexBuffer(&model.indexedVertexBuffer, data->meshData);
+	InitIndexedVertexBuffer(&model.indexedVertexBuffer, &data->meshData);
 	return model;
 }
 

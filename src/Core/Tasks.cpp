@@ -9,7 +9,7 @@ struct LambdaTask : public ITask {
 	std::function<void()> execute_lambda;
 	std::function<void()> finalize_lambda;
 	virtual void execute(U32 workerID) final;
-	virtual void finalize() final;
+	virtual void finalize(U32 workerID) final;
 	LambdaTask(const std::function<void()>& execute, const std::function<void()>& finalize);
 };
 
@@ -17,7 +17,7 @@ LambdaTask::LambdaTask(const std::function<void()>& execute, const std::function
 	execute_lambda(execute), finalize_lambda(finalize) {}
 
 void LambdaTask::execute(U32 workerID) { execute_lambda(); }
-void LambdaTask::finalize() { finalize_lambda(); }
+void LambdaTask::finalize(U32 workerID) { finalize_lambda(); }
 
 static void ThreadProc(WorkQueue* queue, U32 workerID) {
 	bool isRunning = true;

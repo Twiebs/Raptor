@@ -20,7 +20,7 @@ struct Model {
 // Going to do stupid things for now!
 // For the win my friend!
 struct ModelData {
-	MeshData* meshData;
+	MeshData meshData;
 	U32 meshCount;
 	std::vector<U32> meshIndexCounts;
 	std::vector<MaterialAssetInfo> materialInfos;

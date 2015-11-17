@@ -41,10 +41,6 @@ struct Profiler {
 
 	void BeginEntry(const char* name);
 	void EndEntry(const char* name);
+	void BeginPersistantEntry(const char* name);
+	void EndPersistantEntry(const char* name);
 };
-
-void __ProfilerBeginPersistantEntry (const char* name);
-void __ProfilerEndPersistantEntry (const char* name);
-void __ProfilerBeginEntry (const char* name);
-void __ProfilerEndEntry (const char* name);
-void __ProfilerReset();

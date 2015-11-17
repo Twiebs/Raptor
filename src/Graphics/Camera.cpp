@@ -1,72 +1,47 @@
 #include "Camera.hpp"
+#include <Core/Platform.h>
 
-Camera::Camera(float viewportWidth, float viewportHeight) {
-	position.Set(0.0f, 0.0f, 3.0f);
-	direction.Set(0.0f, 0.0f, -1.0f);
-	up.Set(0.0f, 1.0f, 0.0f);
-
-	worldUp = Vector3(0.0f, 1.0f, 0.0f);
-
-	yaw = -90.0f;
-	pitch = 0.0f;
-
-	this->viewportWidth = viewportWidth;
-	this->viewportHeight = viewportHeight;
+Camera::Camera (float viewportWidth, float viewportHeight, float fov, float nearClip, float farClip)
+	: viewportWidth(viewportWidth),
+	viewportHeight(viewportHeight),
+	fov(fov),
+	nearClip(nearClip),
+	farClip(farClip) 
+{
+	aspectRatio = viewportWidth / viewportHeight;
 }
 
-Camera::~Camera() {
-
+void UpdateCamera (Camera* camera) 
+{
+	camera->front.x = cos(RADIANS(camera->yaw)) * cos(RADIANS(camera->pitch));
+	camera->front.y = sin(RADIANS(camera->pitch));
+	camera->front.z = sin(RADIANS(camera->yaw)) * cos(RADIANS(camera->pitch));
+	camera->front.Normalize();
+	camera->view = Matrix4::LookAt(camera->position, camera->position + camera->front, Vector3(0.0f, 1.0f, 0.0f));
+	camera->projection = Matrix4::Perspective(camera->fov, camera->aspectRatio, camera->nearClip, camera->farClip);
 }
 
-void Camera::Translate(Vector3& deltaPos) {
-	position += deltaPos;
-}
 
-void Camera::SetPosition(Vector3* position) {
-	this->position.Set(position);
-}
+void FPSCameraControlUpdate(Camera* camera) 
+{
+	float deltaTime = PlatformGetDeltaTime();
 
-void Camera::LookAt(Vector3* position, Vector3* direction, Vector3* up) {
-	this->position.Set(position);
-	this->direction.Set(direction);
-	this->up.Set(up);
-}
+	int dx, dy;
+	PlatformGetCursorDelta(&dx, &dy);
 
-glm::mat4 Camera::GetProjectionMatrix() const {
-	return projection;
-}
-glm::mat4 Camera::GetViewMatrix() const {
-	return view;
-}
-glm::mat4 Camera::GetCombinedMatrix() const{
-	return projection * view;
-}
+	camera->yaw += dx;
+	camera->pitch -= dy;
 
-void Camera::Update() {
-	UpdateCameraVectors();
-}
+	static const float MOVEMENT_SPEED = 1.788f;
+	static const float SPRINT_MULTIPLIER = 3.0f;
+	float speed = MOVEMENT_SPEED;
 
-void Camera::UpdateCameraVectors() {
-	front.x = cosf(MathUtils::Radians(yaw)) * cosf(MathUtils::Radians(pitch));
-	front.y = sinf(MathUtils::Radians(pitch));
-	front.z = sinf(MathUtils::Radians(yaw)) * cosf(MathUtils::Radians(pitch));
-	front.Normalize();
-	
-	right = front.Cross(worldUp);
-	right.Normalize();
-
-	up = right.Cross(front);
-	up.Normalize();
-}
-
-PerspectiveCamera::PerspectiveCamera(float viewportWidth, float viewportHeight) : Camera(viewportWidth, viewportHeight) {
-	fov = 45.0f;
-	zNear = 0.1f;
-	zFar = 1000;
-}
-
-void PerspectiveCamera::Update() {
-	Camera::UpdateCameraVectors();
-	projection = glm::perspective(fov, (viewportWidth / viewportHeight), zNear, zFar);
-	view = lookAt(position.ToGLM(), position.ToGLM() + front.ToGLM(),up.ToGLM());
+	if (PlatformGetKey(KEY_LSHIFT)) speed *= SPRINT_MULTIPLIER;
+	if (PlatformGetKey(KEY_W)) camera->position += speed * deltaTime * camera->front;
+	if (PlatformGetKey(KEY_S)) camera->position -= speed * deltaTime * camera->front;
+	if (PlatformGetKey(KEY_A)) camera->position -= camera->front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize() * speed * deltaTime;
+	if (PlatformGetKey(KEY_D)) camera->position += camera->front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize()  * speed * deltaTime;
+	if (PlatformGetKey(KEY_SPACE)) camera->position.y += speed * deltaTime;
+	if (PlatformGetKey(KEY_LCTRL)) camera->position.y -= speed * deltaTime;
+	camera->pitch = Clamp(camera->pitch, -89.0f, 89.0f);
 }

@@ -368,7 +368,9 @@ GLuint ShaderBuilder::build() {
 }
 
 Shader ShaderBuilder::build_program() {
-	return Shader{ CompileShader(&data) };
+	auto result = Shader { CompileShader(&data) };
+	result.shaderName = data.name;
+	return result;
 }
 
 GLuint CompileShader (ShaderBuilderData* info) {

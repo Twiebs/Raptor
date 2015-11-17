@@ -26,33 +26,36 @@ void Profiler::EndEntry (const char* name) {
 	entryIndexStack.pop_back();
 }
 
-static void InternalProfilerBeginBlock (Profiler* profiler, const char* name) {
+void Profiler::BeginPersistantEntry(const char* name) {
+	assert_called_by_main_thread();
+
 	ProfilerPersistantEntry* entry;
-	U32 entryIndex = profiler->persistantEntryNameMap[name];
+	U32 entryIndex = persistantEntryNameMap[name];
 
 	if (entryIndex == 0) {
-		profiler->persistantEntries.push_back(ProfilerPersistantEntry());
-		entry = &profiler->persistantEntries.back();
+		persistantEntries.push_back(ProfilerPersistantEntry());
+		entry = &persistantEntries.back();
 		entry->name = name;
-		entry->entryIndex = profiler->persistantEntries.size() - 1;
-		profiler->persistantEntryNameMap[name] = entry->entryIndex + 1;
+		entry->entryIndex = persistantEntries.size() - 1;
+		persistantEntryNameMap[name] = entry->entryIndex + 1;
 	} else {
-		entry = &profiler->persistantEntries[entryIndex - 1];
+		entry = &persistantEntries[entryIndex - 1];
 	}
 
-	profiler->activePersistantEntries.push_back(entry->entryIndex);
-	profiler->persistantEntryIndexStack.push_back(profiler->activePersistantEntries.size() - 1);
+	activePersistantEntries.push_back(entry->entryIndex);
+	persistantEntryIndexStack.push_back(activePersistantEntries.size() - 1);
 
 	entry->tempTime = PlatformGetPerformanceCounter();
 	entry->elapsedCycles[entry->writeIndex] = __rdtsc();
 }
 
-static void InternalProfilerEndBlock (Profiler* profiler, const char* name) {
-	auto activeEntryIndex = profiler->persistantEntryIndexStack.back();
-	profiler->persistantEntryIndexStack.pop_back();
+void Profiler::EndPersistantEntry(const char* name) {
+	assert_called_by_main_thread();
+	auto activeEntryIndex = persistantEntryIndexStack.back();
+	persistantEntryIndexStack.pop_back();
 
-	auto entryIndex = profiler->activePersistantEntries[activeEntryIndex];
-	auto entry = &profiler->persistantEntries[entryIndex];
+	auto entryIndex = activePersistantEntries[activeEntryIndex];
+	auto entry = &persistantEntries[entryIndex];
 
 	entry->tempTime = PlatformGetPerformanceCounter() - entry->tempTime;
 	double tempTime = (double)(entry->tempTime * 1000) / PlatformGetPerformanceCounterFrequency();

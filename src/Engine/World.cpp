@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+#include <Graphics/Uniform.hpp>
 #include <Graphics/imgui.h>
 #include <Engine/Assets.hpp>
 
@@ -55,13 +56,13 @@ void UpdateWorld(World& world) {
 
 void DrawEntities(World& world, GLuint shader) {
 	Matrix4 modelMatrix = Matrix4::Identity();
-	glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
+	glUniformMatrix4fv(UniformLocation::MODEL_MATRIX, 1, GL_FALSE, &modelMatrix[0][0]);
 
 	Transform3D* transforms = (Transform3D*)world.components[COMPONENT_TRANSFORM];
 	U32* modelIDs = (U32*)world.components[COMPONENT_MODELID];
 	for (U32 i = 0; i < world.entityCount; i++) {
 		modelMatrix = TransformToMatrix(transforms[i]);
-		glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
+		glUniformMatrix4fv(UniformLocation::MODEL_MATRIX, 1, GL_FALSE, &modelMatrix[0][0]);
 		// Draw(global_assetTable.models[modelIDs[i]]);
 	}
 }

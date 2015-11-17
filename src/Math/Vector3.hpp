@@ -137,38 +137,48 @@ inline V3 operator*(const V3& a, float s) {
 }
 
 
-inline Vector3 cross (const Vector3& a, const Vector3& b);
-inline float dot (const Vector3& a, const Vector3& b);
-inline float magnitude (const Vector3& a);
-inline float distance (const Vector3& a, const Vector3& b);
-inline float distance_squared (const Vector3& a, const Vector3& b);
+inline Vector3 Cross (const Vector3& a, const Vector3& b);
+inline float Dot (const Vector3& a, const Vector3& b);
+inline float Magnitude (const Vector3& a);
+inline float Distance (const Vector3& a, const Vector3& b);
+inline float DistanceSquared (const Vector3& a, const Vector3& b);
+inline V3 Normalize(const V3& a);
 
-inline Vector3 cross (const Vector3& a, const Vector3& b) {
+inline Vector3 Cross (const Vector3& a, const Vector3& b) {
     const float x = (a.y * b.z) - (a.z * b.y);
     const float y = (a.z * b.x) - (a.x * b.z);
     const float z = (a.x * b.y) - (a.y * b.x);
     return Vector3(x, y, z);
 }
 
-inline float dot (const Vector3& a, const Vector3& b) {
+inline float Dot (const Vector3& a, const Vector3& b) {
     float result = (a.x * b.x) + (a.y * b.y) + (a.z + b.z);
     return result;
 }
 
-inline float magnitude (const Vector3& a) {
+inline float Magnitude (const Vector3& a) {
     float result = sqrtf((a.x * a.x) + (a.y * a.y) + (a.z * a.z));
     return result;
 }
 
-inline float distance (const Vector3& a, const Vector3& b) {
+inline float Distance (const Vector3& a, const Vector3& b) {
     auto displacement = b - a;
-    auto result = magnitude(displacement);
+    auto result = Magnitude(displacement);
     return result;
 }
 
-inline float distance_squared (const Vector3& a, const Vector3& b) {
+inline float DistanceSquared (const Vector3& a, const Vector3& b) {
     auto c = b - a;
     auto result = ((c.x*c.x) + (c.y*c.y) + (c.z*c.z));
     return result;
+}
+
+inline V3 Normalize(const V3& v) {
+	const float magnitude = Magnitude(v);
+	V3 result = { };
+	result.x = v.x / magnitude;
+	result.y = v.y / magnitude;
+	result.x = v.z / magnitude;
+	return result;
 }
 

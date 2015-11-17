@@ -11,7 +11,7 @@
 #include <Math/Procedural3D.hpp>
 #include <Math/Noise.hpp>
 
-TerrainManager::TerrainManager(U32 material_count, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrain_resolution, U32 cellsPerTexcoord) :
+TerrainManager::TerrainManager (U32 material_count, U32 max_width, U32 max_length, float terrainWidth, float terrainLength, U32 terrain_resolution, U32 cellsPerTexcoord) :
 	chunkWidth(terrainWidth),
 	chunkLength(terrainLength),
 	chunkResolution(terrain_resolution),
@@ -44,37 +44,34 @@ TerrainManager::~TerrainManager() {
 }
 
 struct TerrainDrawCommand {
-	
 	Mesh* terrainMesh;
 };
 
-void TerrainManager::draw() {
-	auto& shader = GetShader(shaderHandle);
-	GFX3D::Begin(shader);
-
-	auto BindAlphaMaps = [&](U32 terrainChunkIndex) {
-		for (U32 i = 0; i < materialCount; i++) {
-			BindTexture2DToUnit(alphaMaps[(terrainChunkIndex * materialCount) + i], (materialCount * 3) + i);
-		}
-	};
-
-	for (U32 i = 0; i < materialCount; i++) {
-		auto& material = GetMaterial(materials[i]);
-		BindTexture2DToUnit(material.diffuseMapID, (materialCount * 0) + i);
-		BindTexture2DToUnit(material.specularMapID, (materialCount * 1) + i);
-		BindTexture2DToUnit(material.normalMapID, (materialCount * 2) + i);
-	}
-
-	for (U32 i = 0; i < managerArea; i++) {
-		BindAlphaMaps(i);
-		auto& terrainMesh = terrainMeshes[i];
-		// GFX3D::DrawImmediately(terrainMesh);
-		//glBindVertexArray(terrainMesh.vertexArrayID);
-		//glDrawElements(GL_TRIANGLES, terrainMesh.indexCount, GL_UNSIGNED_INT, 0);
-	}
-
-	GFX3D::End(shader);
-}
+//void TerrainManager::draw() {
+//	auto& shader = GetShader(shaderHandle);
+//	GFX3D::SetMaterialShader(shader);
+//	glUseProgram(shader.id);
+//
+//	auto BindAlphaMaps = [&](U32 terrainChunkIndex) {
+//		for (U32 i = 0; i < materialCount; i++) {
+//			BindTexture2DToUnit(alphaMaps[(terrainChunkIndex * materialCount) + i], (materialCount * 3) + i);
+//		}
+//	};
+//
+//	for (U32 i = 0; i < materialCount; i++) {
+//		auto& material = GetMaterial(materials[i]);
+//		BindTexture2DToUnit(material.diffuseMapID, (materialCount * 0) + i);
+//		BindTexture2DToUnit(material.specularMapID, (materialCount * 1) + i);
+//		BindTexture2DToUnit(material.normalMapID, (materialCount * 2) + i);
+//	}
+//
+//	for (U32 i = 0; i < managerArea; i++) {
+//		BindAlphaMaps(i);
+//		auto& terrainMesh = terrainMeshes[i];
+//		glBindVertexArray(terrainMesh.vertexArrayID);
+//		glDrawElements(GL_TRIANGLES, terrainMesh.indexCount, GL_UNSIGNED_INT, 0);
+//	}
+//}
 
 Rectangle TerrainManager::GetBoundingRectangle() {
 	return Rectangle(0.0f, 0.0f, chunkWidth * managerMaxWidth, chunkLength * managerMaxLength);
@@ -162,6 +159,7 @@ TerrainStreamer::TerrainStreamer (U32 materialCount, U32 max_width, U32 max_leng
 
 	for (U32 i = 0; i < GetTaskWorkerCount(); i++) {
 		AllocateMeshData(&meshDatas[i], vertexCount, indexCount);
+		// meshDatas.emplace_back(vertexCount, indexCount);
 	}
 }
 

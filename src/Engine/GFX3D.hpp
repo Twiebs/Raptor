@@ -3,6 +3,7 @@
 
 #include <Engine/GFXCommon.hpp>
 #include <Engine/Assets.hpp>
+#include <Engine/Terrain.hpp>
 
 #include <Math/Matrix4.hpp>
 
@@ -12,43 +13,22 @@
 #include <Graphics/Model.hpp>
 #include <Graphics/Uniform.hpp>
 
-
-
-enum GFX3DRenderMode {
-	GFX3D_FOWARD,
-	GFX3D_DEFERED,
-};
-
 struct FrameParameters {
 	Vector3 clearColor = Vector3(0.0f, 0.0f, 0.0f);
-};
-
-class Renderer {
-public:
-	Renderer();
-	~Renderer();
-
-	void NewFrame(const FrameParameters& params);
-
-
-
-private:
-
 };
 
 
 GLuint DebugGetShadowMap();
 
-enum DebugDeferedDrawMode {
-	DRAWMODE_ALL,
-	DRAWMODE_POSITION,
-	DRAWMODE_NORMAL,
-	DRAWMODE_COLOR,
-	DRAWMODE_SPECULAR
-};
+//enum DebugDeferedDrawMode {
+//	DRAWMODE_ALL,
+//	DRAWMODE_POSITION,
+//	DRAWMODE_NORMAL,
+//	DRAWMODE_COLOR,
+//	DRAWMODE_SPECULAR
+//};
 
 struct DebugRenderSettings {
-	GFX3DRenderMode renderMode;
 	int deferredDrawMode = 0;
 
 	bool disableNormalMaps = false;
@@ -119,20 +99,21 @@ void Terminate();
 void BeginFrame(FrameParameters* params, Camera* camera);
 void EndFrame();
 
- void Begin(const Shader& shader);
- void End(const Shader& shader);
+ // void Begin(const Shader& shader);
+ // void End(const Shader& shader);
 
 // void BindShader(const Shader& shader);
 void SetDebugRenderSettings(DebugRenderSettings* settings);
-void SetShader(const Shader& shader);
+void SetMaterialShader(const Shader& shader);
 void SetMaterial(Material* material);
 void SetCamera(Camera* camera);
 void SetFrameParameters(FrameParameters* params);
 
 void AddMesh(const Mesh& mesh, const Vector3& position = Vector3(0.0f), const Vector3& rotation = Vector3(0.0f), const Vector3& scale = Vector3(1.0f));
 void AddModel(const Model& model, const Vector3& position = Vector3(0.0f));
+void DrawTerrain(TerrainManager* terrain);
 
-
+void DrawLine(const V3& from, const V3& to, const Color& color);
 
 };
 

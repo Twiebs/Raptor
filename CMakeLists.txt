@@ -39,23 +39,38 @@ endif()
 
 if(MSVC)
   include_directories(include)
+  include_directories(C:/usr/include)
+  link_directories(C:/usr/lib/Release)
+  link_directories(C:/usr/lib/Debug)
   link_directories(lib)
-  file(GLOB RELEASE_LIBS lib/Release)
-  file(GLOB DEBUG_LIBS lib/Debug)
   set(LIBS
     opengl32.lib
     glew32s.lib
-    SOIL.lib
     SDL2.lib
     SDL2_image.lib
     SDL2_mixer.lib
     SDL2_net.lib
     assimp.lib
-    BulletCollision.lib
-    BulletDynamics.lib
-    LinearMath.lib
+
+
   )
+
+set(RELEASE_LIBS
+    LinearMath
+    BulletCollision
+    BulletDynamics
+    BulletSoftBody
+)
+
+set(DEBUG_LIBS
+    LinearMath_Debug
+    BulletCollision_Debug
+    BulletDynamics_Debug
+    BulletSoftBody_Debug
+)
+
 endif(MSVC)
+
 
 link_directories(build/src/Box2D)
 add_subdirectory(src)

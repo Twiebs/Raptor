@@ -10,10 +10,7 @@
 #include <Graphics/ModelData.hpp>
 #include <Graphics/Model.hpp>
 #include <Graphics/Lighting.hpp>
-
-#define MODEL_LOCATION 0
-#define VIEW_LOCATION 1
-#define PROJECTION_LOCATION 2
+#include <Graphics/Camera.hpp>
 
 namespace Raptor {
 
@@ -29,37 +26,6 @@ namespace Raptor {
 	Matrix4 TransformToMatrix(const Transform3D& transform);
 
 	void BindMaterial(const Material& material);
-
-	void Draw(DebugModelData& model);
-
-	struct Camera {
-		float viewportWidth, viewportHeight;
-		float aspectRatio;
-		float yaw= -90, pitch = 0;
-		float nearClip = 0.1f, farClip = 50.0f;
-		float fov;
-
-		Vector3 position;
-		Vector3 front;
-		Matrix4 view;
-		Matrix4 projection;
-		Camera(float viewportWidth, float viewportHeight, float fov = 45.0f, float nearClip = 0.1f, float farClip = 50.0f);
-	};
-
-	void UpdateCamera(Camera* camera);
-	void FPSCameraControlUpdate(Camera* camera);
-
-    inline void SetModelMatrix(Matrix4* matrix);
-    inline void SetModelMatrix(const Vector3& position, const Vector3& rotation, const Vector3& scale);
-    inline void SetModelMatrix(const Vector3& position, const Vector3& rotation, const Vector3& scale) {
-        auto modelMatrix = Matrix4::Transform(position, rotation, scale);
-        glUniformMatrix4fv(MODEL_LOCATION, 1, GL_FALSE, &modelMatrix[0][0]);
-    }
-
-	inline void PushMatrix(U32 location, const Matrix4& matrix);
-	inline void PushMatrix(U32 location, const Matrix4& matrix) {
-		glUniformMatrix4fv(location, 1, GL_FALSE, &matrix[0][0]);
-	}
 
 
 	//TODO should remove need to pass shader...

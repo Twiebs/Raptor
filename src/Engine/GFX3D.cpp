@@ -7,6 +7,8 @@
 #include <Graphics/Render3D.hpp>
 #include <Engine/Assets.hpp>
 
+#include <Math/Geometry3D.hpp>
+
 #include <Core/Platform.h>
 
 const U32 SceneLighting::DIRECTIONAL_LIGHT_COUNT_LOCATION = 4;
@@ -15,9 +17,6 @@ const U32 SceneLighting::POINT_LIGHT_COUNT_LOCATION = 5;
 using namespace Raptor;
 
 global_variable Material DEFAULT_MATERIAL;
-
-static void DEBUGRenderQuad();
-static void DEBUGRenderCube();
 
 struct ModelDrawCommand {
 	Matrix4 transformMatrix;
@@ -71,8 +70,6 @@ struct GFX3DRenderContext {
 	SceneLighting lighting;
 	DebugRenderSettings* settings;
 
-	GFX3DRenderMode mode;
-
 	Material* currentMaterial;
 
 	MeshDrawList drawList;
@@ -87,6 +84,9 @@ struct GFX3DRenderContext {
 
 	DeferedShadingPass deferedShadingInfo;
 	ShadowRenderPass shadowPass;
+
+	DynamicIndexedVertexBuffer<V3> dynamicDrawBuffer;
+
 
 	SSAOBuffer ssao;
 	ShaderHandle ssaoShaderHandle;
@@ -221,15 +221,14 @@ static void SetSceneLightingUniforms(SceneLighting* lighting, GLuint currentShad
 }
 
 static void ApplyDebugRenderSettingsToActiveShader (DebugRenderSettings* settings) {
+	GLDebugHere();
 	assert(context.boundShader != nullptr);
 	if (settings == nullptr) return;
 
-	context.mode = settings->renderMode;
-
-	auto disableNormalsLoc = Uniform::GetLocationNoErrorCheck(context.boundShader->id, "GDebug.disableNormalMaps");
-	auto drawModeLoc = Uniform::GetLocationNoErrorCheck(context.boundShader->id, "GDebug.drawMode");
-	Uniform::SetInt(disableNormalsLoc, settings->disableNormalMaps);
-	Uniform::SetInt(drawModeLoc, (int)settings->deferredDrawMode);
+	//auto disableNormalsLoc = Uniform::GetLocation(context.boundShader->id, "GDebug.disableNormalMaps");
+	//auto drawModeLoc = Uniform::GetLocation(context.boundShader->id, "GDebug.drawMode");
+	//Uniform::SetInt(disableNormalsLoc, settings->disableNormalMaps);
+	//Uniform::SetInt(drawModeLoc, (int)settings->deferredDrawMode);
 }
 
 static void ApplyDebugRenderSettingsToRenderer (DebugRenderSettings* settings) {
@@ -299,6 +298,7 @@ static ShaderHandle CreateSSAOBlurShader() {
 
 
 void InitDeferedShading (DeferedShadingPass* shader) {
+	GLDebugHere();
 	int w, h;
 	PlatformGetSize(&w, &h);
 	InitGBuffer(&shader->gbuffer, w, h);
@@ -311,7 +311,8 @@ void InitDeferedShading (DeferedShadingPass* shader) {
 // ========================================================================================
 // ========================================================================================
 
-static void RenderDebugPointLights (SceneLighting* lighting) {
+static void DebugRenderPointLights (SceneLighting* lighting) {
+	GLDebugHere();
 	static const U32 LIGHT_COLOR_LOCATION = 3;
 
 	auto& pointLightDebugShader = GetShader(context.pointLightDebugShaderHandle);
@@ -325,11 +326,58 @@ static void RenderDebugPointLights (SceneLighting* lighting) {
 		DEBUGRenderCube();
 	}
 
-	UnbindAll();
+	Uniform::SetMatrix4(UniformLocation::MODEL_MATRIX, Matrix4::Identity());
+	Uniform::SetVector3(LIGHT_COLOR_LOCATION, V3(1.0f));
+	static GLuint vao, vbo, ebo;
+	if (vao == 0) {
+		CreateIndexedVertexArray(&vao, &vbo, &ebo, 24, sizeof(V3), 36,
+			GL_STATIC_DRAW, SetVertexLayout1P, (void*)CUBE_VERTICES, (void*)CUBE_INDICES);
+	}
+
+	//glBindVertexArray(vao);
+	//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (GLvoid*)0);
+	//glBindVertexArray(0);
+
+	Uniform::SetMatrix4(UniformLocation::MODEL_MATRIX, Matrix4::Identity());
+	context.dynamicDrawBuffer.Push(CUBE_VERTICES, 24, CUBE_INDICES, 36);
+	context.dynamicDrawBuffer.Draw();
+	Uniform::SetMatrix4(UniformLocation::MODEL_MATRIX, Matrix4::Translate(5.0f, 2.0f, 0.0f));
+	context.dynamicDrawBuffer.Push(CUBE_VERTICES, 24, CUBE_INDICES, 36);
+	context.dynamicDrawBuffer.Draw();
+
+	// context.dynamicDrawBuffer.Draw();
+
+	// glDisable(GL_CULL_FACE);
+
+
+
+	// DEBUGRenderCube();
+
+	//static const U32 INDICES[6] = {
+	//	0, 3, 2,
+	//	0, 2, 1
+	//};
+
+	//static const V3 VERTICES[4] {
+	//	V3(0.0f, 0.0f, 0.0f),
+	//	V3(1.0f, 0.0f, 0.0f),
+	//	V3(1.0f, 1.0f, 0.0f),
+	//	V3(0.0f, 1.0f, 0.0f),
+	//};
+
+	// context.dynamicDrawBuffer.Push((V3*)VERTICES, 4, (U32*)INDICES, 6);
+	
+
+
+
+
+
+	// UnbindAll();
 }
 
 
 static void RenderFowardPass() {
+	GLDebugHere();
 	auto& skyboxShader = GetShader(context.skyboxShaderHandle);
 	glUseProgram(skyboxShader.id);
 	SetCameraUniforms(*context.camera);
@@ -345,6 +393,7 @@ static void RenderFowardPass() {
 }
 
 static void RenderDeferredGeometryPass (GBuffer* gbuffer, MeshDrawList* drawList) {
+	GLDebugHere();
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 	glDisable(GL_CULL_FACE);
@@ -360,6 +409,8 @@ static void RenderDeferredGeometryPass (GBuffer* gbuffer, MeshDrawList* drawList
 }
 
 static void RenderSSAOPass (SSAOBuffer* ssao, GBuffer* gbuffer, Camera* camera, const Shader& ssaoShader, const Shader& ssaoBlurShader) {
+	GLDebugHere();
+
 	glBindFramebuffer(GL_FRAMEBUFFER, ssao->occlusionFramebuffer);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glUseProgram(ssaoShader.id);
@@ -393,6 +444,7 @@ static void RenderSSAOPass (SSAOBuffer* ssao, GBuffer* gbuffer, Camera* camera, 
 
 
 static void RenderDeferedLightingPass (DeferedShadingPass* shadingPass, const Shader& shader) {
+	GLDebugHere();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	BindShader(shader);
 	SetSceneLightingUniforms(&context.lighting, shader.id);
@@ -420,6 +472,7 @@ static void RenderDeferedLightingPass (DeferedShadingPass* shadingPass, const Sh
 }
 
 static void RenderScene() {
+	GLDebugHere();
 	RenderDeferredGeometryPass(&context.deferedShadingInfo.gbuffer, &context.drawList);
 
 	auto& ssaoShader = GetShader(context.ssaoShaderHandle);
@@ -431,7 +484,7 @@ static void RenderScene() {
 
 	// RenderFowardPass();
 	UnbindAll();
-	RenderDebugPointLights(&context.lighting);
+	DebugRenderPointLights(&context.lighting);
 }
 
 // ========================================================================================
@@ -440,6 +493,7 @@ static void RenderScene() {
 
 static void InitShadowRenderPass (ShadowRenderPass* shadowPass, U32 width, U32 height) 
 {
+	GLDebugHere();
 	shadowPass->mapWidth = width;
 	shadowPass->mapHeight = height;
 	shadowPass->depthCubemap = CreateDepthCubemap(width, height);
@@ -467,6 +521,7 @@ static void InitShadowRenderPass (ShadowRenderPass* shadowPass, U32 width, U32 h
 // and create these properties for them when they are rendered!
 static void SetShadowRenderPassUniforms (ShadowRenderPass* shadowPass) 
 {
+	GLDebugHere();
 	PointLight* light = context.lighting.pointLights[0];
 
 	shadowPass->shadowMatrices[0] = shadowPass->projectionMatrix * Matrix4::LookAt(light->position, light->position + V3( 1.0,  0.0,  0.0),  V3(0.0, -1.0,  0.0));
@@ -490,6 +545,7 @@ static void SetShadowRenderPassUniforms (ShadowRenderPass* shadowPass)
 
 
 static void DrawShadowRenderPass (ShadowRenderPass* shadowPass, MeshDrawList* drawList) {
+	GLDebugHere();
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
@@ -503,109 +559,32 @@ static void DrawShadowRenderPass (ShadowRenderPass* shadowPass, MeshDrawList* dr
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void DEBUGRenderQuad() {
-	static GLuint quadVAO = 0;
-	static GLuint quadVBO = 0;
-	if (quadVAO == 0) {
-		GLfloat quadVertices[] = {
-			// Positions        // Texture Coords
-			-1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-			1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-			1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-		};
-		// Setup plane VAO
-		glGenVertexArrays(1, &quadVAO);
-		glGenBuffers(1, &quadVBO);
-		glBindVertexArray(quadVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	}
-	glBindVertexArray(quadVAO);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glBindVertexArray(0);
-}
+
+void GFX3D::DrawLine (const V3& from, const V3& to, const Color& color) {
+	static const float LINE_WIDTH = 2.0f;	
+	static const U32 INDICES[6] = {
+		0, 1, 2,
+		0, 2, 3
+	};
+	
+	V3 verts[4] {
+		V3(from.x, from.y, from.z),
+		V3(to.x, to.y, to.z),
+		V3(to.x, to.y + LINE_WIDTH, to.z),
+		V3(from.x, from.y + LINE_WIDTH, from.z),
+	};
 
 
-void DEBUGRenderCube() {
-	static GLuint cubeVAO = 0;
-	static GLuint cubeVBO = 0;
-	if (cubeVAO == 0) {
-		GLfloat vertices[] = {
-			// Back face
-			-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, // Bottom-left
-			0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, // top-right
-			0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, // bottom-right         
-			0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,  // top-right
-			-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,  // bottom-left
-			-0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,// top-left
-															  // Front face
-			-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom-left
-			0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,  // bottom-right 
-			0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,  // top-right
-			0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top-right
-			-0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,  // top-left
-			-0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,  // bottom-left
-															   // Left face
-			-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
-			-0.5f, 0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-left
-			-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,  // bottom-left
-			-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-left
-			-0.5f, -0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f,  // bottom-right
-			-0.5f, 0.5f, 0.5f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-right
-															  // Right face
-			0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // top-left
-			0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom-right
-			0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top-right         
-			0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,  // bottom-right
-			0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f,  // top-left
-			0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // bottom-left     
-															 // Bottom face
-			-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
-			0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, // top-left
-			0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,// bottom-left
-			0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, // bottom-left
-			-0.5f, -0.5f, 0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, // bottom-right
-			-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, // top-right
-																// Top face
-			-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,// top-left
-			0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
-			0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, // top-right     
-			0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom-right
-			-0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,// top-left
-			-0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f // bottom-left        
-		};
-		glGenVertexArrays(1, &cubeVAO);
-		glGenBuffers(1, &cubeVBO);
-		// Fill buffer
-		glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		// Link vertex attributes
-		glBindVertexArray(cubeVAO);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
-	// Render Cube
-	glBindVertexArray(cubeVAO);
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-	glBindVertexArray(0);
+	context.dynamicDrawBuffer.Push(verts, 4, (U32*)INDICES, 6);
 }
+
 
 void GFX3D::Init() {
 	int w, h;
 	PlatformGetSize(&w, &h);
 	InitDeferedShading(&context.deferedShadingInfo);
-	context.mode = GFX3D_DEFERED;
+
+	context.dynamicDrawBuffer.GenerateBuffer(4096, (4096 / 4) * 6, SetVertexLayout1P);
 
 	context.skyboxShaderHandle = CreateSkyboxShader();
 	context.pointLightDebugShaderHandle = CreatePointLightDebugShader();
@@ -650,13 +629,9 @@ void GFX3D::SetCamera (Camera* camera) {
 	context.camera = camera;
 }
 
-void GFX3D::SetFrameParameters (FrameParameters* params) {
-
-
-
-}
-
 void GFX3D::BeginFrame (FrameParameters* params, Camera* camera) {
+	GLDebugHere();
+
 	assert(context.camera == nullptr && "The GFX3D::EndFrame() was not called before calling GFX3D::BeginFrame() again!");
 
 	glClearColor(params->clearColor.x, params->clearColor.y, params->clearColor.z, 1.0f);
@@ -669,35 +644,52 @@ void GFX3D::BeginFrame (FrameParameters* params, Camera* camera) {
 }
 
 static void UnbindAll() {
+	GLDebugHere();
 	glUseProgram(0);
 	glBindVertexArray(0);
-	BindTexture2DToUnit(0, 0);
-	BindTexture2DToUnit(0, 1);
-	BindTexture2DToUnit(0, 2);
 
 	context.currentMaterial = nullptr;
 	context.boundShader = nullptr;
 }
 
+//void AddTerrain (TerrainManager* terrain) {
+//
+//
+//
+//}
+
 
 
 void GFX3D::EndFrame() {
+	GLDebugHere();
 	assert(context.beginWasCalled == false && "End was not called on the current shading pass");
 	// assert(context.shaderForCommand == 0 && "The shader was never cleared!");
 	// DrawShadowRenderPass(&context.shadowPass, &context.drawList);
 
 
 	RenderScene();
-	
+
+	auto& debugShader = GetShader(context.pointLightDebugShaderHandle);
+
+	// glUseProgram(debugShader.id);
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	context.dynamicDrawBuffer.Draw();
+	DrawLine(V3(0.0f, 1.0f, 0.0f), V3(16.0f, 1.0f, 0.0f), Color());
+	context.dynamicDrawBuffer.Draw();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 
 	context.camera = nullptr;
 
 	context.drawList.meshGeometryInfo.clear();
 	context.drawList.meshShadingInfo.clear();
 	context.drawList.modelInfos.clear();
+	UnbindAll();
 }
 
 void BindShader (const Shader& shader) {
+	GLDebugHere();
 	assert(IsValid(shader));
 
 	context.boundShader = (Shader*)&shader;
@@ -707,36 +699,68 @@ void BindShader (const Shader& shader) {
 	ApplyDebugRenderSettingsToActiveShader(context.settings);
 }
 
-void GFX3D::Begin (const Shader& shader) {
-	assert(context.camera != nullptr && "Begin frame must be called with a specified projection camera!");
-	assert(context.beginWasCalled == false && "End must be called before calling begin once again!");
-	assert(context.shaderForCommand == 0 && "The last shader was not unbound!");
-
-	context.beginWasCalled = true;
-	context.shaderForCommand = (Shader*)&shader;
-	context.currentMaterial = &DEFAULT_MATERIAL;
-}
+//void GFX3D::Begin (const Shader& shader) {
+//	GLDebugHere();
+//	assert(context.camera != nullptr && "Begin frame must be called with a specified projection camera!");
+//	assert(context.beginWasCalled == false && "End must be called before calling begin once again!");
+//	assert(context.shaderForCommand == 0 && "The last shader was not unbound!");
+//
+//	context.beginWasCalled = true;
+//	context.shaderForCommand = (Shader*)&shader;
+//	context.currentMaterial = &DEFAULT_MATERIAL;
+//}
 
 static bool IsValid (const Shader& shader) {
 	bool result = shader.id > 0;
 	return result;
 }
 
-void GFX3D::SetShader(const Shader& shader) {
+void GFX3D::SetMaterialShader(const Shader& shader) {
+	GLDebugHere();
 	assert(IsValid(shader));
 	context.shaderForCommand = (Shader*)&shader;
 }
 
-void GFX3D::End (const Shader& shader) {
-	assert(context.beginWasCalled && "End was called without begin!");
-	assert(context.shaderForCommand != nullptr && "There was no shader bound!");
-	assert(context.shaderForCommand->id == shader.id
-		&& "The shader used in this pass is not The same as the currently bound shader!");
+void GFX3D::DrawTerrain(TerrainManager* terrain) {
+	auto& shader = GetShader(terrain->shaderHandle);
+	GFX3D::SetMaterialShader(shader);
+	glUseProgram(shader.id);
+	SetCameraUniforms(*context.camera);
 
-	context.beginWasCalled = false;
-	context.currentMaterial = nullptr;
-	context.shaderForCommand = nullptr;
+	auto BindAlphaMaps = [&](U32 terrainChunkIndex) {
+		for (U32 i = 0; i < terrain->materialCount; i++) {
+			BindTexture2DToUnit(terrain->alphaMaps[(terrainChunkIndex * terrain->materialCount) + i], (terrain->materialCount * 3) + i);
+		}
+	};
+
+	for (U32 i = 0; i < terrain->materialCount; i++) {
+		auto& material = GetMaterial(terrain->materials[i]);
+		BindTexture2DToUnit(material.diffuseMapID, (terrain->materialCount * 0) + i);
+		BindTexture2DToUnit(material.specularMapID, (terrain->materialCount * 1) + i);
+		BindTexture2DToUnit(material.normalMapID, (terrain->materialCount * 2) + i);
+	}
+
+	for (U32 i = 0; i < terrain->managerArea; i++) {
+		BindAlphaMaps(i);
+		auto& terrainMesh = terrain->terrainMeshes[i];
+		glBindVertexArray(terrainMesh.vertexArrayID);
+		glDrawElements(GL_TRIANGLES, terrainMesh.indexCount, GL_UNSIGNED_INT, 0);
+	}
+
+
 }
+
+//void GFX3D::End (const Shader& shader) {
+//	GLDebugHere();
+//	assert(context.beginWasCalled && "End was called without begin!");
+//	assert(context.shaderForCommand != nullptr && "There was no shader bound!");
+//	assert(context.shaderForCommand->id == shader.id
+//		&& "The shader used in this pass is not The same as the currently bound shader!");
+//
+//	context.beginWasCalled = false;
+//	context.currentMaterial = nullptr;
+//	context.shaderForCommand = nullptr;
+//}
 
 void GFX3D::AddMesh (const Mesh& mesh, const Vector3& position, const Vector3& rotation,const Vector3& scale) {
 	assert(context.shaderForCommand != nullptr && "This mesh requires a shader to be drawn with");

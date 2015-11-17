@@ -3,10 +3,6 @@
 #include <Core/types.h>
 #include <Core/logging.h>
 
-#ifdef __WINDOWS__
-#define PLATFORM_WINDOWS
-#endif
-
 global_variable bool global_running = true;
 global_variable double global_deltaTime = 0.0;
 
@@ -16,9 +12,11 @@ extern "C" void PlatformExit() {
 
 #if PLATFORM_SDL
 #include <SDL2/SDL.h>
-
+// TODO if we add non-gl renderering capabilies this should be removed!
 #define GLEW_STATIC
 #include <GL/glew.h>
+#include <Graphics/GLRenderer.hpp>
+
 
 global_variable SDL_Window* global_window;
 global_variable SDL_GLContext global_context;
@@ -29,6 +27,7 @@ int PlatformCreate (const char* title, int width, int height, int flags) {
 	}
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	// SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
 	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
@@ -45,6 +44,8 @@ int PlatformCreate (const char* title, int width, int height, int flags) {
 		LOG_ERROR("GLEW failed to initialize");
 		return -1;
 	}
+
+	// EnableGLDebugMode();
 	return 0;
 }
 

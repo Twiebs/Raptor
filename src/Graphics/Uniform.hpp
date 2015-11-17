@@ -6,6 +6,7 @@
 #include <GL/glew.h>
 
 #include <Graphics/Lighting.hpp>
+#include <Graphics/GLRenderer.hpp>
 
 #include <Math/Matrix4.hpp>
 #include <Math/Vector2.hpp>
@@ -35,7 +36,6 @@ namespace Uniform
 
 inline bool IsValidLocation (GLint location);
 inline GLint GetLocation(GLuint shaderID, const std::string& name);
-inline GLint GetLocationNoErrorCheck(GLuint shaderID, const std::string& name);
 
 inline void SetInt(GLint location, int value);
 
@@ -54,45 +54,51 @@ inline void SetPointLight (PointLight* light, U32 lightIndex, GLuint shaderID);
 }
 
 
-inline GLint Uniform::GetLocationNoErrorCheck(GLuint shaderID, const std::string& name) {
+#define GLRENDERAPI(functionNameAndSignature, functionBody) functionNameAndSignature { GLDebugHere(); functionBody }
+
+GLRENDERAPI(static const char* TestFunction(),
+	return "This was a test function";
+)
+
+
+inline GLint Uniform::GetLocation(GLuint shaderID, const std::string& name) {
+	GLDebugHere();
 	GLint location = glGetUniformLocation(shaderID, name.c_str());
 	return location;
 }
 
-inline GLint Uniform::GetLocation (GLuint shaderID, const std::string& name) {
-	GLint location = glGetUniformLocation(shaderID, name.c_str());
-
-#ifdef ENABLE_UNIFORM_WARNINGS
-	CheckUniformLocationErrors(location, name);
-#endif
-	return location;
-}
 inline bool Uniform::IsValidLocation (GLint location) {
 	bool result = (location == -1 || location == GL_INVALID_INDEX || GL_INVALID_VALUE);
 	return result;
 }
 
 inline void Uniform::SetInt(GLint location, int value) {
+	GLDebugHere();
 	glUniform1i(location, value);
 }
 
 inline void Uniform::SetFloats(GLint startLocation, float* values, int count) {
+	GLDebugHere();
 	glUniform1fv(startLocation, count, values);
 }
 
 inline void Uniform::SetVector2 (GLint location, V2* values, int count) {
+	GLDebugHere();
 	glUniform2fv(location, count, &values->x);
 }
 
 inline void Uniform::SetFloat(GLint location, float value) {
+	GLDebugHere();
 	glUniform1f(location, value);
 }
 
 inline void Uniform::SetVector3(GLint location, const Vector3& vector) {
+	GLDebugHere();
 	glUniform3fv(location, 1, &vector.x);
 }
 
 inline void Uniform::SetMatrix4(GLint location, const Matrix4& matrix) {
+	GLDebugHere();
 	glUniformMatrix4fv(location, 1, GL_FALSE, &matrix[0][0]);
 }
 

@@ -18,16 +18,26 @@ set(CORE_SRCS
   Core/platform_windows.cpp
   Core/platform_windows.h
 
-    Utils/utils.cpp
-    Utils/utils.hpp
-	Utils/Profiler.cpp
-	Utils/Profiler.hpp
+
 
 	Core/logging.h
 	Core/config.h
 	Core/types.h
 )
 source_group(Core FILES ${CORE_SRCS})
+
+set(UTILS_SRCS 
+	Utils/Array.cpp
+	Utils/Array.hpp
+
+    Utils/utils.cpp
+    Utils/utils.hpp
+	Utils/Profiler.cpp
+	Utils/Profiler.hpp
+	Utils/global_profiler.h
+)
+
+source_group(Utils FILES ${UTILS_SRCS})
 
 set(MATH_SRCS
 	Math/Procedural3D.cpp
@@ -55,8 +65,17 @@ set(GRAPHICS_SRCS
     Graphics/Color.cpp
 	Graphics/Color.hpp
 
+	
+	Graphics/Renderer.cpp
+	Graphics/Renderer.hpp
+	Graphics/Camera.cpp
+	Graphics/Camera.hpp
+	Graphics/RenderPass.cpp
+	Graphics/RenderPass.hpp
 	Graphics/SSAO.cpp
 	Graphics/SSAO.hpp
+
+
 
     Graphics/GLRenderer.cpp
     Graphics/GLRenderer.hpp
@@ -134,7 +153,7 @@ SET(ENGINE_SRCS
 )
 source_group(Engine FILES ${ENGINE_SRCS})
 
-add_library(RaptorEngine STATIC ${CORE_SRCS} ${MATH_SRCS} ${GRAPHICS_SRCS} ${ENGINE_SRCS})
+add_library(RaptorEngine STATIC ${CORE_SRCS} ${MATH_SRCS} ${GRAPHICS_SRCS} ${ENGINE_SRCS} ${UTILS_SRCS})
 
 set(BOX2D_VERSION 2.3.1)
 set(BOX2D_BUILD_STATIC true)
