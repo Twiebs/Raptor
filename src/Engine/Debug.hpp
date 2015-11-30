@@ -7,8 +7,6 @@ using namespace Raptor;
 
 #include <Engine/GFX3D.hpp>
 #include <Core/logging.h>
-// TODO these should belong in the editor
-
 
 void ShowCameraDebugInfo(const Camera& camera);
 void ShowLightDebugInfo(const DirectionalLight& light);

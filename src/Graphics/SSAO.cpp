@@ -9,9 +9,6 @@ const U32 SSAOBuffer::KERNEL_SIZE_LOCATION = 3;
 const U32 SSAOBuffer::KERNEL_RADIUS_LOCATION = 4;
 const U32 SSAOBuffer::KERNEL_SAMPLE_LOCATION = 5;
 
-//TODO we should proabably move screenWidth / height params into some
-//RenderContext that the renderer will use to obtain those values...
-//THis is where we can also store the RenderConfig etc...
 void InitSSAO (SSAOBuffer* shader, U32 screenWidth, U32 screenHeight) {
 	glGenFramebuffers(1, &shader->occlusionFramebuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, shader->occlusionFramebuffer);

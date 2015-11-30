@@ -37,6 +37,7 @@ void FPSCameraControlUpdate(Camera* camera)
 	float speed = MOVEMENT_SPEED;
 
 	if (PlatformGetKey(KEY_LSHIFT)) speed *= SPRINT_MULTIPLIER;
+	if (PlatformGetKey(KEY_LALT)) speed *= SPRINT_MULTIPLIER * 4;
 	if (PlatformGetKey(KEY_W)) camera->position += speed * deltaTime * camera->front;
 	if (PlatformGetKey(KEY_S)) camera->position -= speed * deltaTime * camera->front;
 	if (PlatformGetKey(KEY_A)) camera->position -= camera->front.Cross(Vector3(0.0f, 1.0f, 0.0f)).Normalize() * speed * deltaTime;

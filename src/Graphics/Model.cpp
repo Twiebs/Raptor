@@ -2,6 +2,7 @@
 
 #include <Graphics/Mesh.hpp>
 #include <Graphics/Model.hpp>
+#include <Graphics/VertexArray.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
@@ -44,19 +45,35 @@ static void ImportMeshData (MeshData* data, aiMesh* ai_mesh, U32 vertexOffset, U
 	assert(data->vertexCount >= (vertexOffset + ai_mesh->mNumVertices));
 	assert(data->indexCount >= indexOffset + (ai_mesh->mNumFaces * 3));
 
-	for (U32 i = 0; i < ai_mesh->mNumVertices; i++) {
+	for (auto i = 0; i < ai_mesh->mNumVertices; i++) {
 		auto index = vertexOffset + i;
 		data->vertices[index].position.x = ai_mesh->mVertices[i].x;
 		data->vertices[index].position.y = ai_mesh->mVertices[i].y;
 		data->vertices[index].position.z = ai_mesh->mVertices[i].z;
+	}
+
+	for (auto i = 0; i < ai_mesh->mNumVertices; i++) {
+		auto index = vertexOffset + i;
 		data->vertices[index].normal.x = ai_mesh->mNormals[i].x;
 		data->vertices[index].normal.y = ai_mesh->mNormals[i].y;
 		data->vertices[index].normal.z = ai_mesh->mNormals[i].z;
-		data->vertices[index].tangent.x = ai_mesh->mTangents[i].x;
-		data->vertices[index].tangent.y = ai_mesh->mTangents[i].y;
-		data->vertices[index].tangent.z = ai_mesh->mTangents[i].z;
-		data->vertices[index].texCoord.x = ai_mesh->mTextureCoords[0][i].x;
-		data->vertices[index].texCoord.y = ai_mesh->mTextureCoords[0][i].y;
+	}
+
+	if (ai_mesh->mTangents != nullptr) {
+		for (auto i = 0; i < ai_mesh->mNumVertices; i++) {
+auto index = vertexOffset + i;
+data->vertices[index].tangent.x = ai_mesh->mTangents[i].x;
+data->vertices[index].tangent.y = ai_mesh->mTangents[i].y;
+data->vertices[index].tangent.z = ai_mesh->mTangents[i].z;
+		}
+	}
+
+	if (ai_mesh->mTextureCoords[0] != nullptr) {
+		for (auto i = 0; i < ai_mesh->mNumVertices; i++) {
+			auto index = vertexOffset + i;
+			data->vertices[index].texCoord.x = ai_mesh->mTextureCoords[0][i].x;
+			data->vertices[index].texCoord.y = ai_mesh->mTextureCoords[0][i].y;
+		}
 	}
 
 	for (U32 ai_index = 0, i = indexOffset; i < (ai_mesh->mNumFaces * 3) + indexOffset; ai_index++, i += 3) {
@@ -69,14 +86,14 @@ static void ImportMeshData (MeshData* data, aiMesh* ai_mesh, U32 vertexOffset, U
 
 void ImportModelData (ModelData* data, const std::string& filename) {
 	Assimp::Importer importer;
-	auto scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
+	auto scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_CalcTangentSpace);
 	if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		LOG_ERROR("Assimp failed to load file (" << filename << ") " << importer.GetErrorString());
 		return;
 	}
 
 	data->meshIndexCounts.reserve(scene->mNumMeshes);
-	data->materialInfos.reserve(scene->mNumMaterials);
+	// data->materialInfos.reserve(scene->mNumMaterials);
 	data->meshCount = scene->mNumMeshes;
 
 	U32 vertexCount = 0;
@@ -92,7 +109,7 @@ void ImportModelData (ModelData* data, const std::string& filename) {
 	// data->meshData = AllocateMeshData(vertexCount, indexCount);
 	AllocateMeshData(&data->meshData, vertexCount, indexCount);
 
-	auto GetMaterialAssetInfo = [&filename](aiMaterial* material, U32 materialIndex) -> MaterialAssetInfo{
+	auto CreateMaterialInfo = [&filename](aiMaterial* material, U32 materialIndex) -> MaterialInfo {
 		auto lastSlashInFilepath = filename.find_last_of("/");
 		auto lastDotInFilepath = filename.find_last_of('.');
 		auto directory = filename.substr(0, lastSlashInFilepath + 1);
@@ -108,7 +125,7 @@ void ImportModelData (ModelData* data, const std::string& filename) {
 			return std::string(textureFilename.C_Str());
 		};
 
-		MaterialAssetInfo materialInfo;
+		MaterialInfo materialInfo;
 		materialInfo.diffuseTextureFilename = getTextureFilename(material, aiTextureType_DIFFUSE);
 		materialInfo.normalTextureFilename = getTextureFilename(material, aiTextureType_NORMALS);
 		materialInfo.specularTextureFilename = getTextureFilename(material, aiTextureType_SPECULAR);
@@ -120,25 +137,32 @@ void ImportModelData (ModelData* data, const std::string& filename) {
 	vertexCount = 0;
 	indexCount = 0;
 
-	std::vector<U32> importedMaterials;
-	importedMaterials.reserve(scene->mNumMaterials);
+	//std::vector<U32> importedMaterials;
+	//importedMaterials.reserve(scene->mNumMaterials);
 	for (U32 i = 0; i < scene->mNumMeshes; i++) {
 		auto aiMesh = scene->mMeshes[i];
 		ImportMeshData(&data->meshData, aiMesh, vertexCount, indexCount);
 
-		bool importMaterial = true;
-		for (U32 n = 0; n < importedMaterials.size(); n++) {
-			if (importedMaterials[n] == aiMesh->mMaterialIndex) importMaterial = false;
-		}
 
-		if (importMaterial) {
-			data->materialInfos.emplace_back(GetMaterialAssetInfo(scene->mMaterials[aiMesh->mMaterialIndex], aiMesh->mMaterialIndex));
-			importedMaterials.push_back(aiMesh->mMaterialIndex);
-		}
+
+		//bool importMaterial = true;
+		//for (U32 n = 0; n < importedMaterials.size(); n++) {
+		//	if (importedMaterials[n] == aiMesh->mMaterialIndex) importMaterial = false;
+		//}
+
+		//if (importMaterial) {
+		//	data->materialInfos.emplace_back(CreateMaterialInfo(scene->mMaterials[aiMesh->mMaterialIndex], aiMesh->mMaterialIndex));
+		//	importedMaterials.push_back(aiMesh->mMaterialIndex);
+		//}
 
 
 		vertexCount += aiMesh->mNumVertices;
 		indexCount += aiMesh->mNumFaces * 3;
+	}
+
+	data->materialCount = scene->mNumMaterials;
+	for (auto i = 0; i < data->materialCount; i++) {
+	
 	}
 }
 
@@ -146,162 +170,31 @@ Model CreateModel (ModelData* data) {
 	assert(data->meshCount > 0 && "Invalid Model Data provided!");
 	auto model = CreateModel(data->meshCount);
 	memcpy(model.meshIndexCounts, &data->meshIndexCounts[0], data->meshIndexCounts.size() * sizeof(U32));
-	InitIndexedVertexBuffer(&model.indexedVertexBuffer, &data->meshData);
+
+	CreateIndexedVertexArray<Vertex3D>(&model.indexedVertexBuffer,
+		data->meshData.vertexCount, data->meshData.indexCount,
+		GL_STATIC_DRAW, data->meshData.vertices, data->meshData.indices);
+	
 	return model;
 }
 
 
-//Model* ImportModel (const std::string& filename) {
-//	Assimp::Importer importer;
-//	auto scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
-//	if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-//		LOG_ERROR("Assimp failed to load file (" << filename << ") " << importer.GetErrorString());
-//		return false;
-//	}
-//
-//	Model* model = AllocateModel(scene->mNumMeshes);
-//
-//	U32 vertexCount = 0;
-//	U32 indexCount = 0;
-//	for (U32 i = 0; i < scene->mNumMeshes; i++) {
-//		auto aiMesh = scene->mMeshes[i];
-//		vertexCount += aiMesh->mNumVertices;
-//		indexCount += aiMesh->mNumFaces * 3;
-//
-//		model->meshIndexCounts[i] = aiMesh->mNumFaces * 3;
-//	}
-//
-//	auto meshData = CreateMeshData(vertexCount, indexCount);
-//
-//
-//	auto ImportMaterial = [&filename](aiMaterial* material, U32 materialIndex) -> MaterialHandle {
-//		auto lastSlashInFilepath = filename.find_last_of("/");
-//		auto lastDotInFilepath = filename.find_last_of('.');
-//		auto directory = filename.substr(0, lastSlashInFilepath + 1);
-//		auto name = filename.substr(lastSlashInFilepath + 1, lastDotInFilepath - (lastSlashInFilepath + 1));
-//
-//		static auto getTextureFilename = [&directory](aiMaterial* material, aiTextureType type) -> std::string {
-//			auto textureCount = material->GetTextureCount(type);
-//			assert(textureCount <= 1 && "Two maps of the same kind are not currently suported!");
-//			if (textureCount == 0) return "";
-//
-//			aiString textureFilename;
-//			material->GetTexture(type, 0, &textureFilename);
-//			return std::string(textureFilename.C_Str());
-//		};
-//
-//		MaterialAssetInfo materialInfo;
-//		materialInfo.diffuseTextureFilename = getTextureFilename(material, aiTextureType_DIFFUSE);
-//		materialInfo.normalTextureFilename = getTextureFilename(material, aiTextureType_NORMALS);
-//		materialInfo.specularTextureFilename = getTextureFilename(material, aiTextureType_SPECULAR);
-//		materialInfo.name = name + ".material." + std::to_string(materialIndex);
-//		materialInfo.directory = directory;
-//
-//		auto materialHandle = LoadMaterial(materialInfo);
-//		return materialHandle;
-//	};
-//
-//	vertexCount = 0;
-//	indexCount = 0;
-//
-//	std::vector<U32> importedMaterials;
-//	for (U32 i = 0; i < scene->mNumMeshes; i++) {
-//		auto aiMesh = scene->mMeshes[i];
-//		ImportMeshData(meshData, aiMesh, vertexCount, indexCount);
-//
-//		bool importMaterial = true;
-//		for (U32 n = 0; n < importedMaterials.size(); n++) {
-//			if (importedMaterials[n] == aiMesh->mMaterialIndex) importMaterial = false;
-//		}
-//
-//		if (importMaterial) {
-//			auto materialHandle = ImportMaterial(scene->mMaterials[aiMesh->mMaterialIndex], aiMesh->mMaterialIndex);
-//			model->meshMaterialHandles[i] = materialHandle;
-//			importedMaterials.push_back(aiMesh->mMaterialIndex);
-//		}
-//
-//
-//		vertexCount += aiMesh->mNumVertices;
-//		indexCount += aiMesh->mNumFaces * 3;
-//	}
-//
-//
-//	InitIndexedVertexBuffer(&model->indexedVertexBuffer, meshData);
-//	free(meshData);
-//	return model;
-//}
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/vector.hpp>
+
+template<typename TArchive>
+void serialize(TArchive& archive, ModelData& data) {
+	archive(data.meshCount);
+	archive(data.meshIndexCounts);
+	archive(data.meshData);
+	archive(data.materialName);
+}
 
 
-//
-//void ImportModel (const std::string& filename) {
-//	Assimp::Importer importer;
-//	auto scene = importer.ReadFile(filename, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
-//	if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-//		LOG_ERROR("Assimp failed to load file (" << filename << ") " << importer.GetErrorString());
-//		return;
-//	}
-//
-//	meshes.resize(scene->mNumMeshes);
-//	meshMaterialIndex.resize(scene->mNumMeshes);
-//	meshVertexBuffers.resize(scene->mNumMeshes);
-//	for (U32 i = 0; i < scene->mNumMeshes; i++) {
-//		auto aiMesh = scene->mMeshes[i];
-//		meshMaterialIndex[i] = aiMesh->mMaterialIndex;
-//		ImportMeshData(&meshes[i], aiMesh);
-//		InitVertexBufferForMeshData(&meshVertexBuffers[i], meshes[i]);
-//	}
-//
-//	auto directory = filename.substr(0, filename.find_last_of("/") + 1);
-//	materials.resize(scene->mNumMaterials);
-//
-//	for (U32 i = 0; i < scene->mNumMaterials; i++) {
-//		auto material = scene->mMaterials[i];
-//
-//		auto diffuseTextureCount = material->GetTextureCount(aiTextureType_DIFFUSE);
-//		if (diffuseTextureCount > 0) {
-//			aiString texturePath;
-//			material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
-//			if (strcmp(texturePath.C_Str(), "")) {
-//				materials[i].diffuseMapID = CreateTextureFromFile(directory + texturePath.C_Str());
-//			} else {
-//				LOG_WARNING("Diffuse Texure for: " << filename << " has an invalid filename");
-//			}
-//		} else {
-//			LOG_WARNING("Model: " << filename << " does not have a diffuse texture!");
-//		}
-//
-//		auto specularTextureCount = material->GetTextureCount(aiTextureType_SPECULAR);
-//		if (specularTextureCount > 0) {
-//			aiString texturePath;
-//			material->GetTexture(aiTextureType_SPECULAR, 0, &texturePath);
-//			if (strcmp(texturePath.C_Str(), "")) {
-//				materials[i].specularMapID = CreateTextureFromFile(directory + texturePath.C_Str());
-//			} else {
-//				LOG_WARNING("Diffuse Texure for: " << filename << " has an invalid filename");
-//			}
-//		} else {
-//			LOG_WARNING("Model: " << filename << " does not have a specular texture!");
-//		}
-//
-//		if (material->GetTextureCount(aiTextureType_HEIGHT)) {
-//			aiString texturePath;
-//			material->GetTexture(aiTextureType_HEIGHT, 0, &texturePath);
-//			materials[i].normalMapID = CreateTextureFromFile(directory + texturePath.C_Str());
-//		} else {
-//			LOG_WARNING("Model: " << filename << " does not have a normal map");
-//		}
-//
-//		//for (auto j = 0; j < matDiffuseCount; j++) {
-//		//	aiString texturePath;
-//		//	material->GetTexture(aiTextureType_DIFFUSE, j, &texturePath);
-//		//	model->diffuseTextures[diffuseIndex++] = (CreateTextureFromFile(directory + texturePath.C_Str()));
-//		//}
-//
-//		//for (auto j = 0; j < matSpecularCount; j++) {
-//		//	aiString texturePath;
-//		//	material->GetTexture(aiTextureType_SPECULAR, j, &texturePath);
-//		//	model->specularTextures[specularIndex++] = (CreateTextureFromFile(directory + texturePath.C_Str()));
-//		//}
-//	}
-//	importer.FreeScene();
-//}
+void SaveModelData(ModelData* data, const std::string& filename) {
+	
+}
+
+void LoadModelData(ModelData* data, const std::string& filename) {
+
+}

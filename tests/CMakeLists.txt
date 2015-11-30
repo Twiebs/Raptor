@@ -21,5 +21,7 @@ add_test(CubemapTest cubemap.cpp)
 add_test(LiquidTest liquid.cpp)
 add_test(PlatformerTest PlatformerTest.cpp)
 add_test(SSAO ssao/main.cpp)
+add_test(LandscapeTest landscape.cpp)
 
-add_library(editor SHARED hotcode/editor.cpp)
+add_executable(AssetTest AssetTest.cpp)
+

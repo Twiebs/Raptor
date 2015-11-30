@@ -1,30 +1,32 @@
 #include "Engine.hpp"
 
-global_variable TaskManager global_TaskManager;
-global_variable Profiler global_Profiler;
-global_variable AssetManifest global_AssetManifest;
+TaskManager Engine::taskManager;
+AssetManifest Engine::assetManifest;
+AssetManager Engine::assetManager;
 
 void Engine::Init() {
-	InitTaskManager(&global_TaskManager);
+	assetManifest.Deserialize();
+	assetManager.manifest = &assetManifest;
+	InitTaskManager(&taskManager);
 	GFX3D::Init();
 }
 
 void Engine::Terminate() {
-	TerminateTaskManager(&global_TaskManager);
+	TerminateTaskManager(&taskManager);
 }
 
 void Engine::Update() {
-	FinializeCompletedTasks(&global_TaskManager.workQueue);
+	FinializeCompletedTasks(&taskManager.workQueue);
 }
 
-TaskManager* Engine::GetGlobalTaskManager() {
-	return &global_TaskManager;
+//AssetManager* Engine::GetAssetManager() {
+//	return &assetManager;
+//}
+
+TaskManager* Engine::GetTaskManager() {
+	return &taskManager;
 }
 
-Profiler* Engine::GetGlobalProfiler() {
-	return &global_Profiler;
-}
-
-AssetManifest* Engine::GetGlobalAssetManifest() {
-	return &global_AssetManifest;
+AssetManifest* Engine::GetAssetManifest() {
+	return &assetManifest;
 }

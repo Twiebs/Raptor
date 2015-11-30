@@ -2,6 +2,7 @@
 #include <Engine/Assets.hpp>
 #include <Engine/Terrain.hpp>
 #include <Engine/GFX3D.hpp>
+#include <Engine/GlobalAssetManager.hpp>
 
 #include <Graphics/GLRenderer.hpp>
 #include <Graphics/GLSLProgram.hpp>
@@ -28,14 +29,14 @@ TerrainManager::TerrainManager (U32 material_count, U32 max_width, U32 max_lengt
 	alphaMaps.resize(materialCount * terrainCount);
 	terrainMeshes.resize(managerArea);
 
-	BeginShaderBuilder("main_terrain");
-	AddShaderSourceFile(VERTEX_SHADER, SHADER_FILE("terrain.vert"));
-	AddShaderSourceFile(FRAGMENT_SHADER, SHADER_FILE("terrain.frag"));
-	AddShaderString("#define MATERIAL_COUNT " + std::to_string(materialCount) + "\n");
-	AddShaderString("#define TERRAIN_WIDTH " + std::to_string(terrainWidth) + "\n");
-	AddShaderString("#define TERRAIN_LENGTH " + std::to_string(terrainLength) + "\n");
-	AddShaderString("#define TERRAIN_CELLS_PER_TEXCOORD " + std::to_string(chunkCellsPerTexcoord) + "\n");
-	shaderHandle = LoadShaderFromBuilder();
+	ShaderBuilder builder("main_terrain");
+	builder.addSourceFile(VERTEX_SHADER, SHADER_FILE("terrain.vert"));
+	builder.addSourceFile(FRAGMENT_SHADER, SHADER_FILE("terrain.frag"));
+	builder.addString("#define MATERIAL_COUNT " + std::to_string(materialCount) + "\n");
+	builder.addString("#define TERRAIN_WIDTH " + std::to_string(terrainWidth) + "\n");
+	builder.addString("#define TERRAIN_LENGTH " + std::to_string(terrainLength) + "\n");
+	builder.addString("#define TERRAIN_CELLS_PER_TEXCOORD " + std::to_string(chunkCellsPerTexcoord) + "\n");
+	shaderHandle = LoadShader(builder);
 }
 
 TerrainManager::~TerrainManager() {
@@ -208,6 +209,6 @@ void TerrainStreamer::update(const Vector3& position) {
 		if (chunksToStream.size() == 0) return;
 		auto chunk_info = chunksToStream.back();
 		chunksToStream.pop_back();
-		Engine::ScheduleTask<TerrainGenerationTask>(this, chunk_info.x, chunk_info.y, (U32)chunk_info.z);
+		ScheduleTask<TerrainGenerationTask>(this, chunk_info.x, chunk_info.y, (U32)chunk_info.z);
 	}
 }

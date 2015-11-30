@@ -5,7 +5,10 @@
 #include <Graphics/GLRenderer.hpp>
 #include <Graphics/SSAO.hpp>
 #include <Graphics/Render3D.hpp>
+
 #include <Engine/Assets.hpp>
+#include <Engine/Engine.hpp>
+#include <Engine/GlobalAssetManager.hpp>
 
 #include <Math/Geometry3D.hpp>
 
@@ -225,10 +228,10 @@ static void ApplyDebugRenderSettingsToActiveShader (DebugRenderSettings* setting
 	assert(context.boundShader != nullptr);
 	if (settings == nullptr) return;
 
-	//auto disableNormalsLoc = Uniform::GetLocation(context.boundShader->id, "GDebug.disableNormalMaps");
-	//auto drawModeLoc = Uniform::GetLocation(context.boundShader->id, "GDebug.drawMode");
-	//Uniform::SetInt(disableNormalsLoc, settings->disableNormalMaps);
-	//Uniform::SetInt(drawModeLoc, (int)settings->deferredDrawMode);
+	auto disableNormalsLoc = Uniform::GetLocation(context.boundShader->id, "GDebug.disableNormalMaps");
+	auto drawModeLoc = Uniform::GetLocation(context.boundShader->id, "GDebug.drawMode");
+	Uniform::SetInt(disableNormalsLoc, settings->disableNormalMaps);
+	Uniform::SetInt(drawModeLoc, (int)settings->deferredDrawMode);
 }
 
 static void ApplyDebugRenderSettingsToRenderer (DebugRenderSettings* settings) {
@@ -328,51 +331,6 @@ static void DebugRenderPointLights (SceneLighting* lighting) {
 
 	Uniform::SetMatrix4(UniformLocation::MODEL_MATRIX, Matrix4::Identity());
 	Uniform::SetVector3(LIGHT_COLOR_LOCATION, V3(1.0f));
-	static GLuint vao, vbo, ebo;
-	if (vao == 0) {
-		CreateIndexedVertexArray(&vao, &vbo, &ebo, 24, sizeof(V3), 36,
-			GL_STATIC_DRAW, SetVertexLayout1P, (void*)CUBE_VERTICES, (void*)CUBE_INDICES);
-	}
-
-	//glBindVertexArray(vao);
-	//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, (GLvoid*)0);
-	//glBindVertexArray(0);
-
-	Uniform::SetMatrix4(UniformLocation::MODEL_MATRIX, Matrix4::Identity());
-	context.dynamicDrawBuffer.Push(CUBE_VERTICES, 24, CUBE_INDICES, 36);
-	context.dynamicDrawBuffer.Draw();
-	Uniform::SetMatrix4(UniformLocation::MODEL_MATRIX, Matrix4::Translate(5.0f, 2.0f, 0.0f));
-	context.dynamicDrawBuffer.Push(CUBE_VERTICES, 24, CUBE_INDICES, 36);
-	context.dynamicDrawBuffer.Draw();
-
-	// context.dynamicDrawBuffer.Draw();
-
-	// glDisable(GL_CULL_FACE);
-
-
-
-	// DEBUGRenderCube();
-
-	//static const U32 INDICES[6] = {
-	//	0, 3, 2,
-	//	0, 2, 1
-	//};
-
-	//static const V3 VERTICES[4] {
-	//	V3(0.0f, 0.0f, 0.0f),
-	//	V3(1.0f, 0.0f, 0.0f),
-	//	V3(1.0f, 1.0f, 0.0f),
-	//	V3(0.0f, 1.0f, 0.0f),
-	//};
-
-	// context.dynamicDrawBuffer.Push((V3*)VERTICES, 4, (U32*)INDICES, 6);
-	
-
-
-
-
-
-	// UnbindAll();
 }
 
 
@@ -560,8 +518,8 @@ static void DrawShadowRenderPass (ShadowRenderPass* shadowPass, MeshDrawList* dr
 }
 
 
-void GFX3D::DrawLine (const V3& from, const V3& to, const Color& color) {
-	static const float LINE_WIDTH = 2.0f;	
+void GFX3D::RectLine (const V3& from, const V3& to, const Color& color) {
+	static const float LINE_WIDTH = 0.08f;	
 	static const U32 INDICES[6] = {
 		0, 1, 2,
 		0, 2, 3
@@ -578,13 +536,23 @@ void GFX3D::DrawLine (const V3& from, const V3& to, const Color& color) {
 	context.dynamicDrawBuffer.Push(verts, 4, (U32*)INDICES, 6);
 }
 
+void GFX3D::Line (const V3& from, const V3& to, const Color& color) {
+	static const U32 INDICES[2] { 0, 1 };
+	V3 vertices[2] {
+		V3(from.x, from.y, from.z),
+		V3(to.x, to.y, to.z)
+	};
+
+	context.dynamicDrawBuffer.Push(vertices, 2, INDICES, 2);
+}
+
 
 void GFX3D::Init() {
 	int w, h;
 	PlatformGetSize(&w, &h);
 	InitDeferedShading(&context.deferedShadingInfo);
 
-	context.dynamicDrawBuffer.GenerateBuffer(4096, (4096 / 4) * 6, SetVertexLayout1P);
+	context.dynamicDrawBuffer.GenerateBuffer(4096, (4096 / 4) * 6, nullptr);
 
 	context.skyboxShaderHandle = CreateSkyboxShader();
 	context.pointLightDebugShaderHandle = CreatePointLightDebugShader();
@@ -668,16 +636,17 @@ void GFX3D::EndFrame() {
 
 
 	RenderScene();
-
 	auto& debugShader = GetShader(context.pointLightDebugShaderHandle);
+	Uniform::SetMatrix4(UniformLocation::MODEL_MATRIX, Matrix4::Identity());
+	context.dynamicDrawBuffer.Draw();
 
 	// glUseProgram(debugShader.id);
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	context.dynamicDrawBuffer.Draw();
-	DrawLine(V3(0.0f, 1.0f, 0.0f), V3(16.0f, 1.0f, 0.0f), Color());
-	context.dynamicDrawBuffer.Draw();
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//context.dynamicDrawBuffer.Draw();
+	// DrawLine(V3(0.0f, 1.0f, 0.0f), V3(16.0f, 1.0f, 0.0f), Color());
+	//context.dynamicDrawBuffer.Draw();
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 
 	context.camera = nullptr;
@@ -695,7 +664,7 @@ void BindShader (const Shader& shader) {
 	context.boundShader = (Shader*)&shader;
 	glUseProgram(shader.id);
 	SetCameraUniforms(*context.camera);
-	SetMatrix4Uniform(MODEL_MATRIX_LOCATION, Matrix4::Identity());	// Make sure the model matrix is always valid
+	Uniform::SetMatrix4(UniformLocation::MODEL_MATRIX, Matrix4::Identity());	// Make sure the model matrix is always valid
 	ApplyDebugRenderSettingsToActiveShader(context.settings);
 }
 
@@ -740,13 +709,14 @@ void GFX3D::DrawTerrain(TerrainManager* terrain) {
 		BindTexture2DToUnit(material.normalMapID, (terrain->materialCount * 2) + i);
 	}
 
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	for (U32 i = 0; i < terrain->managerArea; i++) {
 		BindAlphaMaps(i);
 		auto& terrainMesh = terrain->terrainMeshes[i];
 		glBindVertexArray(terrainMesh.vertexArrayID);
 		glDrawElements(GL_TRIANGLES, terrainMesh.indexCount, GL_UNSIGNED_INT, 0);
 	}
-
+	
 
 }
 

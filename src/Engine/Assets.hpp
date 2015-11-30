@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include <Core/types.h>
 #include <Core/config.h>
 
@@ -19,7 +21,7 @@ static_assert(false, "Must define asset directory!");
 static_assert(false, "Must define shader directory!");
 #endif
 
-#define ASSET_FILE(filename)  ASSET_DIRECTORY  filename
+#define ASSET_FILE(filename)  ASSET_DIRECTORY "/" filename
 #define SHADER_FILE(filename) SHADER_DIRECTORY filename
 
 #define LoadShaderFromBuilder() LoadShader(_builder)
@@ -43,49 +45,116 @@ __GenerateAsset(Model);
 __GenerateAsset(Sound);
 __GenerateAsset(Music);
 
-enum AssetType {
+#define ASSET_NAME(name) #name
+
+//typedef TAssetHandle<Material> MaterialHandle;
+//typedef TAssetHandle<Material> TextureHandle;
+//typedef TAssetHandle<Material> ShaderHandle;
+//typedef TAssetHandle<Material> ModelHandle;
+//typedef TAssetHandle<Material> SoundHandle;
+//typedef TAssetHandle<Material> MusicHandle;
+
+enum AssetTypes {
 	ASSET_MATERIAL = 0,
 	ASSET_SHADER = 1,
 	ASSET_MODEL = 2,
 };
 
+enum class AssetType {
+	SHADER,
+	TEXTURE,
+	MATERIAL,
+	MODEL
+};
 
 struct AssetInfo {
 	std::string name;
 	std::string directory;
 };
 
+enum class AssetLoadState {
+	UNLOADED,
+	LOADED,
+};
+
+struct AssetManifestEntry {
+	std::string name;
+	std::string filename;
+};
+
+struct AssetState {
+	AssetLoadState loadedState;
+	U32 assetIndex;
+};
+
 struct AssetManifest {
-	
+	std::vector<AssetManifestEntry> entries;
+	std::unordered_map<std::string, U32> nameToEntryIndexMap;
+
+	std::vector<AssetState> assetStates;
+	U32 loadedCount;
+
+	void AddEntry(const std::string& name, const std::string& filename);
+	void Serialize();
+	void Deserialize();
+};
+
+struct EditorAssetInfo {
+	std::vector<U8> isHotloadEnabled;
+};
+
+
+struct AssetManager {
+	EditorAssetInfo editorAssetInfo;
+
+
 	std::vector<ShaderBuilderData> shaderBuilderData;
-	std::vector<MaterialAssetInfo> materialAssetInfos;
+	std::vector<MaterialInfo> materialAssetInfos;
 	std::vector<AssetInfo> modelInfo;
-	
+
 	std::vector<Shader> shaderPrograms;
 	std::vector<Material> materials;
 	std::vector<Texture> textures;
 	std::vector<Model> models;
+
+	AssetManifest* manifest;
+
+	AssetManager() { }
+	AssetManager(AssetManifest* manifest) : manifest(manifest) { }
+
+	// Asset Load / Get / Reload procedures
+
+	MaterialHandle LoadMaterial(const MaterialInfo& data);
+	ShaderHandle LoadShader(ShaderBuilder& builder);
+
+	MaterialHandle LoadMaterial(const std::string& name);
+	TextureHandle LoadTexture(const std::string& name);
+	ModelHandle LoadModel(const std::string& name);
+
+	void ReloadTexture(const TextureHandle& handle);
+	void ReloadMaterial(const MaterialHandle& handle);
+	void ReloadShader(const ShaderHandle& handle);
+
+	inline const Material& GetMaterial(const MaterialHandle& handle);
+	inline const Texture& GetTexture(const TextureHandle& handle);
+	inline const Shader& GetShader(const ShaderHandle& handle);
+	inline const Model& GetModel(const ModelHandle& handle);
 };
 
-const AssetManifest& GetGlobalAssetManifest();
+inline const Shader& AssetManager::GetShader(const ShaderHandle& handle) {
+	return shaderPrograms[handle.arrayIndex];
+}
 
-const Texture& GetTexture(const TextureHandle& handle);
-TextureHandle LoadTexture(const std::string& filename);
+inline const Model& AssetManager::GetModel(const ModelHandle& handle) {
+	return models[handle.arrayIndex];
+}
 
-const Material& GetMaterial(const MaterialHandle& handle);
-MaterialHandle LoadMaterial(const MaterialAssetInfo& data);
-MaterialHandle LoadMaterial(const std::string& filename);
-// MaterialHandle LoadMaterial(const std::string& diffuseFilename, const std::string& specularFilename, const std::string& normalFilename);
+inline const Material& AssetManager::GetMaterial(const MaterialHandle& handle) {
+	auto& result = materials[handle.arrayIndex];
+	return result;
+}
 
-const Shader& GetShader(const ShaderHandle& handle);
-ShaderHandle LoadShader(ShaderBuilder& builder);
-
-//const Model& GetModel(const ModelHandle& handle);
-//ModelHandle LoadModel(const std::string& filename);
-
-
-#ifdef ENABLE_ASSET_RELOADING
-void ReloadTexture  (const TextureHandle& handle);
-void ReloadMaterial (const MaterialHandle& handle);
-void ReloadShader   (const ShaderHandle& handle);
-#endif
+inline const Texture& AssetManager::GetTexture(const TextureHandle& handle) {
+	auto& result = textures[handle.arrayIndex];
+	return result;
+}

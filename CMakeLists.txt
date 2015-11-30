@@ -38,11 +38,11 @@ if(NOT EMSCRIPTEN AND NOT MSVC)
 endif()
 
 if(MSVC)
+  link_directories(lib)
   include_directories(include)
   include_directories(C:/usr/include)
-  link_directories(C:/usr/lib/Release)
-  link_directories(C:/usr/lib/Debug)
-  link_directories(lib)
+  link_directories(C:/usr/lib)
+
   set(LIBS
     opengl32.lib
     glew32s.lib
@@ -50,9 +50,6 @@ if(MSVC)
     SDL2_image.lib
     SDL2_mixer.lib
     SDL2_net.lib
-    assimp.lib
-
-
   )
 
 set(RELEASE_LIBS
@@ -60,6 +57,7 @@ set(RELEASE_LIBS
     BulletCollision
     BulletDynamics
     BulletSoftBody
+    assimp-vc130-mt
 )
 
 set(DEBUG_LIBS
@@ -67,6 +65,7 @@ set(DEBUG_LIBS
     BulletCollision_Debug
     BulletDynamics_Debug
     BulletSoftBody_Debug
+    assimp-vc130-mtd
 )
 
 endif(MSVC)

@@ -10,31 +10,29 @@
 
 #include <Utils/Profiler.hpp>
 
+class Engine {
+public:
+	static void Init();
+	static void Terminate();
+	static void Update();
 
-//class Engine {
-//public:
-//	Engine();
-//	~Engine();
-//
-//private:
-//
-//
-//};
+	static TaskManager* GetTaskManager();
+	// static AssetManager* GetAssetManager();
+	static AssetManifest* GetAssetManifest();
 
-namespace Engine
-{
+private:
+	Engine();
 
-void Init();
-void Terminate();
-void Update();
+	static TaskManager taskManager;
+	static AssetManifest assetManifest;
+	static AssetManager assetManager;
+};
 
-TaskManager* GetGlobalTaskManager();
-Profiler* GetGlobalProfiler();
-AssetManifest* GetGlobalAssetManifest();
 
 template <typename TTask, typename... TArgs>
 inline void ScheduleTask(TArgs... args) {
-	ScheduleTask<TTask>(&GetGlobalTaskManager()->workQueue, args...);
+	ScheduleTask<TTask>(&Engine::GetTaskManager()->workQueue, args...);
 }
 
-}
+
+//}

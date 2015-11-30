@@ -57,29 +57,15 @@ void AddLight(PointLight* light);
 
 using namespace Raptor;
 
-#define MODEL_MATRIX_LOCATION 0
-#define VIEW_MATRIX_LOCATION 1
-#define PROJECTION_MATRIX_LOCATION 2
 #define CAMERA_POSITION_LOCATION 3
 
-inline void SetVector3Uniform (GLint location, const Vector3& vector);
 inline void SetCameraUniforms (const Camera& camera);
-inline void SetMatrix4Uniform (U32 matrixLocation, const Matrix4& matrix);
-
-inline void SetVector3Uniform (GLint location, const Vector3& vector) {
-	glUniform3fv(location, 1, &vector.x);
-}
 
 inline void SetCameraUniforms (const Camera& camera) {
-	Uniform::SetMatrix4(VIEW_MATRIX_LOCATION, camera.view);
-	Uniform::SetMatrix4(PROJECTION_MATRIX_LOCATION, camera.projection);
+	Uniform::SetMatrix4(UniformLocation::VIEW_MATRIX, camera.view);
+	Uniform::SetMatrix4(UniformLocation::PROJECTION_MATRIX, camera.projection);
 	Uniform::SetVector3(CAMERA_POSITION_LOCATION, camera.position);
 }
-
-inline void SetMatrix4Uniform (U32 matrixLocation, const Matrix4& matrix) {
-	glUniformMatrix4fv(matrixLocation, 1, GL_FALSE, &matrix[0][0]);
-}
-
 
 inline void DrawScreenQuad (GLuint quadShaderID) {
 	static GLuint vao = 0;
@@ -113,7 +99,8 @@ void AddMesh(const Mesh& mesh, const Vector3& position = Vector3(0.0f), const Ve
 void AddModel(const Model& model, const Vector3& position = Vector3(0.0f));
 void DrawTerrain(TerrainManager* terrain);
 
-void DrawLine(const V3& from, const V3& to, const Color& color);
+void RectLine(const V3& from, const V3& to, const Color& color);
+void Line(const V3& from, const V3& to, const Color& color);
 
 };
 

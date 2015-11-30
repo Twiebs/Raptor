@@ -10,7 +10,15 @@ enum MaterialParameter {
 	MATERIAL_SPECULAR_EXPONENT,
 };
 
-const char* GetMaterialParameterString (MaterialParameter param);
+inline const char* GetMaterialParameterString (MaterialParameter param) {
+	switch (param) {
+	case MATERIAL_DIFFUSE: return "Diffuse";
+	case MATERIAL_SPECULAR: return "Specular";
+	case MATERIAL_NORMAL: return "Normal";
+	case MATERIAL_SPECULAR_EXPONENT: return "Specular Exponent";
+	}
+	return "UNKNOWN MATERIAL PARAMETER!";
+}
 
 struct UniqueMaterial {
 	GLuint diffuseMapID = 0;
@@ -25,7 +33,7 @@ struct Material {
 	GLuint normalMapID = 0;
 };
 
-struct MaterialAssetInfo {
+struct MaterialInfo {
 	std::string name;
 	std::string directory;
 
@@ -40,9 +48,10 @@ struct MaterialData {
 	TextureData specularData;
 };
 
-void SaveMaterialAssetInfo (const MaterialAssetInfo& data, const std::string& filename);
-void LoadMaterialAssetInfo (MaterialAssetInfo* data, const std::string& filename);
+void SaveMaterialInfo (const MaterialInfo& data, const std::string& filename);
+void LoadMaterialInfo (MaterialInfo* data, const std::string& filename);
 
 void InitMaterial(Material* material, MaterialData* data);
-void ImportMaterialData(MaterialData* data, const MaterialAssetInfo& info);
+void ImportMaterialData(MaterialData* data, const MaterialInfo& info);
 void FreeMaterialData(MaterialData* data);
+

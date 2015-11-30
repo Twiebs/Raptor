@@ -1,6 +1,7 @@
 include_directories(../src)
 include_directories(${INCS})
 
+
 set(CORE_SRCS
   Core/Common.hpp
   Core/Console.hpp
@@ -9,7 +10,7 @@ set(CORE_SRCS
   #Core/Network.cpp
   Core/Audio.cpp
   Core/Audio.hpp
-  
+
   Core/Tasks.hpp
   Core/Tasks.cpp
 
@@ -17,6 +18,8 @@ set(CORE_SRCS
   Core/Platform.cpp
   Core/platform_windows.cpp
   Core/platform_windows.h
+
+  assets/assets.hpp
 
 
 
@@ -26,7 +29,7 @@ set(CORE_SRCS
 )
 source_group(Core FILES ${CORE_SRCS})
 
-set(UTILS_SRCS 
+set(UTILS_SRCS
 	Utils/Array.cpp
 	Utils/Array.hpp
 
@@ -65,7 +68,7 @@ set(GRAPHICS_SRCS
     Graphics/Color.cpp
 	Graphics/Color.hpp
 
-	
+
 	Graphics/Renderer.cpp
 	Graphics/Renderer.hpp
 	Graphics/Camera.cpp
@@ -79,8 +82,13 @@ set(GRAPHICS_SRCS
 
     Graphics/GLRenderer.cpp
     Graphics/GLRenderer.hpp
+	Graphics/VertexArray.cpp
+	Graphics/VertexArray.hpp
 	Graphics/Uniform.cpp
 	Graphics/Uniform.hpp
+
+	Graphics/Vertex3D.hpp
+	Graphics/Vertex2D.hpp
 
 	Graphics/Render3D.hpp
 	Graphics/Render3D.cpp
@@ -120,6 +128,8 @@ source_group(Graphics FILES ${GRAPHICS_SRCS})
 SET(ENGINE_SRCS
 	Engine/Engine.cpp
 	Engine/Engine.hpp
+	Engine/GlobalAssetManager.cpp
+	Engine/GlobalAssetManager.hpp
 
     Engine/World.cpp
     Engine/World.hpp

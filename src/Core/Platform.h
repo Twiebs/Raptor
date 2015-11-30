@@ -27,6 +27,9 @@ struct FileWriteTime {
 bool operator==(const FileWriteTime& a, const FileWriteTime& b);
 bool operator!=(const FileWriteTime& a, const FileWriteTime& b);
 FileWriteTime GetLastModifedTime (const std::string& filename);
+FileWriteTime GetLastWriteTimeForDirectory (const std::string& path);
+void ListFilesInDirectory(const std::string& directory, unsigned int level = 0);
+void GetFilesInDirectory(const std::string& directory, std::vector<std::string> files, std::vector<std::string>* directories);
 
 int PlatformPopKeypress();
 
@@ -111,7 +114,7 @@ static int __SDLPlatformGetKey(int keycode) {
 #define KEY_RETURN		40
 #define KEY_ENTER		40
 #define KEY_ESCAPE		41
-#define KEY_BACKSPACE	42
+#define KEY_BACKSPACE	SDLK_BACKSPACE
 #define KEY_TAB			43
 #define KEY_SPACE		44
 

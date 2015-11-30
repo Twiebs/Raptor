@@ -30,7 +30,10 @@
 
 #include <Utils/utils.hpp>
 #include <Utils/Profiler.hpp>
+
 #define IMPLEMENT_GLOBAL_PROFILER
+#define IMPLEMENT_GLOBAL_ASSET_MANAGER
+#include <Engine/GlobalAssetManager.hpp>
 #include <Utils/global_profiler.h>
 
 using namespace Raptor;
@@ -105,10 +108,16 @@ void RunBasicGLTest() {
 
 	// CreateTestMaterials();
 
+	GetGlobalAssetManifest()->Deserialize();
+	EditorWindow editorWindow;
+	editorWindow.assetBrowser.manifest = GetGlobalAssetManifest();
+	GFX3D::SetDebugRenderSettings(&editorWindow.renderSettings);
+
 	ProfilerBeginEntry("Load Models");
-	auto rockModelHandle  = LoadModel(ASSET_FILE("models/rock0/Rock1.obj"));
-	auto plantModelHandle = LoadModel(ASSET_FILE("models/palm_plant/palm_plant.obj"));
-	auto laraModelHandle = LoadModel(ASSET_FILE("models/foliage/tree/Tree.obj"));
+	//auto rockModelHandle  = LoadModel(ASSET_FILE("models/rock0/Rock1.obj"));
+	//auto plantModelHandle = LoadModel(ASSET_FILE("models/palm_plant/palm_plant.obj"));
+	auto plantModelHandle = LoadModel(ASSET_NAME(rock00));
+	//auto laraModelHandle = LoadModel(ASSET_FILE("models/foliage/tree/Tree.obj"));
 	ProfilerEndEntry("Load Models");
 
 	ProfilerBeginEntry("Load Materials");
@@ -119,8 +128,8 @@ void RunBasicGLTest() {
 	DirectionalLight directionalLight;
 	AddLight(directionalLight);
 
-	EditorWindow editorWindow;
-	GFX3D::SetDebugRenderSettings(&editorWindow.renderSettings);
+	
+
 
 	// UniformDirectionalLight(shaderID, 0, directionalLight);
 
@@ -221,10 +230,10 @@ void RunBasicGLTest() {
 	
 	ShaderHandle modelShaderHandle; 
 	{
-		BeginShaderBuilder("DefaultModel");
-		AddShaderSourceFile(VERTEX_SHADER, SHADER_FILE("DeferredGenericMaterial.vert"));
-		AddShaderSourceFile(FRAGMENT_SHADER, SHADER_FILE("DeferredGenericMaterial.frag"));
-		modelShaderHandle = LoadShaderFromBuilder();
+		ShaderBuilder builder("DefaultModel");
+		builder.addSourceFile(VERTEX_SHADER, SHADER_FILE("DeferredGenericMaterial.vert"));
+		builder.addSourceFile(FRAGMENT_SHADER, SHADER_FILE("DeferredGenericMaterial.frag"));
+		modelShaderHandle = LoadShader(builder);
 	}
 
 
@@ -259,6 +268,8 @@ void RunBasicGLTest() {
 			auto& model = GetModel(entity.modelHandle);
 			GFX3D::AddModel(model, entity.position);
 		}
+
+		
 
 
 		//auto& liquidShader = GetShader(liquidShaderHandle);

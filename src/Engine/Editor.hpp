@@ -26,9 +26,22 @@ void ShowLightDebugInfo(const DirectionalLight& light);
 void ShowDebugRenderSettings(DebugRenderSettings* settings);
 void ShowAssetBrowser();
 
+#include <fstream>
+#include <cereal/archives/json.hpp>
+
+
+//void ShowFileExplorer(const std::string& directory) {
+//	std::vector<
+//
+//
+//}
+
+void ImportAsset(const std::string& filename, AssetManifest* manifest);
+
+
 // TODO
 // This is not a final implementation
-// This is a slow version because i dont feel like it
+// This is a slow version
 struct HotReloadEntry {
 	std::string filename;
 	FileWriteTime time;
@@ -55,17 +68,28 @@ private:
 	// U32 internalPollIndex;
 };
 
+struct EditorOfflineState {
+	// std::unordered_map<std::string, FileWriteTime> writeTimesForAssets;
+	EditorOfflineState();
+	~EditorOfflineState();
+};
+
 struct AssetBrowser {
-	S32 selectedAssetType;
-	S32 selectedAssetIndex;
+	S32 selectedAssetType = 0;
+	S32 selectedAssetIndex = -1;
+	AssetManager* manager;
+	AssetManifest* manifest;
 	HotReloadWatchList hotreloadWatchList;
 };
 
 struct EditorWindow {
+	EditorOfflineState state;
 	AssetBrowser assetBrowser;
 	S32 selectedWindowIndex;
 	DebugRenderSettings renderSettings;
 };
+
+void CheckAssetFolderForChanges(EditorWindow* editor);
 
 void ShowEditorWindow (EditorWindow* editor);
 void ProcessEditorKeypress (EditorWindow* editor, int keycode);

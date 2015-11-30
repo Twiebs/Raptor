@@ -1,13 +1,17 @@
 #pragma once
 
+#include <Graphics/Material.hpp>
+// #include <Engine/Assets.hpp>
+
 struct MaterialHandle;
 
-#include <Graphics/Material.hpp>
 
-typedef std::string AssetFileIdentifer;
-struct MaterialTextureMapInfo {
-	AssetFileIdentifer name;
-};
+//typedef std::string AssetFileIdentifer;
+//struct MaterialTextureMapInfo {
+//	AssetFileIdentifer name;
+//};
+
+
 
 struct Model {
 	MaterialHandle* meshMaterialHandles;
@@ -17,16 +21,20 @@ struct Model {
 };
 
 
-// Going to do stupid things for now!
-// For the win my friend!
 struct ModelData {
 	MeshData meshData;
-	U32 meshCount;
+	uint32_t meshCount;
+	uint32_t materialCount;
 	std::vector<U32> meshIndexCounts;
-	std::vector<MaterialAssetInfo> materialInfos;
+//	std::vector<MaterialInfo> materialInfos;
+	std::string materialName;
 };
 
 void ImportModelData (ModelData* data, const std::string& filename);
+
+void SaveModelData(ModelData* data, const std::string& filename);
+void LoadModelData(ModelData* data, const std::string& filename);
+
 
 Model CreateModel (ModelData* data);
 

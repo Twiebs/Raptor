@@ -1,12 +1,67 @@
 #include "Editor.hpp"
 
 #include <Core/logging.h>
+#include <Engine/Engine.hpp>
 
 #include <Graphics/imgui.h>
 #include <Core/Platform.h>
 #include <Utils/global_profiler.h>
 
+#include <string>
+
 static void ShowAssetBrowser (AssetBrowser* assetBrowser);
+
+template<typename TArchive>
+void serialize(TArchive& archive, FileWriteTime& writeTime) {
+	archive(writeTime.lowDateTime);
+	archive(writeTime.highDateTime);
+}
+
+template<typename TArchive>
+void serialize(TArchive& archive, EditorOfflineState& state) {
+//	archive(state.lastAssetDirectoryWriteTime);
+}
+
+EditorOfflineState::EditorOfflineState() {
+	std::ifstream stream("editor_offline_state");
+	if (!stream.is_open()) return;
+
+	cereal::JSONInputArchive archive(stream);
+	archive(*this);
+}
+
+EditorOfflineState::~EditorOfflineState() {
+	std::ofstream stream("editor_offline_state");
+	cereal::JSONOutputArchive archive(stream);
+	archive(*this);
+}
+
+void CheckAssetFolderForChanges(EditorWindow* editor) {
+	//auto lastWriteTime = GetLastWriteTimeForDirectory(ASSET_DIRECTORY);
+	//if (editor->state.lastAssetDirectoryWriteTime != lastWriteTime) {
+	//	std::cout << "The Asset Directory was Modifed!\n";
+	//	editor->state.lastAssetDirectoryWriteTime = lastWriteTime;
+	//}
+}
+
+void ImportAsset(const std::string& filename, AssetManifest* manifest) {
+	auto extentionBegin = filename.find_last_of('.') + 1;
+	auto folderNameEnd = filename.find_first_of('/');
+	auto fileExtention = filename.substr(extentionBegin, filename.size() - extentionBegin);
+	auto assetName = filename.substr(0, folderNameEnd);
+	if (fileExtention == "blend") {
+		bool isAssetNameTaken = manifest->nameToEntryIndexMap[assetName] > 0;
+		if (isAssetNameTaken) {
+			assert(false && "An asset with this name has already been added to the manifest!");
+		} else {
+			manifest->AddEntry(assetName, filename);
+		}
+	} else {
+		assert(false && "Unsupported asset type!");
+	}
+}
+
+
 
 HotReloadWatchList::HotReloadWatchList() {
 	internalPollIterator = filenameEntryMap.begin();
@@ -38,6 +93,7 @@ void HotReloadWatchList::RemoveWatch (const std::string& filename) {
 	entries.erase(entries.begin() + index);
 	filenameIndexMap[filename] = -1;*/
 }
+
 
 U32 HotReloadWatchList::PollHotreloadState (HotReloadEntry** out_entry) { 
 	if (internalPollIterator == filenameEntryMap.end()) {
@@ -74,6 +130,8 @@ U32 HotReloadWatchList::PollHotreloadState (HotReloadEntry** out_entry) {
 	//return 1;
 }
 
+#include <Engine/GlobalAssetManager.hpp>
+
 static void HotreloadModifedAssets (HotReloadWatchList* watchList) {
 	HotReloadEntry* entry;
 	U32 pollNotFinished;
@@ -88,28 +146,26 @@ static void HotreloadModifedAssets (HotReloadWatchList* watchList) {
 	}
 }
 
+static void ShowAssetManifestBrowser(AssetBrowser* assetBrowser);
+
 
 void ShowEditorWindow (EditorWindow* editor) {
 	HotreloadModifedAssets(&editor->assetBrowser.hotreloadWatchList);
 
 	if (editor->selectedWindowIndex == -1) return;
-	ImGui::Begin("EditorWindow", 0, ImGuiWindowFlags_NoTitleBar);
-
-	if (ImGui::Button("Asset Browser")) {
-		editor->selectedWindowIndex = 0;
-	}
-
+	ImGui::Begin("EditorWindow", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar);
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+	ImGui::BeginMenuBar();
+	if (ImGui::Button("Asset Browser")) editor->selectedWindowIndex = 0;
 	ImGui::SameLine();
-	if (ImGui::Button("Profiler")) {
-		editor->selectedWindowIndex = 1;
-	}
-
-	ImGui::SameLine();
-	if (ImGui::Button("Renderer"))
-		editor->selectedWindowIndex = 2;
-
+	if (ImGui::Button("Profiler")) editor->selectedWindowIndex = 1;
+	ImGui::SameLine(); 
+	if (ImGui::Button("Render Settings")) editor->selectedWindowIndex = 2;
+	ImGui::EndMenuBar();
+	ImGui::PopStyleColor();
+	
 	switch (editor->selectedWindowIndex) {
-	case 0: ShowAssetBrowser(&editor->assetBrowser); break;
+	case 0: ShowAssetManifestBrowser(&editor->assetBrowser); break;
 	case 1: ShowProfilerPanel(GetGlobalProfiler()); break;
 	case 2: ShowDebugRenderSettings(&editor->renderSettings); break;
 	}
@@ -162,10 +218,123 @@ void ShowProfilerPanel (Profiler* profiler) {
 }
 
 
+// If the entry index is set to -1 this assumes that a new asset manifest entry is being created
+// Will return 1 if an entry was modifed or added, -1 if canceled, 0 otherwise,  This is currently useless
+// @MINOR this probably doesnt need to return a value
+static inline int ShowAssetManifestEntryEdit(AssetManifest* manifest, S64 entryIndex, bool* setInputBuffersToEntryValues) {
+	static const int NAME_INPUT_BUFFER_SIZE = 256;
+	static const int FILENAME_INPUT_BUFFER_SIZE = 1024;
+	static char nameInputBuffer[NAME_INPUT_BUFFER_SIZE];
+	static char filenameInputBuffer[FILENAME_INPUT_BUFFER_SIZE];
+	//static std::string nameInputBuffer(NAME_INPUT_BUFFER_SIZE, 0);
+	//static std::string filenameInputBuffer(FILENAME_INPUT_BUFFER_SIZE, 0);
+
+	// Takes a pointer to the bool and sets it here to force it to be handled in this function
+	if (*setInputBuffersToEntryValues) {
+		assert(entryIndex >= 0);
+		auto& entry = manifest->entries[entryIndex];
+		//nameInputBuffer = entry.name;
+		//filenameInputBuffer = entry.filename;
+		assert((entry.name.size() + 1) < NAME_INPUT_BUFFER_SIZE);
+		assert((entry.filename.size() + 1) < FILENAME_INPUT_BUFFER_SIZE);
+		memcpy(nameInputBuffer, &entry.name.front(), entry.name.size() + 1);
+		memcpy(filenameInputBuffer, &entry.filename.front(), entry.filename.size() + 1);
+		*setInputBuffersToEntryValues = false;
+	}
+
+	ImGui::InputText("AssetName", nameInputBuffer, NAME_INPUT_BUFFER_SIZE);
+	ImGui::InputText("Filename", filenameInputBuffer, FILENAME_INPUT_BUFFER_SIZE);
+	//ImGui::InputText("AssetName", &nameInputBuffer.front(), nameInputBuffer.capacity());
+	//ImGui::InputText("Filename", &filenameInputBuffer.front(), filenameInputBuffer.capacity());
+
+	if (entryIndex == -1) {
+		if (ImGui::Button("Add Entry")) {
+			manifest->AddEntry(nameInputBuffer, filenameInputBuffer);
+			return 1;
+		}
+	} else {
+		if (ImGui::Button("Apply Changes")) {
+			auto entry = &manifest->entries[entryIndex];
+			entry->name = nameInputBuffer;
+			entry->filename = filenameInputBuffer;
+			return 1;
+		}
+	}
+
+	if (ImGui::Button("Cancel")) {
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static void ShowAssetManifestBrowser(AssetBrowser* assetBrowser) {
+	auto assetManifest = assetBrowser->manifest;
+
+	ImGui::Text("Manifest Entry Count: %d", assetManifest->entries.size());
+	ImGui::Text("Loaded Asset Count: %d", assetManifest->loadedCount);
+	ImGui::SameLine();
+	if (ImGui::Button("Save Manifest File")) {
+		assetManifest->Serialize();
+	}
+
+
+	static auto AssetListTableHeader = [](const char* assetListName) {
+		ImGui::Separator();
+		ImGui::Columns(4, assetListName);
+		ImGui::Separator();
+		ImGui::Text("Name");
+		ImGui::NextColumn();
+		ImGui::Text("State");
+		ImGui::NextColumn();
+		ImGui::Text("Hotreload");
+		ImGui::NextColumn();
+		ImGui::Text("Filename");
+		ImGui::NextColumn();
+		ImGui::Separator();
+	};
+
+	static bool setManifestEntryEditorBuffers = false;
+	auto ShowAssetManifestEntries = [&]() {
+		AssetListTableHeader("AssetManifest");
+
+		for (U32 i = 0; i < assetManifest->entries.size(); i++) {
+			auto& entry = assetManifest->entries[i];
+			if (ImGui::Selectable(entry.name.c_str(), assetBrowser->selectedAssetIndex == i, ImGuiSelectableFlags_SpanAllColumns)) {
+				assetBrowser->selectedAssetIndex = i;
+				setManifestEntryEditorBuffers = true;
+			}
+
+			ImGui::NextColumn();
+			auto& assetState = assetManifest->assetStates[i];
+			auto textColor = assetState.loadedState == AssetLoadState::UNLOADED ? ImVec4(1.0, 0.0, 0.0, 1.0) : ImVec4(0.0, 1.0, 0.0, 1.0);
+			auto textValue = assetState.loadedState == AssetLoadState::UNLOADED ? "UNLOADED" : "LOADED";
+			ImGui::TextColored(textColor, textValue);
+			ImGui::NextColumn();
+			ImGui::Text("NO");
+			ImGui::NextColumn();
+			ImGui::Text(entry.filename.c_str());
+			ImGui::NextColumn();
+		}
+	};
+
+
+	ImGui::Columns(2, "MainAssetManifestPartition");
+	ImGui::BeginChild("EntryList");
+	ShowAssetManifestEntries();
+	ImGui::EndChild();
+	ImGui::NextColumn();
+	ImGui::Separator();
+	ImGui::BeginChild("EntryEdit");
+	ShowAssetManifestEntryEdit(assetManifest, assetBrowser->selectedAssetIndex, &setManifestEntryEditorBuffers);
+	ImGui::EndChild();
+
+
+
+}
 
 static void ShowAssetBrowser (AssetBrowser* assetBrowser) {
-
-
 	if (ImGui::Button("Materials")) {
 		assetBrowser->selectedAssetType = ASSET_MATERIAL;
 		assetBrowser->selectedAssetIndex = -1;
@@ -183,13 +352,12 @@ static void ShowAssetBrowser (AssetBrowser* assetBrowser) {
 		assetBrowser->selectedAssetIndex = -1;
 	}
 
-
-	auto& manifest = GetGlobalAssetManifest();
+	auto assetManager = GetGlobalAssetManager();
 	ImGui::BeginChild("AssetList", ImVec2(450.0f, 0.0f), true);
 	switch (assetBrowser->selectedAssetType) {
 	case 0:
-		for (U32 i = 0; i < manifest.materials.size(); i++) {
-			const auto& info = manifest.materialAssetInfos[i];
+		for (U32 i = 0; i < assetManager->materials.size(); i++) {
+			const auto& info = assetManager->materialAssetInfos[i];
 			if (ImGui::Button(info.name.c_str(), ImVec2(200.0f, 0.0f))) {
 				assetBrowser->selectedAssetIndex = i;
 			}
@@ -205,8 +373,8 @@ static void ShowAssetBrowser (AssetBrowser* assetBrowser) {
 		ImGui::NextColumn();
 		ImGui::Separator();
 
-		for (U32 i = 0; i < manifest.shaderPrograms.size(); i++) {
-			const auto& data = manifest.shaderBuilderData[i];
+		for (U32 i = 0; i < assetManager->shaderPrograms.size(); i++) {
+			const auto& data = assetManager->shaderBuilderData[i];
 			if (ImGui::Selectable(data.name.c_str(), assetBrowser->selectedAssetIndex == i, ImGuiSelectableFlags_SpanAllColumns)) {
 				assetBrowser->selectedAssetIndex = i;
 			}
@@ -228,8 +396,8 @@ static void ShowAssetBrowser (AssetBrowser* assetBrowser) {
 		break;
 
 	case 2:
-		for (U32 i = 0; i < manifest.models.size(); i++) {
-			auto& info = manifest.modelInfo[i];
+		for (U32 i = 0; i < assetManager->models.size(); i++) {
+			auto& info = assetManager->modelInfo[i];
 			if (ImGui::Button(info.name.c_str(), ImVec2(200.0f, 0.0f))) {
 				assetBrowser->selectedAssetIndex = i;
 			}
@@ -246,7 +414,7 @@ static void ShowAssetBrowser (AssetBrowser* assetBrowser) {
 	if (assetBrowser->selectedAssetType == 1) {
 		ImGui::BeginChild("All Shaders", ImVec2(0, 50), true);
 		if (ImGui::Button("Reload All Shader Programs!")) {
-			for (U32 i = 0; i < manifest.shaderPrograms.size(); i++) {
+			for (U32 i = 0; i < assetManager->shaderPrograms.size(); i++) {
 				ReloadShader(ShaderHandle { i });
 			}
 		}
@@ -257,7 +425,7 @@ static void ShowAssetBrowser (AssetBrowser* assetBrowser) {
 
 	if (assetBrowser->selectedAssetIndex >= 0) {
 		if (assetBrowser->selectedAssetType == 0) {
-			auto& material = manifest.materials[assetBrowser->selectedAssetIndex];
+			auto& material = assetManager->materials[assetBrowser->selectedAssetIndex];
 			static auto ShowMaterialTexture = [](GLuint textureID, MaterialParameter paramType) {
 				ImGui::BeginChild(textureID, ImVec2(130.0f, 158.0f), true);
 				ImGui::Text(GetMaterialParameterString(paramType));
@@ -276,7 +444,7 @@ static void ShowAssetBrowser (AssetBrowser* assetBrowser) {
 			}
 
 		} else if (assetBrowser->selectedAssetType == 1) {
-			ShaderBuilderData* shaderData = (ShaderBuilderData*)&manifest.shaderBuilderData[assetBrowser->selectedAssetIndex];
+			ShaderBuilderData* shaderData = (ShaderBuilderData*)&assetManager->shaderBuilderData[assetBrowser->selectedAssetIndex];
 			if (ImGui::Checkbox("Hotreload Enabled", &shaderData->hotreloadEnabled)) {
 				if (shaderData->hotreloadEnabled) {
 					auto AddWatchIfShaderHasType = [&](ShaderType type) {
@@ -307,7 +475,7 @@ static void ShowAssetBrowser (AssetBrowser* assetBrowser) {
 			}
 
 			if (ImGui::Button("Reload Shader Now")) {
-				ReloadShader(ShaderHandle { (U32)assetBrowser->selectedAssetIndex });
+				assetManager->ReloadShader(ShaderHandle { (U32)assetBrowser->selectedAssetIndex });
 			}
 		}
 	}

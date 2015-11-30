@@ -14,15 +14,7 @@ UniqueMaterial::~UniqueMaterial() {
 	glDeleteTextures(1, &normalMapID);
 }
 
-const char* GetMaterialParameterString (MaterialParameter param) {
-	switch (param) {
-	case MATERIAL_DIFFUSE: return "Diffuse";
-	case MATERIAL_SPECULAR: return "Specular";
-	case MATERIAL_NORMAL: return "Normal";
-	case MATERIAL_SPECULAR_EXPONENT: return "Specular Exponent";
-	}
-	return "UNKNOWN MATERIAL PARAMETER!";
-}
+
 
 template <class TArchive>
 void serialize(TArchive& archive, MaterialAssetInfo& data) {
@@ -33,7 +25,7 @@ void serialize(TArchive& archive, MaterialAssetInfo& data) {
 	);
 }
 
-void SaveMaterialAssetInfo (const MaterialAssetInfo& data, const std::string& filename) {
+void SaveMaterialInfo (const MaterialInfo& data, const std::string& filename) {
 	std::ofstream stream(filename);
 	if (!stream.is_open()) LOG_ERROR("Could not open file when trying to save material file");
 
@@ -42,7 +34,7 @@ void SaveMaterialAssetInfo (const MaterialAssetInfo& data, const std::string& fi
 	stream.close();
 }
 
-void LoadMaterialAssetInfo (MaterialAssetInfo* info, const std::string& filename) {
+void LoadMaterialInfo (MaterialInfo* info, const std::string& filename) {
 	std::ifstream stream(filename);
 	if (!stream.is_open()) LOG_ERROR("Could not open file when trying to load material file");
 
@@ -62,7 +54,7 @@ void LoadMaterialAssetInfo (MaterialAssetInfo* info, const std::string& filename
 }
 
 
-void ImportMaterialData (MaterialData* data, const MaterialAssetInfo& info) {
+void ImportMaterialData (MaterialData* data, const MaterialInfo& info) {
 	static auto loadDataIfFilenameIsValid = [](const std::string& directory, const std::string& filename) {
 		if (filename == "") return TextureData { };
 		return LoadTextureData(directory + filename);

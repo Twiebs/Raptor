@@ -90,7 +90,8 @@ int PlatformPopKeypress() {
 	return keysPressedThisFrame[--keysPressedThisFrameCount];
 }
 
-static void ProcessSDLEvents() {
+#include <Graphics/imgui.h>
+static inline void ProcessSDLEvents() {
 	SDL_Event event;
 	SDL_GetRelativeMouseState(nullptr, nullptr);
 	while (SDL_PollEvent(&event)) {
@@ -103,8 +104,9 @@ static void ProcessSDLEvents() {
 		{
 			global_running = false;
 		} break;
-		case SDL_TEXTINPUT:
-		{
+		case SDL_TEXTINPUT: {
+			auto& io = ImGui::GetIO();
+			io.AddInputCharactersUTF8(event.text.text);
 		} break;
 
 		}

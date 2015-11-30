@@ -1,6 +1,7 @@
 #include "GLRenderer.hpp"
 #include <string>
 #include <Graphics/GLSLProgram.hpp>
+#include <Core/Tasks.hpp>
 
 CREATE_LOG_CATEGORY(GLRenderer, LOGLEVEL_VERBOSE);
 
@@ -9,8 +10,8 @@ CREATE_LOG_CATEGORY(GLRenderer, LOGLEVEL_VERBOSE);
 const char* GLDebugHelper::currentFunctionName = UNKNOWN_FUNCTION_STRING;
 const char* GLDebugHelper::lastFunctionName = UNKNOWN_FUNCTION_STRING;
 
-// TODO Asset Main Thread here...
 GLDebugHelper::GLDebugHelper(const char* functionName) {
+	assert_called_by_main_thread();
 	lastFunctionName = currentFunctionName;
 	currentFunctionName = functionName;
 }
@@ -28,7 +29,6 @@ void BindTexture2DToUnit(U32 textureUnit, U32 textureID) {
 	glActiveTexture(GL_TEXTURE0 + textureUnit);
 	glBindTexture(GL_TEXTURE_2D, textureID);
 }
-
 
 static const char* GetGLSourceDebugString (GLenum source) { 
 	switch (source) {
